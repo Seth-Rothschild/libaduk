@@ -1,0 +1,50 @@
+$vp-min-width: 320px;
+$vp-max-width: 1200px;
+
+.box {
+  @extend %box-shadow;
+
+  background: $c-bg-box;
+
+  &-pad {
+    @extend %box-padding;
+
+    .box__top {
+      padding: 0 0 $box-padding-vert 0;
+    }
+  }
+
+  &__top {
+    @extend %box-padding, %flex-between;
+
+    gap: 1rem;
+
+    &__actions {
+      @extend %flex-wrap;
+
+      .button {
+        @extend %flex-center;
+      }
+
+      gap: 1rem;
+    }
+  }
+
+  &__pad {
+    @extend %box-padding-horiz;
+  }
+
+  @include if-transp {
+    position: relative;
+
+    @include back-blur;
+  }
+}
+
+@media (min-width: at-least($small)) {
+  .box {
+    @include box-radius;
+
+    overflow: hidden;
+  }
+}

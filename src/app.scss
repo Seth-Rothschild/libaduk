@@ -1,0 +1,68 @@
+/* Step 1: Import theme files while $c-* vars are real SCSS colors */
+@import 'lib/css/theme/gen/mix';
+@import 'lib/css/theme/theme.default';
+
+/* Step 2: Apply dark theme CSS custom properties to body NOW, before wrap.scss
+   overwrites $c-* with var(--c-*) references */
+body {
+  @include default-mix;
+  @include shared-color-defs;
+}
+
+/* Step 3: Import abstract layer — this imports gen/wrap which replaces
+   $c-* with CSS var references for use in all subsequent SCSS */
+@import 'lib/css/abstract/all';
+
+@include theme-style;
+
+/* Fonts */
+@font-face {
+  font-family: 'lichess';
+  font-display: block;
+  src: url('/font/lichess.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Noto Sans';
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('/font/noto-sans-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Base */
+@import 'lib/css/base/elements';
+@import 'lib/css/base/form';
+@import 'lib/css/base/typography';
+@import 'lib/css/base/data-icon';
+@import 'lib/css/base/unread';
+@import 'lib/css/base/util';
+@import 'lib/css/base/scrollbar';
+@import 'lib/css/base/ltr';
+
+/* Layout */
+@import 'lib/css/layout/vars';
+@import 'lib/css/layout/base';
+@import 'lib/css/layout/page-menu';
+
+/* Header */
+@import 'lib/css/header/header';
+
+/* Components */
+@import 'lib/css/component/button';
+@import 'lib/css/component/box';
+@import 'lib/css/component/loader';
+@import 'lib/css/component/flash';
+@import 'lib/css/component/dialog';
+@import 'lib/css/component/user-link';
+@import 'lib/css/component/subnav';
+@import 'lib/css/component/friend-box';
+
+/* Lobby */
+@import 'lib/css/lobby/defs';
+@import 'lib/css/lobby/layout';
+@import 'lib/css/lobby/table';
+@import 'lib/css/lobby/about';
+@import 'lib/css/lobby/app/pool';
