@@ -6,6 +6,32 @@
 	// Stub auth state — toggle to preview signed-in UI
 	let signedIn = $state(false);
 	let username = 'player1';
+
+	let searchExpanded = $state(false);
+	let settingsOpen = $state(false);
+	let searchInput = $state(null);
+
+	$effect(() => {
+		document.body.classList.toggle('clinput', searchExpanded);
+	});
+
+	function onSearchMouseEnter() {
+		searchExpanded = true;
+		searchInput?.focus();
+	}
+
+	function onSearchMouseLeave() {
+		searchExpanded = false;
+		searchInput?.blur();
+	}
+
+	function onSearchBlur() {
+		searchExpanded = false;
+	}
+
+	function toggleSettings() {
+		settingsOpen = !settingsOpen;
+	}
 </script>
 
 <!-- Mobile hamburger toggle (CSS-only) -->
@@ -42,12 +68,52 @@
 	</div>
 
 	<div class="site-buttons">
+		<div
+			id="clinput"
+			onmouseenter={onSearchMouseEnter}
+			onmouseleave={onSearchMouseLeave}
+		>
+			<a data-icon="" aria-label="Search" class="link"></a>
+			<input
+				type="text"
+				spellcheck="false"
+				autocomplete="off"
+				aria-label="Search"
+				placeholder="Search"
+				enterkeyhint="search"
+				bind:this={searchInput}
+				onblur={onSearchBlur}
+			/>
+		</div>
+
 		{#if signedIn}
 			<a id="user_tag" href="/profile" class="link">{username}</a>
+			<div class="dasher" class:shown={settingsOpen}>
+				<button class="toggle link" data-icon="" aria-label="Settings" onclick={toggleSettings}></button>
+				<div class="dropdown">
+					<a href="/settings">Settings</a>
+					<a href="/settings/theme">Theme</a>
+					<a href="/settings/board">Board</a>
+					<button onclick={() => { signedIn = false; settingsOpen = false; }}>Sign out</button>
+				</div>
+			</div>
 		{:else}
 			<div class="signin-or-signup">
 				<a href="/signup" class="button button-metal signup">Register</a>
-				<button class="button button-metal" onclick={() => (signedIn = true)}>Sign in</button>
+				<a href="/login" class="button button-metal">Sign in</a>
+			</div>
+			<div class="dasher" class:shown={settingsOpen}>
+				<button
+					class="toggle anon link"
+					data-icon=""
+					aria-label="Settings"
+					title="Settings"
+					onclick={toggleSettings}
+				></button>
+				<div class="dropdown">
+					<a href="/settings/theme">Theme</a>
+					<a href="/settings/board">Board</a>
+				</div>
 			</div>
 		{/if}
 	</div>
@@ -58,48 +124,3 @@
 		{@render children()}
 	</main>
 </div>
-
-<!-- Friends panel — fixed bottom-right, shown on large screens -->
-<div id="friend_box">
-	<div class="friend_box_title">Friends</div>
-	<div class="content">
-		<div class="nobody">
-			<span>No friends online</span>
-			<a href="/players" class="find">Find players</a>
-		</div>
-	</div>
-</div>
-
-<!-- Sign-in modal — shown when not signed in -->
-{#if !signedIn}
-	<dialog open>
-		<div class="close-button-anchor">
-			<button class="close-button" onclick={() => (signedIn = true)} aria-label="Close">✕</button>
-		</div>
-		<div class="scrollable">
-			<div style="padding: 2em; min-width: 280px;">
-				<h2 style="margin-bottom: 1em;">Sign in to libaduk</h2>
-				<form onsubmit={(e) => { e.preventDefault(); signedIn = true; }}>
-					<div style="display: flex; flex-direction: column; gap: 0.8em;">
-						<input
-							type="text"
-							placeholder="Username"
-							style="padding: 0.5em; background: var(--c-bg-input); border: 1px solid var(--c-border); color: var(--c-font); border-radius: 4px;"
-						/>
-						<input
-							type="password"
-							placeholder="Password"
-							style="padding: 0.5em; background: var(--c-bg-input); border: 1px solid var(--c-border); color: var(--c-font); border-radius: 4px;"
-						/>
-						<button type="submit" class="button button-metal" style="margin-top: 0.5em;">
-							Sign in
-						</button>
-					</div>
-				</form>
-				<p style="margin-top: 1em; color: var(--c-font-dim); text-align: center; font-size: 0.9em;">
-					No account? <a href="/signup">Register</a>
-				</p>
-			</div>
-		</div>
-	</dialog>
-{/if}

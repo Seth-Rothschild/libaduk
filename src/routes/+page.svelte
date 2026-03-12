@@ -18,7 +18,7 @@
 				<span>Recent activity</span>
 			</div>
 			<div class="lobby__box__content">
-				<p style="padding: 1em; color: var(--c-font-dim);">Sign in to see your timeline.</p>
+				<p style="padding: 1em; color: var(--c-font-dim);">Nothing yet.</p>
 			</div>
 		</div>
 	</div>

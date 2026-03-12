@@ -49,6 +49,12 @@ body {
 
 /* Header */
 @import 'lib/css/header/header';
+@import 'lib/css/header/clinput';
+
+/* Forms */
+@import 'lib/css/form/form3';
+@import 'lib/css/form/password';
+@import 'lib/css/form/check';
 
 /* Components */
 @import 'lib/css/component/button';
@@ -59,6 +65,9 @@ body {
 @import 'lib/css/component/user-link';
 @import 'lib/css/component/subnav';
 @import 'lib/css/component/friend-box';
+
+/* Pages */
+@import 'lib/css/page/auth';
 
 /* Lobby */
 @import 'lib/css/lobby/defs';
