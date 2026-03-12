@@ -1,0 +1,35 @@
+.site-buttons .dasher .dropdown {
+  .sub-head {
+    border-bottom: $border;
+    font-weight: 600;
+
+    &::before {
+      color: $c-dasher;
+    }
+  }
+
+  .selector {
+    margin: 0.5rem 0;
+
+    button {
+      &::before {
+        margin-inline-end: 8px;
+        opacity: 0;
+      }
+
+      &.active {
+        background: $c-dasher !important;
+        color: $c-over !important;
+
+        &::before {
+          opacity: 1;
+          color: $c-over !important;
+        }
+
+        &:hover {
+          background: $c-dasher !important;
+        }
+      }
+    }
+  }
+}

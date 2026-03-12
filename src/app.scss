@@ -1,16 +1,22 @@
-/* Step 1: Import theme files while $c-* vars are real SCSS colors */
+/* Step 1: Import the color mixin definitions (dark/light/transp) */
 @import 'lib/css/theme/gen/mix';
-@import 'lib/css/theme/theme.default';
-// @import 'lib/css/theme/theme.light';
 
-/* Step 2: Apply dark theme CSS custom properties to body NOW, before wrap.scss
-   overwrites $c-* with var(--c-*) references */
-body {
+/* Step 2: Import default (dark) theme — sets $c-* SCSS vars to dark values */
+@import 'lib/css/theme/theme.default';
+
+/* Step 3: Apply dark theme CSS custom properties to html NOW, while $c-* are
+   still real dark colors — before theme.light overwrites them or wrap.scss
+   replaces them with var() references.
+   Must target html (not body) so html.light { } can override via higher specificity. */
+html {
   @include default-mix;
   @include shared-color-defs;
 }
 
-/* Step 3: Import abstract layer — this imports gen/wrap which replaces
+/* Step 4: Import light theme — resets $c-* to light values and defines html.light block */
+@import 'lib/css/theme/theme.light';
+
+/* Step 5: Import abstract layer — this imports gen/wrap which replaces
    $c-* with CSS var references for use in all subsequent SCSS */
 @import 'lib/css/abstract/all';
 
@@ -52,6 +58,7 @@ body {
 /* Header */
 @import 'lib/css/header/header';
 @import 'lib/css/header/clinput';
+@import 'lib/css/header/dasher';
 
 /* Forms */
 @import 'lib/css/form/form3';

@@ -19,6 +19,7 @@
 	let searchExpanded = $state(false);
 	let settingsOpen = $state(false);
 	let searchInput = $state(null);
+	let dasherPane = $state('main');
 
 	$effect(() => {
 		document.body.classList.toggle('clinput', searchExpanded);
@@ -40,6 +41,7 @@
 
 	function toggleSettings() {
 		settingsOpen = !settingsOpen;
+		if (!settingsOpen) dasherPane = 'main';
 	}
 </script>
 
@@ -83,7 +85,7 @@
 			onmouseenter={onSearchMouseEnter}
 			onmouseleave={onSearchMouseLeave}
 		>
-			<a data-icon="" aria-label="Search" class="link"></a>
+			<a data-icon="&#xe057;" aria-label="Search" class="link"></a>
 			<input
 				type="text"
 				spellcheck="false"
@@ -96,18 +98,6 @@
 			/>
 		</div>
 
-		{#snippet themeButtons()}
-			<div class="dropdown__theme">
-				{#each [['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']] as [value, label]}
-					<button
-						class="theme-btn"
-						class:active={themeState.setting === value}
-						onclick={() => themeState.set(value)}
-					>{label}</button>
-				{/each}
-			</div>
-		{/snippet}
-
 		{#snippet pingStatus()}
 			<a class="status" href="/lag">
 				<signal class="q{pingState.lagRating}">
@@ -119,15 +109,35 @@
 			</a>
 		{/snippet}
 
+		{#snippet backgroundPane()}
+			<button class="sub-head text" data-icon="&#xe047;" onclick={() => (dasherPane = 'main')}>
+				Background
+			</button>
+			<div class="selector">
+				{#each [['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']] as [value, label]}
+					<button
+						class="text"
+						class:active={themeState.setting === value}
+						data-icon="&#xe023;"
+						onclick={() => themeState.set(value)}
+					>{label}</button>
+				{/each}
+			</div>
+		{/snippet}
+
 		{#if signedIn}
 			<a id="user_tag" href="/profile" class="link">{username}</a>
 			<div class="dasher" class:shown={settingsOpen}>
-				<button class="toggle link" data-icon="" aria-label="Settings" onclick={toggleSettings}></button>
+				<button class="toggle link" data-icon="&#xe005;" aria-label="Settings" onclick={toggleSettings}></button>
 				<div class="dropdown">
-					<a href="/settings">Settings</a>
-					<a href="/settings/board">Board</a>
-					<button onclick={() => { clearUsername(); settingsOpen = false; }}>Sign out</button>
-					{@render themeButtons()}
+					{#if dasherPane === 'background'}
+						{@render backgroundPane()}
+					{:else}
+						<a href="/settings">Settings</a>
+						<a href="/settings/board">Board</a>
+						<button onclick={() => (dasherPane = 'background')}>Background</button>
+						<button onclick={() => { clearUsername(); settingsOpen = false; dasherPane = 'main'; }}>Sign out</button>
+					{/if}
 					{@render pingStatus()}
 				</div>
 			</div>
@@ -139,14 +149,18 @@
 			<div class="dasher" class:shown={settingsOpen}>
 				<button
 					class="toggle anon link"
-					data-icon=""
+					data-icon="&#xe005;"
 					aria-label="Settings"
 					title="Settings"
 					onclick={toggleSettings}
 				></button>
 				<div class="dropdown">
-					<a href="/settings/board">Board</a>
-					{@render themeButtons()}
+					{#if dasherPane === 'background'}
+						{@render backgroundPane()}
+					{:else}
+						<a href="/settings/board">Board</a>
+						<button onclick={() => (dasherPane = 'background')}>Background</button>
+					{/if}
 					{@render pingStatus()}
 				</div>
 			</div>
