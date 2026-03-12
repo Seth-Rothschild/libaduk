@@ -17,14 +17,14 @@
 }
 
 @mixin lobby-app-size {
-  min-height: 300px;
+  min-height: 420px;
 
   @include mq-at-least-col2 {
-    min-height: 400px;
+    min-height: 520px;
   }
 
   @include mq-at-least-col3 {
-    height: 600px;
+    height: 680px;
     max-height: calc(100vh - #{$site-header-outer-height} - #{$block-gap});
   }
 }

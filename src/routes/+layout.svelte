@@ -1,11 +1,20 @@
 <script>
 	import '../app.scss';
+	import { getUsername, clearUsername } from '$lib/user.svelte.js';
+	import { pingState } from '$lib/ping.svelte.js';
+	import { themeState } from '$lib/theme.svelte.js';
+	import { onMount } from 'svelte';
+
+	onMount(() => {
+		themeState.init();
+		pingState.start();
+		return () => pingState.stop();
+	});
 
 	let { children } = $props();
 
-	// Stub auth state — toggle to preview signed-in UI
-	let signedIn = $state(false);
-	let username = 'player1';
+	const username = $derived(getUsername());
+	const signedIn = $derived(username.length > 0);
 
 	let searchExpanded = $state(false);
 	let settingsOpen = $state(false);
@@ -44,6 +53,7 @@
 
 	<div class="site-title-nav">
 		<a class="site-title" href="/">
+			<span class="site-icon" data-icon="&#xe029;"></span>
 			<span class="home">libaduk</span>
 		</a>
 		<nav id="topnav" class="hover">
@@ -73,7 +83,7 @@
 			onmouseenter={onSearchMouseEnter}
 			onmouseleave={onSearchMouseLeave}
 		>
-			<a data-icon="" aria-label="Search" class="link"></a>
+			<a data-icon="" aria-label="Search" class="link"></a>
 			<input
 				type="text"
 				spellcheck="false"
@@ -86,15 +96,39 @@
 			/>
 		</div>
 
+		{#snippet themeButtons()}
+			<div class="dropdown__theme">
+				{#each [['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']] as [value, label]}
+					<button
+						class="theme-btn"
+						class:active={themeState.setting === value}
+						onclick={() => themeState.set(value)}
+					>{label}</button>
+				{/each}
+			</div>
+		{/snippet}
+
+		{#snippet pingStatus()}
+			<a class="status" href="/lag">
+				<signal class="q{pingState.lagRating}">
+					{#each [1, 2, 3, 4] as bar}
+						<i class:off={bar > pingState.lagRating}></i>
+					{/each}
+				</signal>
+				<span class="ping"><em>PING</em><strong>{pingState.ping ?? '?'}</strong><em>ms</em></span>
+			</a>
+		{/snippet}
+
 		{#if signedIn}
 			<a id="user_tag" href="/profile" class="link">{username}</a>
 			<div class="dasher" class:shown={settingsOpen}>
-				<button class="toggle link" data-icon="" aria-label="Settings" onclick={toggleSettings}></button>
+				<button class="toggle link" data-icon="" aria-label="Settings" onclick={toggleSettings}></button>
 				<div class="dropdown">
 					<a href="/settings">Settings</a>
-					<a href="/settings/theme">Theme</a>
 					<a href="/settings/board">Board</a>
-					<button onclick={() => { signedIn = false; settingsOpen = false; }}>Sign out</button>
+					<button onclick={() => { clearUsername(); settingsOpen = false; }}>Sign out</button>
+					{@render themeButtons()}
+					{@render pingStatus()}
 				</div>
 			</div>
 		{:else}
@@ -105,14 +139,15 @@
 			<div class="dasher" class:shown={settingsOpen}>
 				<button
 					class="toggle anon link"
-					data-icon=""
+					data-icon=""
 					aria-label="Settings"
 					title="Settings"
 					onclick={toggleSettings}
 				></button>
 				<div class="dropdown">
-					<a href="/settings/theme">Theme</a>
 					<a href="/settings/board">Board</a>
+					{@render themeButtons()}
+					{@render pingStatus()}
 				</div>
 			</div>
 		{/if}

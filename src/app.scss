@@ -1,6 +1,7 @@
 /* Step 1: Import theme files while $c-* vars are real SCSS colors */
 @import 'lib/css/theme/gen/mix';
 @import 'lib/css/theme/theme.default';
+// @import 'lib/css/theme/theme.light';
 
 /* Step 2: Apply dark theme CSS custom properties to body NOW, before wrap.scss
    overwrites $c-* with var(--c-*) references */
@@ -45,6 +46,7 @@ body {
 /* Layout */
 @import 'lib/css/layout/vars';
 @import 'lib/css/layout/base';
+@import 'lib/css/layout/uniboard';
 @import 'lib/css/layout/page-menu';
 
 /* Header */
@@ -59,16 +61,19 @@ body {
 /* Components */
 @import 'lib/css/component/button';
 @import 'lib/css/component/box';
+@import 'lib/css/component/color-icon';
 @import 'lib/css/component/loader';
 @import 'lib/css/component/flash';
 @import 'lib/css/component/dialog';
 @import 'lib/css/component/user-link';
 @import 'lib/css/component/subnav';
 @import 'lib/css/component/friend-box';
+@import 'lib/css/component/tabs-horiz';
 
 /* Pages */
 @import 'lib/css/page/auth';
 @import 'lib/css/page/board';
+@import 'lib/css/page/round';
 
 /* Lobby */
 @import 'lib/css/lobby/defs';
@@ -76,3 +81,4 @@ body {
 @import 'lib/css/lobby/table';
 @import 'lib/css/lobby/about';
 @import 'lib/css/lobby/app/pool';
+@import 'lib/css/lobby/setup';

@@ -1,9 +1,15 @@
 <script>
 	import GoBoardLib from '@sabaki/go-board';
 	import GoBoard from '$lib/GoBoard.svelte';
+	import { page } from '$app/state';
 
-	const SIZE = 19;
+	const VALID_SIZES = [9, 13, 19];
+	const rawSize = Number(page.url.searchParams.get('size') ?? 19);
+	const SIZE = VALID_SIZES.includes(rawSize) ? rawSize : 19;
 	const KOMI = 6.5;
+
+	// licon-InfoCircle (e060)
+	const ICON_INFO = '\ue060';
 
 	function emptyShiftMap(size) {
 		return Array.from({ length: size }, () => new Array(size).fill(0));
@@ -39,15 +45,11 @@
 	const blackCaptures = $derived(board.getCaptures(1));
 	const whiteCaptures = $derived(board.getCaptures(-1));
 
-	const turnLabel = $derived(
-		status === 'gameover'
-			? winner === 1
-				? 'Black wins'
-				: 'White wins'
-			: currentSign === 1
-				? 'Black to play'
-				: 'White to play'
-	);
+	const currentColor = $derived(currentSign === 1 ? 'black' : 'white');
+	const opponentColor = $derived(currentSign === 1 ? 'white' : 'black');
+
+	const currentCaptures = $derived(currentSign === 1 ? blackCaptures : whiteCaptures);
+	const opponentCaptures = $derived(currentSign === 1 ? whiteCaptures : blackCaptures);
 
 	function makeMove(x, y) {
 		if (status !== 'playing') return;
@@ -113,29 +115,74 @@
 	}
 </script>
 
-<div class="go-container">
-	<GoBoard {signMap} {lastMove} {shiftMap} {animatedVertex} size={SIZE} onVertexClick={makeMove} />
+<div class="round">
+	<aside class="round__side">
+		<div class="game__meta">
+			<section>
+				<div class="game__meta__infos" data-icon="&#xe015;">
+					<div class="setup">Casual • {SIZE}×{SIZE} • Go</div>
+				</div>
+				<div class="game__meta__players">
+					<div class="player color-icon is black text">Black</div>
+					<div class="player color-icon is white text">White</div>
+				</div>
+			</section>
+			{#if status === 'gameover'}
+				<section class="status">
+					{winner === 1 ? 'Black' : 'White'} is victorious.
+				</section>
+			{/if}
+		</div>
+	</aside>
 
-	<div class="go-side">
-		<div class="go-turn">{turnLabel}</div>
-
-		<div class="go-captures">
-			<span>Black captures: {blackCaptures}</span>
-			<span>White captures: {whiteCaptures}</span>
+	<div class="round__app">
+		<div class="round__app__board">
+			<GoBoard {signMap} {lastMove} {shiftMap} {animatedVertex} size={SIZE} onVertexClick={makeMove} />
 		</div>
 
-		{#if status === 'playing'}
-			<div class="go-actions">
-				<button class="button button-metal" onclick={pass}>Pass</button>
-				<button class="button button-metal" onclick={resign}>Resign</button>
+		<div class="round__app__table">
+			<div class="ruser ruser-top color-icon is {opponentColor}">
+				<i class="line"></i>
+				<name>{opponentColor === 'black' ? 'Black' : 'White'}</name>
+				{#if opponentCaptures > 0}
+					<span class="material">+{opponentCaptures}</span>
+				{/if}
 			</div>
-		{/if}
 
-		{#if status === 'gameover'}
-			<div class="go-message">
-				{winner === 1 ? 'Black' : 'White'} wins by {winner === -1 ? `${KOMI} komi + ` : ''}captures.
+			<div class="rmoves">
+				{#if status === 'playing'}
+					<div class="message" data-icon={ICON_INFO}>
+						<div>
+							You play the {currentColor} stones
+							<br /><strong>It's your turn!</strong>
+						</div>
+					</div>
+				{:else}
+					<div class="message" data-icon={ICON_INFO}>
+						<div>
+							{winner === 1 ? 'Black' : 'White'} wins<br />
+							{#if winner === -1}by {KOMI} komi + {/if}captures.
+						</div>
+					</div>
+				{/if}
 			</div>
-			<button class="button button-metal" onclick={newGame}>New game</button>
-		{/if}
+
+			<div class="rcontrols">
+				{#if status === 'playing'}
+					<button class="button button-metal" onclick={pass}>Pass</button>
+					<button class="button button-red" onclick={resign}>Resign</button>
+				{:else}
+					<button class="button button-metal" onclick={newGame}>New game</button>
+				{/if}
+			</div>
+
+			<div class="ruser ruser-bottom color-icon is {currentColor} active">
+				<i class="line"></i>
+				<name>{currentColor === 'black' ? 'Black' : 'White'}</name>
+				{#if currentCaptures > 0}
+					<span class="material">+{currentCaptures}</span>
+				{/if}
+			</div>
+		</div>
 	</div>
 </div>

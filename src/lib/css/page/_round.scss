@@ -1,0 +1,168 @@
+// Game round page layout — ported from lila ui/round/css/
+
+.round {
+  grid-area: main;
+  display: grid;
+  gap: $block-gap;
+  grid-template-areas: 'app' 'side';
+
+  @include mq-at-least-col3 {
+    grid-template-columns: $col3-uniboard-side auto;
+    grid-template-areas: 'side app';
+  }
+
+  &__side {
+    grid-area: side;
+    display: flex;
+    flex-direction: column;
+    gap: $block-gap;
+  }
+
+  &__app {
+    grid-area: app;
+    display: flex;
+    gap: $block-gap;
+    flex-direction: column;
+    align-items: flex-start;
+
+    @include mq-at-least-col2 {
+      flex-direction: row;
+      align-items: stretch;
+    }
+
+    &__board {
+      flex: 0 0 auto;
+    }
+
+    &__table {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      min-width: 220px;
+      max-width: 360px;
+      background: $c-bg-box;
+
+      @extend %box-radius;
+    }
+  }
+}
+
+// Player strips
+.ruser {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.5em 0.8em;
+  font-size: 1.1em;
+  user-select: none;
+  border-bottom: $border;
+
+  &:last-child {
+    border-bottom: none;
+    border-top: $border;
+  }
+
+  .line {
+    width: 0.55em;
+    height: 0.55em;
+    border-radius: 50%;
+    background: $c-good;
+    flex: 0 0 auto;
+  }
+
+  name {
+    flex: 1 1 auto;
+  }
+
+  .material {
+    color: $c-font-dim;
+    font-size: 0.9em;
+  }
+
+  &.active {
+    background: $c-bg-zebra;
+  }
+}
+
+// Turn/message area
+.rmoves {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1em;
+
+  .message {
+    display: flex;
+    align-items: center;
+    gap: 0.8em;
+
+    &[data-icon]::before {
+      font-size: 3em;
+      color: $c-font-dim;
+    }
+  }
+}
+
+// Action buttons area
+.rcontrols {
+  padding: 0.5em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  border-top: $border;
+
+  .button {
+    width: 100%;
+  }
+}
+
+// Game meta panel (left side)
+.game__meta {
+  background: $c-bg-box;
+  padding: 1.5em;
+
+  @extend %box-neat-force;
+
+  section:not(:last-child) {
+    border-bottom: $border;
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.8rem;
+  }
+
+  &__infos {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    position: relative;
+
+    &[data-icon]::before {
+      font-size: 2.5rem;
+      color: $c-font-dim;
+    }
+
+    .setup {
+      color: $c-font-dim;
+      font-size: 0.95em;
+    }
+  }
+
+  &__players {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 90%;
+  }
+
+  .status {
+    text-align: center;
+    font-style: italic;
+    margin-top: 0.5em;
+  }
+}
+
+.player.color-icon {
+  display: flex;
+  align-items: center;
+}

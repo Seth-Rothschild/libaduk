@@ -55,16 +55,53 @@
 
     display: none;
     position: absolute;
+    min-width: 225px;
 
     @include inline-end(0);
 
     top: $site-header-height;
     background: $c-bg-header-dropdown;
     z-index: $z-dropdown-109;
+    padding: 5px 0;
 
-    a,
-    button {
+    a:not(.status),
+    button:not(.theme-btn) {
+      @extend %nowrap-hidden;
+
+      display: block;
+      padding: 0.5rem 1rem;
+      width: 100%;
+      text-align: start;
       color: $c-header-dropdown;
+
+      &:hover {
+        background: $c-dasher;
+        color: $c-over !important;
+      }
+    }
+
+    .dropdown__theme {
+      display: flex;
+      border-top: $border;
+      padding: 6px 8px;
+      gap: 4px;
+
+      .theme-btn {
+        @extend %metal, %box-radius;
+
+        flex: 1 1 auto;
+        padding: 0.3rem 0;
+        font-size: 0.8rem;
+        color: $c-header-dropdown;
+
+        &.active {
+          @extend %active;
+        }
+
+        &:hover:not(.active) {
+          background: $c-dasher-light;
+        }
+      }
     }
   }
 

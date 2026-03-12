@@ -8,9 +8,19 @@ import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 const dirname =
 	typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
+const wsDevPlugin = {
+	name: 'websocket-dev',
+	configureServer(server) {
+		server.httpServer?.once('listening', async () => {
+			const { attachWebSocketServer } = await import('./src/lib/server/rooms.js');
+			attachWebSocketServer(server.httpServer);
+		});
+	}
+};
+
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
-	plugins: [sveltekit()],
+	plugins: [sveltekit(), wsDevPlugin],
 	test: {
 		expect: {
 			requireAssertions: true
