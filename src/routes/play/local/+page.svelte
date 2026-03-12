@@ -1,5 +1,6 @@
 <script>
 	import GoBoardLib from '@sabaki/go-board';
+	import influence from '@sabaki/influence';
 	import GoBoard from '$lib/GoBoard.svelte';
 	import { page } from '$app/state';
 
@@ -40,6 +41,18 @@
 	let winner = $state(null);
 	let shiftMap = $state(emptyShiftMap(SIZE));
 	let animatedVertex = $state(null);
+	let deadStones = $state([]);
+	let blackApproved = $state(false);
+	let whiteApproved = $state(false);
+	let finalScore = $state(null);
+	let showCoords = $state(false);
+	let boardContainerWidth = $state(0);
+	const vertexSize = $derived(boardContainerWidth > 0 ? Math.floor(boardContainerWidth / (SIZE + 0.8)) : 24);
+
+	$effect(() => {
+		const stored = localStorage.getItem('go-showCoords');
+		if (stored !== null) showCoords = stored === 'true';
+	});
 
 	const signMap = $derived(board.signMap);
 	const blackCaptures = $derived(board.getCaptures(1));
@@ -50,6 +63,36 @@
 
 	const currentCaptures = $derived(currentSign === 1 ? blackCaptures : whiteCaptures);
 	const opponentCaptures = $derived(currentSign === 1 ? whiteCaptures : blackCaptures);
+
+	const scoreBoard = $derived.by(() => {
+		if (status !== 'scoring') return board;
+		const clone = board.clone();
+		for (const [x, y] of deadStones) {
+			const sign = clone.get([x, y]);
+			if (sign === 0) continue;
+			clone.set([x, y], 0);
+			clone.setCaptures(-sign, (n) => n + 1);
+		}
+		return clone;
+	});
+
+	const areaMap = $derived(status === 'scoring' ? influence.areaMap(scoreBoard.signMap) : null);
+
+	const score = $derived.by(() => {
+		if (!areaMap) return null;
+		let blackArea = 0;
+		let whiteArea = 0;
+		for (let y = 0; y < SIZE; y++) {
+			for (let x = 0; x < SIZE; x++) {
+				const z = areaMap[y][x];
+				if (z > 0) blackArea++;
+				if (z < 0) whiteArea++;
+			}
+		}
+		const blackScore = blackArea;
+		const whiteScore = whiteArea + KOMI;
+		return { blackArea, whiteArea, blackScore, whiteScore };
+	});
 
 	function makeMove(x, y) {
 		if (status !== 'playing') return;
@@ -85,6 +128,27 @@
 		currentSign = currentSign === 1 ? -1 : 1;
 	}
 
+	function toggleDeadGroup(x, y) {
+		const sign = board.get([x, y]);
+		if (sign === 0) return;
+		const chain = board.getChain([x, y]);
+		const chainKeys = new Set(chain.map(([cx, cy]) => `${cx},${cy}`));
+		const currentDeadKeys = new Set(deadStones.map(([cx, cy]) => `${cx},${cy}`));
+		const isCurrentlyDead = currentDeadKeys.has(`${x},${y}`);
+		if (isCurrentlyDead) {
+			deadStones = deadStones.filter(([cx, cy]) => !chainKeys.has(`${cx},${cy}`));
+		} else {
+			deadStones = [...deadStones, ...chain];
+		}
+		blackApproved = false;
+		whiteApproved = false;
+	}
+
+	function handleVertexClick(x, y) {
+		if (status === 'playing') makeMove(x, y);
+		else if (status === 'scoring') toggleDeadGroup(x, y);
+	}
+
 	function pass() {
 		if (status !== 'playing') return;
 		consecutivePasses++;
@@ -92,8 +156,20 @@
 		animatedVertex = null;
 		currentSign = currentSign === 1 ? -1 : 1;
 		if (consecutivePasses >= 2) {
+			status = 'scoring';
+			deadStones = [];
+			blackApproved = false;
+			whiteApproved = false;
+		}
+	}
+
+	function approveScore(playerSign) {
+		if (playerSign === 1) blackApproved = true;
+		else whiteApproved = true;
+		if (blackApproved && whiteApproved) {
+			finalScore = score;
 			status = 'gameover';
-			winner = whiteCaptures + KOMI > blackCaptures ? -1 : 1;
+			winner = score.blackScore > score.whiteScore ? 1 : -1;
 		}
 	}
 
@@ -101,6 +177,7 @@
 		if (status !== 'playing') return;
 		status = 'gameover';
 		winner = currentSign === 1 ? -1 : 1;
+		finalScore = null;
 	}
 
 	function newGame() {
@@ -112,6 +189,15 @@
 		winner = null;
 		shiftMap = emptyShiftMap(SIZE);
 		animatedVertex = null;
+		deadStones = [];
+		blackApproved = false;
+		whiteApproved = false;
+		finalScore = null;
+	}
+
+	function toggleCoords() {
+		showCoords = !showCoords;
+		localStorage.setItem('go-showCoords', String(showCoords));
 	}
 </script>
 
@@ -132,12 +218,30 @@
 					{winner === 1 ? 'Black' : 'White'} is victorious.
 				</section>
 			{/if}
+			<section class="board-options">
+				<label class="board-option-toggle">
+					<input type="checkbox" checked={showCoords} onchange={toggleCoords} />
+					Coordinates
+				</label>
+			</section>
 		</div>
 	</aside>
 
 	<div class="round__app">
-		<div class="round__app__board">
-			<GoBoard {signMap} {lastMove} {shiftMap} {animatedVertex} size={SIZE} onVertexClick={makeMove} />
+		<div class="round__app__board" bind:clientWidth={boardContainerWidth}>
+			<GoBoard
+				{signMap}
+				{lastMove}
+				{shiftMap}
+				{animatedVertex}
+				size={SIZE}
+				{vertexSize}
+				{areaMap}
+				deadStones={status === 'scoring' ? deadStones : null}
+				{showCoords}
+				{currentSign}
+				onVertexClick={handleVertexClick}
+			/>
 		</div>
 
 		<div class="round__app__table">
@@ -157,11 +261,43 @@
 							<br /><strong>It's your turn!</strong>
 						</div>
 					</div>
+				{:else if status === 'scoring'}
+					<div class="message" data-icon={ICON_INFO}>
+						<div>
+							Counting territory<br />
+							<strong>Click stones to mark dead</strong>
+						</div>
+					</div>
+					{#if score}
+						<div class="score-breakdown">
+							<div class="score-row">
+								<span class="color-icon is black text">Black</span>
+								<span>{score.blackArea}</span>
+							</div>
+							<div class="score-row">
+								<span class="color-icon is white text">White</span>
+								<span>{score.whiteArea} + {KOMI} = {score.whiteScore.toFixed(1)}</span>
+							</div>
+							<div class="score-verdict">
+								{#if score.blackScore > score.whiteScore}
+									Black leads by {(score.blackScore - score.whiteScore).toFixed(1)}
+								{:else if score.whiteScore > score.blackScore}
+									White leads by {(score.whiteScore - score.blackScore).toFixed(1)}
+								{:else}
+									Tied (jigo)
+								{/if}
+							</div>
+						</div>
+					{/if}
 				{:else}
 					<div class="message" data-icon={ICON_INFO}>
 						<div>
-							{winner === 1 ? 'Black' : 'White'} wins<br />
-							{#if winner === -1}by {KOMI} komi + {/if}captures.
+							{winner === 1 ? 'Black' : 'White'} wins
+							{#if finalScore}
+								<br />{finalScore.blackScore.toFixed(1)} – {finalScore.whiteScore.toFixed(1)}
+							{:else}
+								<br />by resignation
+							{/if}
 						</div>
 					</div>
 				{/if}
@@ -171,6 +307,25 @@
 				{#if status === 'playing'}
 					<button class="button button-metal" onclick={pass}>Pass</button>
 					<button class="button button-red" onclick={resign}>Resign</button>
+				{:else if status === 'scoring'}
+					<button
+						class="button"
+						class:button-metal={!blackApproved}
+						class:button-green={blackApproved}
+						onclick={() => approveScore(1)}
+						disabled={blackApproved}
+					>
+						{blackApproved ? 'Black ✓' : 'Black accepts'}
+					</button>
+					<button
+						class="button"
+						class:button-metal={!whiteApproved}
+						class:button-green={whiteApproved}
+						onclick={() => approveScore(-1)}
+						disabled={whiteApproved}
+					>
+						{whiteApproved ? 'White ✓' : 'White accepts'}
+					</button>
 				{:else}
 					<button class="button button-metal" onclick={newGame}>New game</button>
 				{/if}
@@ -186,3 +341,9 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	:global(#main-wrap) {
+		display: block;
+	}
+</style>

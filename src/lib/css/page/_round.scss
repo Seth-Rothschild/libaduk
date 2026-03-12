@@ -28,10 +28,16 @@
     @include mq-at-least-col2 {
       flex-direction: row;
       align-items: stretch;
+      height: calc(100vh - $site-header-outer-height - 2rem);
     }
 
     &__board {
       flex: 0 0 auto;
+      aspect-ratio: 1 / 1;
+
+      @include mq-at-least-col2 {
+        height: 100%;
+      }
     }
 
     &__table {
@@ -165,4 +171,43 @@
 .player.color-icon {
   display: flex;
   align-items: center;
+}
+
+// Board options panel (coordinates toggle, etc.)
+.board-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+
+.board-option-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 0.9em;
+  color: $c-font-dim;
+  cursor: pointer;
+  user-select: none;
+}
+
+// Score breakdown during territory counting
+.score-breakdown {
+  margin-top: 0.8em;
+  font-size: 0.9em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+
+.score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.score-verdict {
+  margin-top: 0.3em;
+  font-weight: bold;
+  border-top: $border;
+  padding-top: 0.3em;
 }

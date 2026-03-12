@@ -47,8 +47,13 @@
   position: relative;
   cursor: pointer;
 
-  &.go-empty:hover {
-    background: rgba(100, 100, 100, 0.15);
+  .go-turn-black &.go-empty:hover {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+  }
+
+  .go-turn-white &.go-empty:hover {
+    background: rgba(255, 255, 255, 0.4);
     border-radius: 50%;
   }
 }
