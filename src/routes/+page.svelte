@@ -32,6 +32,9 @@
 			<button class="button button-metal lobby__start__button lobby__start__button--friend">
 				Challenge a friend
 			</button>
+			<a href="/play/local" class="button button-metal lobby__start__button lobby__start__button--ai">
+				Play locally
+			</a>
 		</div>
 	</div>
 
