@@ -159,9 +159,9 @@ $c-setup: $c-secondary;
   }
 
   .color-picker {
-    --stone-size: 32px;
-
     &__button {
+      --stone-size: 32px;
+
       i {
         display: block;
         width: var(--stone-size);

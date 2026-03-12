@@ -3,6 +3,7 @@
 	import influence from '@sabaki/influence';
 	import GoBoard from '$lib/GoBoard.svelte';
 	import { page } from '$app/state';
+	import { boardState } from '$lib/boardState.svelte.js';
 
 	const VALID_SIZES = [9, 13, 19];
 	const rawSize = Number(page.url.searchParams.get('size') ?? 19);
@@ -45,16 +46,10 @@
 	let blackApproved = $state(false);
 	let whiteApproved = $state(false);
 	let finalScore = $state(null);
-	let showCoords = $state(false);
 	let boardContainerWidth = $state(0);
 	const vertexSize = $derived(boardContainerWidth > 0 ? Math.floor(boardContainerWidth / (SIZE + 0.8)) : 24);
 
-	$effect(() => {
-		const stored = localStorage.getItem('go-showCoords');
-		if (stored !== null) showCoords = stored === 'true';
-	});
-
-	const signMap = $derived(board.signMap);
+const signMap = $derived(board.signMap);
 	const blackCaptures = $derived(board.getCaptures(1));
 	const whiteCaptures = $derived(board.getCaptures(-1));
 
@@ -195,10 +190,7 @@
 		finalScore = null;
 	}
 
-	function toggleCoords() {
-		showCoords = !showCoords;
-		localStorage.setItem('go-showCoords', String(showCoords));
-	}
+
 </script>
 
 <div class="round">
@@ -218,13 +210,7 @@
 					{winner === 1 ? 'Black' : 'White'} is victorious.
 				</section>
 			{/if}
-			<section class="board-options">
-				<label class="board-option-toggle">
-					<input type="checkbox" checked={showCoords} onchange={toggleCoords} />
-					Coordinates
-				</label>
-			</section>
-		</div>
+			</div>
 	</aside>
 
 	<div class="round__app">
@@ -238,7 +224,7 @@
 				{vertexSize}
 				{areaMap}
 				deadStones={status === 'scoring' ? deadStones : null}
-				{showCoords}
+				showCoords={boardState.showCoords}
 				{currentSign}
 				onVertexClick={handleVertexClick}
 			/>

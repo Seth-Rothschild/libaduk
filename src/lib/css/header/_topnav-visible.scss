@@ -62,10 +62,17 @@
         @include back-blur;
       }
 
-      a {
+      a,
+      button {
         display: block;
+        width: 100%;
         padding: 0.6rem 0.7rem;
         color: $c-header-dropdown;
+        background: none;
+        border: none;
+        text-align: start;
+        font: inherit;
+        cursor: pointer;
 
         &:hover {
           background: $c-primary;

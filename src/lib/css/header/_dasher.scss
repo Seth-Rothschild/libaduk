@@ -8,6 +8,18 @@
     }
   }
 
+  .board-settings {
+    padding: 0.75rem 1rem;
+
+    .board-setting-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+  }
+
   .selector {
     margin: 0.5rem 0;
 

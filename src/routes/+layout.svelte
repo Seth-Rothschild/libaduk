@@ -3,10 +3,13 @@
 	import { getUsername, clearUsername } from '$lib/user.svelte.js';
 	import { pingState } from '$lib/ping.svelte.js';
 	import { themeState } from '$lib/theme.svelte.js';
+	import { boardState } from '$lib/boardState.svelte.js';
+	import GameSetupModal from '$lib/GameSetupModal.svelte';
 	import { onMount } from 'svelte';
 
 	onMount(() => {
 		themeState.init();
+		boardState.init();
 		pingState.start();
 		return () => pingState.stop();
 	});
@@ -20,6 +23,7 @@
 	let settingsOpen = $state(false);
 	let searchInput = $state(null);
 	let dasherPane = $state('main');
+	let setupModal = $state(null);
 
 	$effect(() => {
 		document.body.classList.toggle('clinput', searchExpanded);
@@ -65,8 +69,8 @@
 					<span class="home">libaduk</span>
 				</a>
 				<div role="group">
-					<a href="/">Create a game</a>
-					<a href="/challenge">Challenge a friend</a>
+					<button onclick={() => (setupModal = 'hook')}>Create a game</button>
+					<button onclick={() => (setupModal = 'friend')}>Challenge a friend</button>
 				</div>
 			</section>
 			<section>
@@ -125,6 +129,22 @@
 			</div>
 		{/snippet}
 
+		{#snippet boardPane()}
+			<button class="sub-head text" data-icon="&#xe047;" onclick={() => (dasherPane = 'main')}>
+				Board
+			</button>
+			<div class="board-settings">
+				<label class="board-setting-toggle">
+					<input
+						type="checkbox"
+						checked={boardState.showCoords}
+						onchange={() => boardState.toggleCoords()}
+					/>
+					Coordinates
+				</label>
+			</div>
+		{/snippet}
+
 		{#if signedIn}
 			<a id="user_tag" href="/profile" class="link">{username}</a>
 			<div class="dasher" class:shown={settingsOpen}>
@@ -132,9 +152,11 @@
 				<div class="dropdown">
 					{#if dasherPane === 'background'}
 						{@render backgroundPane()}
+					{:else if dasherPane === 'board'}
+						{@render boardPane()}
 					{:else}
 						<a href="/settings">Settings</a>
-						<a href="/settings/board">Board</a>
+						<button onclick={() => (dasherPane = 'board')}>Board</button>
 						<button onclick={() => (dasherPane = 'background')}>Background</button>
 						<button onclick={() => { clearUsername(); settingsOpen = false; dasherPane = 'main'; }}>Sign out</button>
 					{/if}
@@ -157,8 +179,10 @@
 				<div class="dropdown">
 					{#if dasherPane === 'background'}
 						{@render backgroundPane()}
+					{:else if dasherPane === 'board'}
+						{@render boardPane()}
 					{:else}
-						<a href="/settings/board">Board</a>
+						<button onclick={() => (dasherPane = 'board')}>Board</button>
 						<button onclick={() => (dasherPane = 'background')}>Background</button>
 					{/if}
 					{@render pingStatus()}
@@ -173,3 +197,7 @@
 		{@render children()}
 	</main>
 </div>
+
+{#if setupModal}
+	<GameSetupModal gameType={setupModal} onClose={() => (setupModal = null)} />
+{/if}
