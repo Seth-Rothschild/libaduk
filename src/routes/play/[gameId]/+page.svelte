@@ -345,16 +345,12 @@
 
 	onMount(() => {
 		gameSocket.onMessage(handleMessage);
-		gameSocket.connect();
-		const timer = setTimeout(() => {
-			gameSocket.send({ type: 'join', gameId, username: username || 'Anonymous' });
-		}, 100);
+		gameSocket.connect({ type: 'join', gameId, username: username || 'Anonymous' });
 
 		const mainWrap = document.getElementById('main-wrap');
 		if (mainWrap) mainWrap.style.display = 'block';
 
 		return () => {
-			clearTimeout(timer);
 			if (mainWrap) mainWrap.style.display = '';
 		};
 	});

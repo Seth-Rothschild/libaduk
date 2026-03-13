@@ -14,14 +14,16 @@ class GameSocket {
 		this.#onMessage = handler;
 	}
 
-	connect() {
+	connect(joinMsg = null) {
 		if (this.#ws) this.#ws.close();
 		this.status = 'connecting';
-		const url = `ws://${location.host}/ws`;
+		const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+		const url = `${protocol}://${location.host}/ws`;
 		this.#ws = new WebSocket(url);
 
 		this.#ws.addEventListener('open', () => {
 			this.status = 'connected';
+			if (joinMsg) this.send(joinMsg);
 		});
 
 		this.#ws.addEventListener('message', (e) => {

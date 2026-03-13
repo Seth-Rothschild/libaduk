@@ -54,36 +54,27 @@
 		liveGames = await res.json();
 	}
 
-	let pollInterval = $state(null);
-	let liveGamesInterval = $state(null);
-
 	$effect(() => {
 		refreshLiveGames();
-		liveGamesInterval = setInterval(refreshLiveGames, 3000);
-		return () => {
-			if (liveGamesInterval) clearInterval(liveGamesInterval);
-		};
+		const id = setInterval(refreshLiveGames, 3000);
+		return () => clearInterval(id);
 	});
 
-	function startPolling(fn) {
-		stopPolling();
-		fn();
-		pollInterval = setInterval(fn, 3000);
-	}
-
-	function stopPolling() {
-		if (pollInterval) {
-			clearInterval(pollInterval);
-			pollInterval = null;
+	$effect(() => {
+		if (activeTab === 'lobby') {
+			refreshPending();
+			const id = setInterval(refreshPending, 3000);
+			return () => clearInterval(id);
+		} else if (activeTab === 'now_playing') {
+			refreshMyGames();
+			const id = setInterval(refreshMyGames, 3000);
+			return () => clearInterval(id);
 		}
-	}
+	});
 
 	function switchTab(tab) {
 		activeTab = tab;
 		localStorage.setItem('lobby-tab', tab);
-		if (tab === 'lobby') startPolling(refreshPending);
-		else if (tab === 'now_playing') startPolling(refreshMyGames);
-		else stopPolling();
 	}
 
 	const LIVE_POOLS = [

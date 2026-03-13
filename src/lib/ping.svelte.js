@@ -18,7 +18,8 @@ class PingState {
 
 	start() {
 		if (!browser || this.#ws) return;
-		const url = `ws://${location.host}/ws`;
+		const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+		const url = `${protocol}://${location.host}/ws`;
 		this.#ws = new WebSocket(url);
 
 		this.#ws.addEventListener('open', () => {

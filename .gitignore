@@ -31,3 +31,5 @@ CLAUDE.md
 /data/
 
 deploy.sh
+setup-prod.sh
+deploy-prod.sh
