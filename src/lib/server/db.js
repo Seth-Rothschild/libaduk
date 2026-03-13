@@ -66,7 +66,9 @@ export function createGame({ id, size, blackName, whiteName, timeControl = { typ
 		createdAt: Date.now(),
 		endedAt: null,
 		winner: null,
-		result: null
+		result: null,
+		corrActiveColor: null,
+		corrTurnDeadline: null
 	};
 	db.games[id] = game;
 	schedulFlush();
@@ -88,7 +90,6 @@ export function appendMove(id, moveEntry) {
 }
 
 export function getPendingGames() {
-	console.log('all games', db.games);
 	return Object.values(db.games)
 		.filter((g) => g.status === 'waiting' && (g.blackName || g.whiteName))
 		.map((g) => ({ id: g.id, creator: g.blackName || g.whiteName, size: g.size, timeControl: g.timeControl, createdAt: g.createdAt }));
@@ -98,11 +99,18 @@ export function getUserGames(username) {
 	return Object.values(db.games)
 		.filter((g) => g.blackName === username || g.whiteName === username)
 		.filter((g) => g.status === 'playing' || g.status === 'waiting')
-		.map((g) => ({
-			id: g.id,
-			status: g.status,
-			opponent: g.blackName === username ? g.whiteName : g.blackName
-		}));
+		.map((g) => {
+			const myColor = g.blackName === username ? 'black' : 'white';
+			const isCorr = g.timeControl?.type === 'correspondence';
+			return {
+				id: g.id,
+				status: g.status,
+				timeControl: g.timeControl,
+				opponent: g.blackName === username ? g.whiteName : g.blackName,
+				isMyTurn: isCorr ? g.corrActiveColor === myColor : null,
+				corrTurnDeadline: isCorr ? g.corrTurnDeadline : null
+			};
+		});
 }
 
 export function getAllActiveGames() {

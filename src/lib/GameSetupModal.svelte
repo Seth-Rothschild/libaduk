@@ -4,71 +4,81 @@
 	let { gameType, onClose } = $props();
 
 	let dialog = $state(null);
-	let timeMode = $state('realtime');
-	let selectedClock = $state('10+0');
+	let timeMode = $state('byoyomi');
 	let boardSize = $state(19);
 	let color = $state('random');
 	let loading = $state(false);
+
+	// Byo-yomi sliders
+	let byoMin = $state(10);
+	let byoPeriods = $state(3);
+	let byoSec = $state(20);
+
+	// Fischer sliders
+	let fischerMin = $state(10);
+	let fischerInc = $state(0);
+
+	// Correspondence preset
+	let corrDays = $state(3);
 
 	$effect(() => {
 		dialog?.showModal();
 	});
 
-	const REALTIME_PRESETS = ['1+0', '2+1', '3+0', '5+0', '5+3', '10+0', '15+0', '30+0'];
-	const BYOYOMI_PRESETS = ['0+3×10s', '1+3×10s', '3+3×20s', '10+5×30s', '20+5×30s', '60+5×60s'];
-	const CORR_PRESETS = ['1 day', '3 days', '7 days', '14 days'];
+	const BYOYOMI_PRESETS = [
+		{ label: '1+3×20s',  min: 1,  periods: 3, sec: 20 },
+		{ label: '3+3×20s',  min: 3,  periods: 3, sec: 20 },
+		{ label: '5+3×20s',  min: 5,  periods: 3, sec: 20 },
+		{ label: '10+3×20s', min: 10, periods: 3, sec: 20 },
+		{ label: '20+3×30s', min: 20, periods: 3, sec: 30 },
+		{ label: '30+5×30s', min: 30, periods: 5, sec: 30 },
+		{ label: '60+5×60s', min: 60, periods: 5, sec: 60 },
+	];
 
-	function parseTimeControl(mode, clockStr) {
-		if (mode === 'unlimited') return { type: 'none' };
-		if (mode === 'correspondence') {
-			const days = parseInt(clockStr);
-			return { type: 'correspondence', days };
-		}
-		if (mode === 'byoyomi') {
-			// Format: "10+5×30s" → initial=10min, periods=5, periodTime=30s
-			const match = clockStr.match(/^(\d+)\+(\d+)×(\d+)s$/);
-			if (match) {
-				return {
-					type: 'byoyomi',
-					initial: parseInt(match[1]) * 60,
-					periods: parseInt(match[2]),
-					periodTime: parseInt(match[3])
-				};
-			}
-		}
-		// Fischer: "10+0" or "5+3"
-		const parts = clockStr.split('+');
-		return {
-			type: 'fischer',
-			initial: parseInt(parts[0]) * 60,
-			increment: parseInt(parts[1] ?? '0')
-		};
-	}
+	const FISCHER_PRESETS = [
+		{ label: '5+0',  min: 5,  inc: 0 },
+		{ label: '10+0', min: 10, inc: 0 },
+		{ label: '15+10', min: 15, inc: 10 },
+		{ label: '30+0', min: 30, inc: 0 },
+		{ label: '40+0', min: 40, inc: 0 },
+	];
+
+	const CORR_PRESETS = [1, 3, 7, 14];
 	const SIZE_OPTIONS = [9, 13, 19];
 
 	const BUTTON_LABELS = {
 		hook: 'Create a game',
 		friend: 'Challenge a friend',
-		local: 'Play locally'
+		local: 'Play locally',
 	};
 
 	function switchTimeMode(mode) {
 		timeMode = mode;
-		if (mode === 'realtime') selectedClock = '10+0';
-		else if (mode === 'byoyomi') selectedClock = '10+5×30s';
-		else if (mode === 'correspondence') selectedClock = '3 days';
-		else selectedClock = null;
+		if (mode === 'byoyomi') {
+			byoMin = 10; byoPeriods = 3; byoSec = 20;
+		} else if (mode === 'realtime') {
+			fischerMin = 10; fischerInc = 0;
+		} else if (mode === 'correspondence') {
+			corrDays = 3;
+		}
+	}
+
+	function buildTimeControl() {
+		if (timeMode === 'unlimited') return { type: 'none' };
+		if (timeMode === 'correspondence') return { type: 'correspondence', days: corrDays };
+		if (timeMode === 'byoyomi') return { type: 'byoyomi', initial: byoMin * 60, periods: byoPeriods, periodTime: byoSec };
+		return { type: 'fischer', initial: fischerMin * 60, increment: fischerInc };
 	}
 
 	async function submit() {
 		loading = true;
 		try {
-			const timeControl = parseTimeControl(timeMode, selectedClock);
+			const timeControl = buildTimeControl();
 			const isLocal = gameType === 'local';
 			const res = await fetch('/api/game', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ size: boardSize, timeControl, color: isLocal ? 'black' : color, local: isLocal })
+				body: JSON.stringify({ size: boardSize, timeControl, color: isLocal ? 'black' : color, local: isLocal }),
 			});
 			const { gameId } = await res.json();
 			goto(isLocal ? `/play/${gameId}?local=true` : `/play/${gameId}`);
@@ -84,6 +94,10 @@
 
 	function onDialogClick(e) {
 		if (e.target === e.currentTarget) close();
+	}
+
+	function corrLabel(days) {
+		return days === 1 ? '1 day' : `${days} days`;
 	}
 </script>
 
@@ -113,90 +127,135 @@
 			</div>
 
 			<!-- Time control -->
-			{#if true}
-				<div class="config-group time-control-tabs">
-					<div class="tabs-horiz">
-						<button
-							class:active={timeMode === 'realtime'}
-							onclick={() => switchTimeMode('realtime')}
-						>
-							Fischer
-						</button>
-						<button
-							class:active={timeMode === 'byoyomi'}
-							onclick={() => switchTimeMode('byoyomi')}
-						>
-							Byo-yomi
-						</button>
-						<button
-							class:active={timeMode === 'correspondence'}
-							onclick={() => switchTimeMode('correspondence')}
-						>
-							Correspondence
-						</button>
-						<button
-							class:active={timeMode === 'unlimited'}
-							onclick={() => switchTimeMode('unlimited')}
-						>
-							Unlimited
-						</button>
-					</div>
-
-					{#if timeMode === 'realtime'}
-						<div class="time-panel">
-							<div class="presets">
-								{#each REALTIME_PRESETS as preset}
-									<button
-										class="preset-btn"
-										class:active={selectedClock === preset}
-										onclick={() => (selectedClock = preset)}
-									>
-										{preset}
-									</button>
-								{/each}
-							</div>
-						</div>
-					{:else if timeMode === 'byoyomi'}
-						<div class="time-panel">
-							<div class="presets">
-								{#each BYOYOMI_PRESETS as preset}
-									<button
-										class="preset-btn"
-										class:active={selectedClock === preset}
-										onclick={() => (selectedClock = preset)}
-									>
-										{preset}
-									</button>
-								{/each}
-							</div>
-						</div>
-					{:else if timeMode === 'correspondence'}
-						<div class="time-panel">
-							<div class="presets">
-								{#each CORR_PRESETS as preset}
-									<button
-										class="preset-btn"
-										class:active={selectedClock === preset}
-										onclick={() => (selectedClock = preset)}
-									>
-										{preset}
-									</button>
-								{/each}
-							</div>
-						</div>
-					{:else}
-						<div class="time-panel">
-							<p class="unlimited-label">No time limit</p>
-						</div>
-					{/if}
+			<div class="config-group time-control-tabs">
+				<div class="tabs-horiz">
+					<button
+						class:active={timeMode === 'byoyomi'}
+						onclick={() => switchTimeMode('byoyomi')}
+					>
+						Byo-yomi
+					</button>
+					<button
+						class:active={timeMode === 'realtime'}
+						onclick={() => switchTimeMode('realtime')}
+					>
+						Fischer
+					</button>
+					<button
+						class:active={timeMode === 'correspondence'}
+						onclick={() => switchTimeMode('correspondence')}
+					>
+						Correspondence
+					</button>
+					<button
+						class:active={timeMode === 'unlimited'}
+						onclick={() => switchTimeMode('unlimited')}
+					>
+						Unlimited
+					</button>
 				</div>
-			{/if}
+
+				{#if timeMode === 'byoyomi'}
+					<div class="time-panel">
+						<div class="sliders">
+							<div class="slider-row">
+								<span class="slider-label">Minutes per side</span>
+								<input class="range" type="range" min="0" max="60" value={byoMin}
+									oninput={(e) => byoMin = +e.target.value} />
+								<span class="val-box">{byoMin}</span>
+							</div>
+							<div class="slider-row">
+								<span class="slider-label">Byo-yomi periods</span>
+								<input class="range" type="range" min="1" max="10" value={byoPeriods}
+									oninput={(e) => byoPeriods = +e.target.value} />
+								<span class="val-box">{byoPeriods}</span>
+							</div>
+							<div class="slider-row">
+								<span class="slider-label">Period time (seconds)</span>
+								<input class="range" type="range" min="5" max="120" step="5" value={byoSec}
+									oninput={(e) => byoSec = +e.target.value} />
+								<span class="val-box">{byoSec}s</span>
+							</div>
+						</div>
+						<div class="presets">
+							{#each BYOYOMI_PRESETS as p}
+								<button
+									class="preset-btn"
+									class:active={byoMin === p.min && byoPeriods === p.periods && byoSec === p.sec}
+									onclick={() => { byoMin = p.min; byoPeriods = p.periods; byoSec = p.sec; }}
+								>
+									{p.label}
+								</button>
+							{/each}
+						</div>
+					</div>
+				{:else if timeMode === 'realtime'}
+					<div class="time-panel">
+						<div class="sliders-grid">
+							<div class="slider-container">
+								<div class="label-row">
+									<label>Minutes per side</label>
+									<span class="val-box">{fischerMin}</span>
+								</div>
+								<input class="range" type="range" min="1" max="60" value={fischerMin}
+									oninput={(e) => fischerMin = +e.target.value} />
+							</div>
+							<div class="slider-separator">+</div>
+							<div class="slider-container">
+								<div class="label-row">
+									<span class="val-box">{fischerInc}s</span>
+									<label>Increment (seconds)</label>
+								</div>
+								<input class="range" type="range" min="0" max="60" value={fischerInc}
+									oninput={(e) => fischerInc = +e.target.value} />
+							</div>
+						</div>
+						<div class="presets">
+							{#each FISCHER_PRESETS as p}
+								<button
+									class="preset-btn"
+									class:active={fischerMin === p.min && fischerInc === p.inc}
+									onclick={() => { fischerMin = p.min; fischerInc = p.inc; }}
+								>
+									{p.label}
+								</button>
+							{/each}
+						</div>
+					</div>
+				{:else if timeMode === 'correspondence'}
+					<div class="time-panel">
+						<div class="slider-container">
+							<div class="label-row">
+								<label>Days per turn</label>
+								<span class="val-box">{corrLabel(corrDays)}</span>
+							</div>
+							<input class="range" type="range" min="1" max="14" value={corrDays}
+								oninput={(e) => corrDays = +e.target.value} />
+						</div>
+						<div class="presets">
+							{#each CORR_PRESETS as days}
+								<button
+									class="preset-btn"
+									class:active={corrDays === days}
+									onclick={() => (corrDays = days)}
+								>
+									{corrLabel(days)}
+								</button>
+							{/each}
+						</div>
+					</div>
+				{:else}
+					<div class="time-panel">
+						<p class="unlimited-label">No time limit</p>
+					</div>
+				{/if}
+			</div>
 
 			<!-- Color picker -->
 			<div class="config-group">
 				<div class="label">Side</div>
 				<div class="color-choices">
-					{#each [['black', 'Black'],  ['random', 'Random'], ['white', 'White']] as [key, name]}
+					{#each [['black', 'Black'], ['random', 'Random'], ['white', 'White']] as [key, name]}
 						<button
 							class="color-choice"
 							class:active={color === key}

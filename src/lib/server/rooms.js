@@ -114,6 +114,7 @@ function clockSnapshot(clock) {
 export function createRoom(size = 19, timeControl = { type: 'none' }, color, local = false) {
 	const id = uniqueId();
 
+	const corrDeadlineMs = timeControl.type === 'correspondence' ? (timeControl.days ?? 3) * 86400000 : 0;
 	const room = {
 		id,
 		size,
@@ -126,7 +127,9 @@ export function createRoom(size = 19, timeControl = { type: 'none' }, color, loc
 		local,
 		consecutivePasses: 0,
 		scoring: { active: false, deadStones: [], blackApproved: false, whiteApproved: false, signMap: null },
-		clock: initClock(timeControl)
+		clock: initClock(timeControl),
+		corrState: null,
+		corrDeadlineMs
 	};
 	if (color === 'black') {
 		room.blackName = 'black';
@@ -172,6 +175,18 @@ function opponentColor(color) {
 	return color === 'black' ? 'white' : 'black';
 }
 
+function endGameTimeout(room, gameId, loserColor) {
+	const winner = opponentColor(loserColor);
+	db.updateGame(gameId, {
+		status: 'finished',
+		winner,
+		result: winner === 'black' ? 'B+T' : 'W+T',
+		endedAt: Date.now()
+	});
+	room.status = 'finished';
+	sendBoth(room, { type: 'timeout', loser: loserColor });
+}
+
 function handleMessage(socket, raw) {
 	let msg;
 	try {
@@ -197,6 +212,7 @@ function handleMessage(socket, raw) {
 				return;
 			}
 			// Reconstruct skeleton room from DB for reconnection
+			const corrDeadlineMs = game.timeControl?.type === 'correspondence' ? (game.timeControl.days ?? 3) * 86400000 : 0;
 			room = {
 				id: roomId,
 				size: game.size,
@@ -208,7 +224,9 @@ function handleMessage(socket, raw) {
 				timeControl: game.timeControl,
 				consecutivePasses: 0,
 				scoring: { active: false, deadStones: [], blackApproved: false, whiteApproved: false, signMap: null },
-				clock: initClock(game.timeControl)
+				clock: initClock(game.timeControl),
+				corrState: game.corrActiveColor ? { activeColor: game.corrActiveColor, turnDeadline: game.corrTurnDeadline } : null,
+				corrDeadlineMs
 			};
 			rooms.set(roomId, room);
 		}
@@ -261,13 +279,29 @@ function handleMessage(socket, raw) {
 			return;
 		}
 
+		// Initialize correspondence state when game first starts
+		if (room.timeControl?.type === 'correspondence' && !room.corrState && room.black && room.white) {
+			room.corrState = { activeColor: 'black', turnDeadline: Date.now() + room.corrDeadlineMs };
+			db.updateGame(roomId, { corrActiveColor: 'black', corrTurnDeadline: room.corrState.turnDeadline });
+		}
+
 		if (!room.local && room.black && room.white) {
-			send(room.black, { type: 'opponent_joined', opponent: username, clock: clockSnapshot(room.clock) });
-			send(room.white, { type: 'opponent_joined', opponent: username, clock: clockSnapshot(room.clock) });
+			const corrState = room.corrState ? { ...room.corrState } : null;
+			send(room.black, { type: 'opponent_joined', opponent: username, clock: clockSnapshot(room.clock), corrState });
+			send(room.white, { type: 'opponent_joined', opponent: username, clock: clockSnapshot(room.clock), corrState });
 		}
 
 		socket.gameId = roomId;
 		socket.username = username;
+
+		// Check correspondence deadline on join
+		let corrTimeoutLoser = null;
+		if (room.corrState?.turnDeadline && Date.now() > room.corrState.turnDeadline && room.status === 'playing') {
+			corrTimeoutLoser = room.corrState.activeColor;
+			const winner = opponentColor(corrTimeoutLoser);
+			db.updateGame(roomId, { status: 'finished', winner, result: winner === 'black' ? 'B+T' : 'W+T', endedAt: Date.now() });
+			room.status = 'finished';
+		}
 
 		const game = db.getGame(roomId);
 		send(socket, {
@@ -279,8 +313,13 @@ function handleMessage(socket, raw) {
 			opponent: room.local ? null : (opponent(room, socket)?.username ?? null),
 			moves: game?.moves ?? [],
 			timeControl: room.timeControl,
-			clock: clockSnapshot(room.clock)
+			clock: clockSnapshot(room.clock),
+			corrState: room.corrState ? { ...room.corrState } : null
 		});
+
+		if (corrTimeoutLoser !== null) {
+			sendBoth(room, { type: 'timeout', loser: corrTimeoutLoser });
+		}
 		return;
 	}
 
@@ -306,32 +345,35 @@ function handleMessage(socket, raw) {
 				: { type: 'pass', color, t: Date.now() };
 		db.appendMove(socket.gameId, moveEntry);
 
-		// Handle clock
+		// Handle clock or correspondence deadline
 		let clockData = null;
+		let newCorrState = null;
 		if (room.clock) {
 			if (room.clock.turnStartedAt) {
 				const elapsed = Date.now() - room.clock.turnStartedAt;
 				const result = deductTime(room.clock, color, elapsed);
 				if (result === 'timeout') {
-					const winner = opponentColor(color);
-					db.updateGame(socket.gameId, {
-						status: 'finished',
-						winner,
-						result: winner === 'black' ? 'B+T' : 'W+T',
-						endedAt: Date.now()
-					});
-					room.status = 'finished';
-					sendBoth(room, { type: 'timeout', loser: color });
+					endGameTimeout(room, socket.gameId, color);
 					return;
 				}
 			}
 			room.clock.activeColor = opponentColor(color);
 			room.clock.turnStartedAt = Date.now();
 			clockData = clockSnapshot(room.clock);
+		} else if (room.corrState) {
+			if (room.corrState.turnDeadline && Date.now() > room.corrState.turnDeadline) {
+				endGameTimeout(room, socket.gameId, color);
+				return;
+			}
+			room.corrState.activeColor = opponentColor(color);
+			room.corrState.turnDeadline = Date.now() + room.corrDeadlineMs;
+			db.updateGame(socket.gameId, { corrActiveColor: room.corrState.activeColor, corrTurnDeadline: room.corrState.turnDeadline });
+			newCorrState = { ...room.corrState };
 		}
 
-		if (opp && opp !== socket) send(opp, { ...msg, color, clock: clockData });
+		if (opp && opp !== socket) send(opp, { ...msg, color, clock: clockData, corrState: newCorrState });
 		if (clockData) send(socket, { type: 'clock_update', clock: clockData });
+		if (newCorrState) send(socket, { type: 'corr_update', corrState: newCorrState });
 		return;
 	}
 

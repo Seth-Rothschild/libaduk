@@ -187,7 +187,13 @@
 								<span class="lobby__game-row__creator">
 									{game.opponent ?? 'Waiting for opponent...'}
 								</span>
-								<span class="lobby__game-row__status">{game.status}</span>
+								{#if game.timeControl?.type === 'correspondence'}
+									<span class="lobby__game-row__status" class:your-turn={game.isMyTurn}>
+										{game.isMyTurn === true ? 'Your turn' : game.isMyTurn === false ? 'Their turn' : 'Waiting'}
+									</span>
+								{:else}
+									<span class="lobby__game-row__status">{game.status}</span>
+								{/if}
 							</a>
 						{/each}
 					</div>
@@ -361,6 +367,11 @@
 		font-size: 0.85em;
 		color: var(--c-font-dim);
 		text-transform: capitalize;
+	}
+
+	.lobby__game-row__status.your-turn {
+		color: var(--c-good);
+		font-weight: bold;
 	}
 
 	.lobby__counters {

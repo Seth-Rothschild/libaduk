@@ -52,6 +52,7 @@
 	let animatedVertex = $state(null);
 	let timeControl = $state({ type: 'none' });
 	let clockState = $state(null);
+	let corrState = $state(null);
 	let deadStones = $state([]);
 	let blackApproved = $state(false);
 	let whiteApproved = $state(false);
@@ -69,11 +70,29 @@
 	const myCaptures = $derived(mySign === 1 ? blackCaptures : whiteCaptures);
 	const opponentCaptures = $derived(mySign === 1 ? whiteCaptures : blackCaptures);
 	let timedOutColor = $state(null);
-	const isMyTurn = $derived(status === 'playing' && timedOutColor === null && (isLocal || currentSign === mySign));
+	const isCorrGame = $derived(timeControl.type === 'correspondence');
+	const isMyTurn = $derived(
+		status === 'playing' &&
+		timedOutColor === null &&
+		(isLocal || currentSign === mySign) &&
+		(!isCorrGame || corrState?.activeColor === myColor)
+	);
 
 	function handleTimeout(loser) {
 		timedOutColor = loser;
 		gameSocket.send({ type: 'flag', loser });
+	}
+
+	function formatCorrDeadline(deadline) {
+		if (!deadline) return '';
+		const remaining = deadline - Date.now();
+		if (remaining <= 0) return 'Overdue';
+		const days = Math.floor(remaining / 86400000);
+		const hours = Math.floor((remaining % 86400000) / 3600000);
+		if (days > 0) return `${days}d ${hours}h remaining`;
+		const minutes = Math.floor((remaining % 3600000) / 60000);
+		if (hours > 0) return `${hours}h ${minutes}m remaining`;
+		return `${minutes}m remaining`;
 	}
 
 	const myClockData = $derived(clockState?.[myColor] ?? null);
@@ -225,6 +244,7 @@
 			boardSize = msg.size ?? 19;
 			timeControl = msg.timeControl ?? { type: 'none' };
 			clockState = msg.clock ?? null;
+			corrState = msg.corrState ?? null;
 			shiftMap = emptyShiftMap(boardSize);
 			if (msg.moves && msg.moves.length > 0) {
 				board = replayMoves(msg.moves, boardSize);
@@ -238,9 +258,10 @@
 			if (msg.local || msg.opponent) status = 'playing';
 		}
 		if (msg.type === 'opponent_joined') {
-		status = 'playing';
-		if (msg.clock) clockState = msg.clock;
-	}
+			status = 'playing';
+			if (msg.clock) clockState = msg.clock;
+			if (msg.corrState) corrState = msg.corrState;
+		}
 		if (msg.type === 'opponent_left') {
 			if (status !== 'gameover') status = 'abandoned';
 		}
@@ -248,6 +269,7 @@
 			const opponentSign = mySign === 1 ? -1 : 1;
 			applyMove(msg.x, msg.y, opponentSign);
 			if (msg.clock) clockState = msg.clock;
+			if (msg.corrState) corrState = msg.corrState;
 		}
 		if (msg.type === 'pass') {
 			consecutivePasses++;
@@ -255,6 +277,7 @@
 			animatedVertex = null;
 			currentSign = currentSign === 1 ? -1 : 1;
 			if (msg.clock) clockState = msg.clock;
+			if (msg.corrState) corrState = msg.corrState;
 		}
 		if (msg.type === 'aborted') {
 			goto('/');
@@ -290,10 +313,13 @@
 			winnerResult = msg.result;
 			status = 'gameover';
 		}
-		if (msg.type === 'clock_update') {
-		if (msg.clock) clockState = msg.clock;
-	}
-	if (msg.type === 'error') console.error('Game error:', msg.message);
+			if (msg.type === 'clock_update') {
+			if (msg.clock) clockState = msg.clock;
+		}
+		if (msg.type === 'corr_update') {
+			if (msg.corrState) corrState = msg.corrState;
+		}
+		if (msg.type === 'error') console.error('Game error:', msg.message);
 	}
 
 	onMount(() => {
@@ -362,7 +388,9 @@
 		</div>
 
 		<div class="round__app__table">
+			{#if !isCorrGame}
 			<Clock clockData={oppClockData} running={oppClockRunning} position="top" {initialMs} turnStartedAt={clockState?.turnStartedAt} onTimeout={isLocal ? () => handleTimeout(oppColor) : null} />
+		{/if}
 			<div class="ruser ruser-top color-icon is {oppColor}">
 				<i class="line"></i>
 				<name>{isLocal ? oppColor : (gameSocket.opponent ?? (status === 'waiting' ? 'Waiting...' : oppColor))}</name>
@@ -384,8 +412,14 @@
 						<div>
 							{#if isMyTurn}
 								You play the {myColor} stones<br /><strong>It's your turn!</strong>
+								{#if isCorrGame && corrState?.turnDeadline}
+									<br /><span class="corr-deadline">{formatCorrDeadline(corrState.turnDeadline)}</span>
+								{/if}
 							{:else}
 								Waiting for opponent...
+								{#if isCorrGame && corrState?.turnDeadline}
+									<br /><span class="corr-deadline">{formatCorrDeadline(corrState.turnDeadline)}</span>
+								{/if}
 							{/if}
 						</div>
 					</div>
@@ -481,7 +515,9 @@
 					<span class="material">+{myCaptures}</span>
 				{/if}
 			</div>
+			{#if !isCorrGame}
 			<Clock clockData={myClockData} running={myClockRunning} position="bottom" {initialMs} turnStartedAt={clockState?.turnStartedAt} onTimeout={() => handleTimeout(myColor)} />
+		{/if}
 		</div>
 	</div>
 </div>
@@ -489,6 +525,11 @@
 <style>
 	:global(#main-wrap) {
 		display: block;
+	}
+
+	.corr-deadline {
+		font-size: 0.85em;
+		color: var(--c-font-dim);
 	}
 
 	.score-approvals {
