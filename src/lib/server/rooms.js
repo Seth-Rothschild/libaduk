@@ -151,7 +151,7 @@ export function createRoom(size = 19, timeControl = { type: 'none' }, color, loc
 		}
 	}
 	rooms.set(id, room);
-	db.createGame({ id, size, blackName: room.blackName, whiteName: room.whiteName, timeControl });
+	db.createGame({ id, size, blackName: room.blackName, whiteName: room.whiteName, timeControl, local });
 	return room;
 }
 
@@ -218,9 +218,10 @@ function handleMessage(socket, raw) {
 				send(socket, { type: 'error', message: 'Game not found' });
 				return;
 			}
-			// Reconstruct skeleton room from DB for reconnection
 			const corrDeadlineMs =
-				game.timeControl?.type === 'correspondence' ? (game.timeControl.days ?? 3) * 86400000 : 0;
+				game.timeControl?.type === 'correspondence'
+					? (game.timeControl.days ?? 3) * 86400000
+					: 0;
 			room = {
 				id: roomId,
 				size: game.size,
@@ -230,6 +231,7 @@ function handleMessage(socket, raw) {
 				whiteName: game.whiteName,
 				status: game.status,
 				timeControl: game.timeControl,
+				local: game.local ?? false,
 				consecutivePasses: 0,
 				scoring: {
 					active: false,
@@ -247,82 +249,136 @@ function handleMessage(socket, raw) {
 			rooms.set(roomId, room);
 		}
 
-		const username = socket.authenticatedUsername ?? msg.username ?? 'Anonymous';
+		if (['aborted', 'abandoned'].includes(room.status)) {
+			send(socket, { type: 'error', message: 'Game is over' });
+			return;
+		}
 
-		// Reconnection: allow a player to reclaim their color
-		const isReturningBlack = room.blackName === username;
-		const isReturningWhite = room.whiteName === username;
+		const username = socket.authenticatedUsername ?? msg.username ?? 'Anonymous';
+		const isAuthenticated = !!socket.authenticatedUsername;
+
+		// Finished games are read-only: send the full historical state so the board
+		// can be replayed, but don't seat the player or modify any room/db state.
+		if (room.status === 'finished') {
+			const game = db.getGame(roomId);
+			const color =
+				room.blackName === username ? 'black' : room.whiteName === username ? 'white' : null;
+			send(socket, {
+				type: 'joined',
+				gameId: roomId,
+				color,
+				size: room.size,
+				status: 'finished',
+				local: room.local ?? false,
+				blackName: room.blackName,
+				whiteName: room.whiteName,
+				opponent: null,
+				winner: game?.winner ?? null,
+				result: game?.result ?? null,
+				moves: game?.moves ?? [],
+				timeControl: room.timeControl,
+				clock: null,
+				corrState: null
+			});
+			return;
+		}
 
 		if (room.local) {
-			socket.color = 'black';
+			// Determine which side is the user from the color sentinel set at room creation.
+			// blackName === 'black' means the user chose black; otherwise they chose white.
+			const userIsBlack = room.blackName === 'black';
+			room.blackName = userIsBlack ? username : 'Guest';
+			room.whiteName = userIsBlack ? 'Guest' : username;
+			socket.color = 'black'; // single socket handles both sides
 			room.black = socket;
 			room.white = socket;
-			room.blackName = username;
-			room.whiteName = username;
 			room.status = 'playing';
-			db.updateGame(roomId, { blackName: username, whiteName: username, status: 'playing' });
-		} else if (isReturningBlack && !room.black) {
-			socket.color = 'black';
-			room.black = socket;
-		} else if (isReturningWhite && !room.white) {
-			socket.color = 'white';
-			room.white = socket;
-		} else if (!room.black && !room.white) {
-			if (room.blackName === 'black') {
+			db.updateGame(roomId, {
+				blackName: room.blackName,
+				whiteName: room.whiteName,
+				status: 'playing'
+			});
+		} else {
+			// Prevent a currently-connected player from joining their own game as the other color.
+			const occupiesBlack = room.blackName === username && room.black !== null;
+			const occupiesWhite = room.whiteName === username && room.white !== null;
+			if (username !== 'Anonymous' && (occupiesBlack || occupiesWhite)) {
+				send(socket, { type: 'error', message: 'You are already in this game' });
+				return;
+			}
+
+			if (isAuthenticated && room.blackName === username && !room.black) {
+				// Authenticated player reconnecting as black
+				socket.color = 'black';
+				room.black = socket;
+			} else if (isAuthenticated && room.whiteName === username && !room.white) {
+				// Authenticated player reconnecting as white
+				socket.color = 'white';
+				room.white = socket;
+			} else if (!room.black && !room.white) {
+				// First player: seat them in their reserved color slot
+				if (room.blackName === 'black') {
+					socket.color = 'black';
+					room.black = socket;
+					room.blackName = username;
+					db.updateGame(roomId, { blackName: username });
+				} else if (room.whiteName === 'white') {
+					socket.color = 'white';
+					room.white = socket;
+					room.whiteName = username;
+					db.updateGame(roomId, { whiteName: username });
+				} else {
+					send(socket, { type: 'error', message: 'Game not available' });
+					return;
+				}
+			} else if (!room.black) {
 				socket.color = 'black';
 				room.black = socket;
 				room.blackName = username;
 				db.updateGame(roomId, { blackName: username });
-			} else if (room.whiteName === 'white') {
+			} else if (!room.white) {
 				socket.color = 'white';
 				room.white = socket;
 				room.whiteName = username;
 				db.updateGame(roomId, { whiteName: username });
+			} else {
+				send(socket, { type: 'error', message: 'Game is full' });
+				return;
 			}
-		} else if (!room.black) {
-			socket.color = 'black';
-			room.black = socket;
-			room.blackName = username;
-			db.updateGame(roomId, { blackName: username });
-		} else if (!room.white) {
-			socket.color = 'white';
-			room.white = socket;
-			room.whiteName = username;
-			room.status = 'playing';
-			db.updateGame(roomId, { whiteName: username, status: 'playing' });
-		} else {
-			send(socket, { type: 'error', message: 'Game is full' });
-			return;
-		}
 
-		// Initialize correspondence state when game first starts
-		if (
-			room.timeControl?.type === 'correspondence' &&
-			!room.corrState &&
-			room.black &&
-			room.white
-		) {
-			room.corrState = { activeColor: 'black', turnDeadline: Date.now() + room.corrDeadlineMs };
-			db.updateGame(roomId, {
-				corrActiveColor: 'black',
-				corrTurnDeadline: room.corrState.turnDeadline
-			});
-		}
+			// Start the game when both seats are first filled
+			if (room.black && room.white && room.status === 'waiting') {
+				room.status = 'playing';
+				db.updateGame(roomId, { status: 'playing' });
+			}
 
-		if (!room.local && room.black && room.white) {
-			const corrState = room.corrState ? { ...room.corrState } : null;
-			send(room.black, {
-				type: 'opponent_joined',
-				opponent: username,
-				clock: clockSnapshot(room.clock),
-				corrState
-			});
-			send(room.white, {
-				type: 'opponent_joined',
-				opponent: username,
-				clock: clockSnapshot(room.clock),
-				corrState
-			});
+			// Initialize correspondence state when game first goes live
+			if (
+				room.timeControl?.type === 'correspondence' &&
+				!room.corrState &&
+				room.black &&
+				room.white
+			) {
+				room.corrState = {
+					activeColor: 'black',
+					turnDeadline: Date.now() + room.corrDeadlineMs
+				};
+				db.updateGame(roomId, {
+					corrActiveColor: 'black',
+					corrTurnDeadline: room.corrState.turnDeadline
+				});
+			}
+
+			// Notify the already-connected player that their opponent arrived/reconnected
+			if (room.black && room.white) {
+				const otherSocket = socket.color === 'black' ? room.white : room.black;
+				send(otherSocket, {
+					type: 'opponent_joined',
+					opponent: username,
+					clock: clockSnapshot(room.clock),
+					corrState: room.corrState ? { ...room.corrState } : null
+				});
+			}
 		}
 
 		socket.gameId = roomId;
@@ -347,13 +403,19 @@ function handleMessage(socket, raw) {
 		}
 
 		const game = db.getGame(roomId);
+		const oppSocket = socket.color === 'black' ? room.white : room.black;
 		send(socket, {
 			type: 'joined',
 			gameId: roomId,
 			color: socket.color,
 			size: room.size,
+			status: room.status,
 			local: room.local ?? false,
-			opponent: room.local ? null : (opponent(room, socket)?.username ?? null),
+			blackName: room.blackName,
+			whiteName: room.whiteName,
+			opponent: room.local ? null : (oppSocket?.username ?? null),
+			winner: game?.winner ?? null,
+			result: game?.result ?? null,
 			moves: game?.moves ?? [],
 			timeControl: room.timeControl,
 			clock: clockSnapshot(room.clock),
@@ -563,6 +625,35 @@ function handleDisconnect(socket) {
 	lobbyClients.delete(socket);
 	const room = rooms.get(socket.gameId);
 	if (!room) return;
+
+	if (room.local) {
+		room.black = null;
+		room.white = null;
+		if (room.status === 'playing' || room.status === 'waiting') {
+			room.status = 'aborted';
+			db.updateGame(socket.gameId, { status: 'aborted', endedAt: Date.now() });
+		}
+		return;
+	}
+
+	// Anonymous players have no persistent identity and can't meaningfully reconnect.
+	// Abort waiting games immediately; abandon playing games so the opponent is notified.
+	if (!socket.authenticatedUsername) {
+		if (socket.color === 'black') room.black = null;
+		else if (socket.color === 'white') room.white = null;
+		const opp = opponent(room, socket);
+		if (room.status === 'waiting') {
+			room.status = 'aborted';
+			db.updateGame(socket.gameId, { status: 'aborted', endedAt: Date.now() });
+			if (opp) send(opp, { type: 'aborted' });
+		} else if (room.status === 'playing') {
+			room.status = 'abandoned';
+			db.updateGame(socket.gameId, { status: 'abandoned', endedAt: Date.now() });
+			if (opp) send(opp, { type: 'opponent_left' });
+		}
+		return;
+	}
+
 	const opp = opponent(room, socket);
 	if (opp) send(opp, { type: 'opponent_left' });
 	// Null out the socket but keep the room/DB record for reconnection

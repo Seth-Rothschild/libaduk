@@ -59,13 +59,15 @@ export function createGame({
 	blackName,
 	whiteName,
 	timeControl = { type: 'none' },
-	komi = 6.5
+	komi = 6.5,
+	local = false
 }) {
 	const game = {
 		id,
 		size,
 		blackName,
 		whiteName,
+		local,
 		moves: [],
 		status: 'waiting',
 		timeControl,

@@ -85,7 +85,7 @@
 				body: JSON.stringify({
 					size: boardSize,
 					timeControl,
-					color: isLocal ? 'black' : color,
+					color,
 					local: isLocal
 				})
 			});

@@ -270,7 +270,13 @@
 			} else {
 				board = GoBoardLib.fromDimensions(boardSize);
 			}
-			if (msg.local || msg.opponent) status = 'playing';
+			if (msg.status === 'finished') {
+				status = 'gameover';
+				winner = msg.winner === 'black' ? 1 : msg.winner === 'white' ? -1 : null;
+				winnerResult = msg.result ?? null;
+			} else {
+				status = msg.status ?? (msg.local || msg.opponent ? 'playing' : 'waiting');
+			}
 		}
 		if (msg.type === 'opponent_joined') {
 			status = 'playing';
@@ -369,14 +375,14 @@
 				<div class="game__meta__players">
 					<div class="player color-icon is black text">
 						{isLocal
-							? 'Black'
+							? (gameSocket.blackName ?? 'Black')
 							: myColor === 'black'
 								? username || 'You'
 								: (gameSocket.opponent ?? '...')}
 					</div>
 					<div class="player color-icon is white text">
 						{isLocal
-							? 'White'
+							? (gameSocket.whiteName ?? 'White')
 							: myColor === 'white'
 								? username || 'You'
 								: (gameSocket.opponent ?? '...')}
@@ -432,7 +438,7 @@
 				<i class="line"></i>
 				<name
 					>{isLocal
-						? oppColor
+						? (oppColor === 'white' ? (gameSocket.whiteName ?? 'Guest') : (gameSocket.blackName ?? 'Guest'))
 						: (gameSocket.opponent ?? (status === 'waiting' ? 'Waiting...' : oppColor))}</name
 				>
 				{#if opponentCaptures > 0}
@@ -573,7 +579,7 @@
 
 			<div class="ruser ruser-bottom color-icon is {myColor} active">
 				<i class="line"></i>
-				<name>{username || 'You'}</name>
+				<name>{isLocal ? (gameSocket.blackName ?? 'You') : (username || 'You')}</name>
 				{#if myCaptures > 0}
 					<span class="material">+{myCaptures}</span>
 				{/if}

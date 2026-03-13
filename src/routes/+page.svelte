@@ -169,9 +169,9 @@
 			>
 				Correspondence
 			</button>
-			<button class:active={activeTab === 'now_playing'} onclick={() => switchTab('now_playing')}>
+			<!-- <button class:active={activeTab === 'now_playing'} onclick={() => switchTab('now_playing')}>
 				Now playing
-			</button>
+			</button> -->
 		</div>
 
 		<div class="lobby__pools-wrap">
