@@ -170,10 +170,10 @@
 					{:else if dasherPane === 'board'}
 						{@render boardPane()}
 					{:else}
-						<a href="/">Settings</a>
-						<button onclick={() => (dasherPane = 'board')}>Board</button>
-						<button onclick={() => (dasherPane = 'background')}>Background</button>
-						<button onclick={() => { signOut(); settingsOpen = false; dasherPane = 'main'; }}>Sign out</button>
+						<a class="text" data-icon="&#xe005;" href="/">Settings</a>
+						<button class="text" data-icon="&#xe028;" onclick={() => (dasherPane = 'board')}>Board</button>
+						<button class="text" data-icon="&#xe061;" onclick={() => (dasherPane = 'background')}>Background</button>
+						<button class="text signout" data-icon="&#xe055;" onclick={() => { signOut(); settingsOpen = false; dasherPane = 'main'; }}>Sign out</button>
 					{/if}
 					{@render pingStatus()}
 				</div>
@@ -216,3 +216,10 @@
 {#if setupModal}
 	<GameSetupModal gameType={setupModal} onClose={() => (setupModal = null)} />
 {/if}
+
+<style>
+	:global(.site-buttons .dasher .dropdown .signout:hover) {
+		background: var(--c-bad) !important;
+		color: #fff !important;
+	}
+</style>

@@ -19,15 +19,10 @@
 	}
 
 	async function createGame(pool = null) {
-		if (!username) { goto('/signup'); return; }
+		if (!username) { goto('/login'); return; }
 		const body = { size: 19, color: 'random' };
 		if (pool) {
-			if (pool.clock.includes('day')) {
-				body.timeControl = { type: 'correspondence' };
-			} else {
-				const [initial, increment] = pool.clock.split('+').map(Number);
-				body.timeControl = { type: 'fischer', initial, increment };
-			}
+			body.timeControl = pool.timeControl;
 		}
 		const res = await fetch('/api/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 		const { gameId } = await res.json();
@@ -87,27 +82,23 @@
 	}
 
 	const LIVE_POOLS = [
-		{ clock: '5+0', label: 'Blitz' },
-		{ clock: '5+3', label: 'Blitz' },
-		{ clock: '10+0', label: 'Blitz' },
-		{ clock: '15+0', label: 'Rapid' },
-		{ clock: '15+5', label: 'Rapid' },
-		{ clock: '20+0', label: 'Rapid' },
-		{ clock: '30+0', label: 'Classical' },
-		{ clock: '30+30', label: 'Classical' },
-		{ clock: '60+0', label: 'Classical' },
-		{ clock: '90+0', label: 'Classical' },
-		{ clock: '90+30', label: 'Classical' },
-		{ clock: '120+30', label: 'Classical' }
+		{ clock: '1+3×20s',  label: 'Bullet',     timeControl: { type: 'byoyomi', initial: 60,   periods: 3, periodTime: 20 } },
+		{ clock: '3+3×20s',  label: 'Bullet',     timeControl: { type: 'byoyomi', initial: 180,  periods: 3, periodTime: 20 } },
+		{ clock: '5+3×20s',  label: 'Blitz',     timeControl: { type: 'byoyomi', initial: 300,  periods: 3, periodTime: 20 } },
+		{ clock: '10+3×20s', label: 'Blitz',     timeControl: { type: 'byoyomi', initial: 600,  periods: 3, periodTime: 20 } },
+		{ clock: '20+3×30s', label: 'Rapid',     timeControl: { type: 'byoyomi', initial: 1200, periods: 3, periodTime: 30 } },
+		{ clock: '30+5×30s', label: 'Rapid',     timeControl: { type: 'byoyomi', initial: 1800, periods: 5, periodTime: 30 } },
+		{ clock: '40+0',     label: 'Standard',  timeControl: { type: 'fischer', initial: 40,   increment: 0 } },
+		{ clock: '60+5×60s', label: 'Classical', timeControl: { type: 'byoyomi', initial: 3600, periods: 5, periodTime: 60 } },
 	];
 
 	let setupModal = $state(null); // 'hook' | 'friend' | null
 
 	const CORR_POOLS = [
-		{ clock: '1 day', label: 'Correspondence' },
-		{ clock: '3 days', label: 'Correspondence' },
-		{ clock: '7 days', label: 'Correspondence' },
-		{ clock: '14 days', label: 'Correspondence' }
+		{ clock: '1 day',   label: 'Correspondence', timeControl: { type: 'correspondence', days: 1 } },
+		{ clock: '3 days',  label: 'Correspondence', timeControl: { type: 'correspondence', days: 3 } },
+		{ clock: '7 days',  label: 'Correspondence', timeControl: { type: 'correspondence', days: 7 } },
+		{ clock: '14 days', label: 'Correspondence', timeControl: { type: 'correspondence', days: 14 } },
 	];
 </script>
 
@@ -149,6 +140,9 @@
 							<span class="perf">{pool.label}</span>
 						</div>
 					{/each}
+					<div class="lpool lpool--custom" role="button" tabindex="0" onclick={() => username ? (setupModal = 'hook') : goto('/login')} onkeydown={(e) => e.key === 'Enter' && (username ? (setupModal = 'hook') : goto('/login'))}>
+						<span class="clock">Custom</span>
+					</div>
 				</div>
 			{:else if activeTab === 'lobby'}
 				{#if pendingGames.length === 0}
@@ -309,6 +303,15 @@
 	.lobby__game-list {
 		position: relative;
 		z-index: 1;
+	}
+
+	:global(.lobby__app .lpools .clock) {
+		font-size: 1.1em;
+		letter-spacing: 0.05em;
+	}
+
+	:global(.lpool--custom) {
+		opacity: 0.7;
 	}
 
 	.lobby__tab-empty {

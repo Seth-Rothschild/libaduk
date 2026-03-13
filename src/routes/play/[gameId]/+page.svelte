@@ -1,5 +1,6 @@
 <script>
 	import { onMount, onDestroy } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import GoBoardLib from '@sabaki/go-board';
 	import influence from '@sabaki/influence';
@@ -36,6 +37,7 @@
 	}
 
 	const gameId = $derived(page.params.gameId);
+	const isLocal = $derived(page.url.searchParams.get('local') === 'true');
 
 	let boardContainerWidth = $state(0);
 	let boardSize = $state(19);
@@ -61,12 +63,18 @@
 	const blackCaptures = $derived(board.getCaptures(1));
 	const whiteCaptures = $derived(board.getCaptures(-1));
 
-	const mySign = $derived(gameSocket.color === 'black' ? 1 : -1);
-	const myColor = $derived(gameSocket.color ?? 'black');
+	const mySign = $derived(isLocal ? 1 : (gameSocket.color === 'black' ? 1 : -1));
+	const myColor = $derived(mySign === 1 ? 'black' : 'white');
 	const oppColor = $derived(myColor === 'black' ? 'white' : 'black');
 	const myCaptures = $derived(mySign === 1 ? blackCaptures : whiteCaptures);
 	const opponentCaptures = $derived(mySign === 1 ? whiteCaptures : blackCaptures);
-	const isMyTurn = $derived(status === 'playing' && currentSign === mySign);
+	let timedOutColor = $state(null);
+	const isMyTurn = $derived(status === 'playing' && timedOutColor === null && (isLocal || currentSign === mySign));
+
+	function handleTimeout(loser) {
+		timedOutColor = loser;
+		gameSocket.send({ type: 'flag', loser });
+	}
 
 	const myClockData = $derived(clockState?.[myColor] ?? null);
 	const oppClockData = $derived(clockState?.[oppColor] ?? null);
@@ -150,10 +158,12 @@
 	function onVertexClick(x, y) {
 		if (status === 'playing') {
 			if (!isMyTurn) return;
-			const analysis = board.analyzeMove(mySign, [x, y]);
+			const movingSign = isLocal ? currentSign : mySign;
+			const movingColor = movingSign === 1 ? 'black' : 'white';
+			const analysis = board.analyzeMove(movingSign, [x, y]);
 			if (analysis.overwrite || analysis.suicide || analysis.ko) return;
-			const ok = applyMove(x, y, mySign);
-			if (ok) gameSocket.send({ type: 'move', x, y });
+			const ok = applyMove(x, y, movingSign);
+			if (ok) gameSocket.send(isLocal ? { type: 'move', x, y, color: movingColor } : { type: 'move', x, y });
 		} else if (status === 'scoring') {
 			toggleDeadGroup(x, y);
 		}
@@ -178,11 +188,12 @@
 
 	function pass() {
 		if (!isMyTurn) return;
+		const movingColor = isLocal ? (currentSign === 1 ? 'black' : 'white') : myColor;
 		consecutivePasses++;
 		lastMove = null;
 		animatedVertex = null;
 		currentSign = currentSign === 1 ? -1 : 1;
-		gameSocket.send({ type: 'pass' });
+		gameSocket.send(isLocal ? { type: 'pass', color: movingColor } : { type: 'pass' });
 		if (consecutivePasses >= 2) {
 			status = 'scoring';
 			deadStones = [];
@@ -190,6 +201,10 @@
 			whiteApproved = false;
 			gameSocket.send({ type: 'score_phase' });
 		}
+	}
+
+	function abort() {
+		gameSocket.send({ type: 'abort' });
 	}
 
 	function resign() {
@@ -220,7 +235,7 @@
 			} else {
 				board = GoBoardLib.fromDimensions(boardSize);
 			}
-			if (msg.opponent) status = 'playing';
+			if (msg.local || msg.opponent) status = 'playing';
 		}
 		if (msg.type === 'opponent_joined') {
 		status = 'playing';
@@ -240,6 +255,9 @@
 			animatedVertex = null;
 			currentSign = currentSign === 1 ? -1 : 1;
 			if (msg.clock) clockState = msg.clock;
+		}
+		if (msg.type === 'aborted') {
+			goto('/');
 		}
 		if (msg.type === 'resign') {
 			status = 'gameover';
@@ -302,16 +320,18 @@
 				</div>
 				<div class="game__meta__players">
 					<div class="player color-icon is black text">
-						{myColor === 'black' ? (username || 'You') : (gameSocket.opponent ?? '...')}
+						{isLocal ? 'Black' : (myColor === 'black' ? (username || 'You') : (gameSocket.opponent ?? '...'))}
 					</div>
 					<div class="player color-icon is white text">
-						{myColor === 'white' ? (username || 'You') : (gameSocket.opponent ?? '...')}
+						{isLocal ? 'White' : (myColor === 'white' ? (username || 'You') : (gameSocket.opponent ?? '...'))}
 					</div>
 				</div>
 			</section>
 			{#if status === 'gameover'}
 				<section class="status">
-					{#if winnerResult}
+					{#if isLocal}
+						{winner === 1 ? 'Black' : 'White'} wins{winnerResult ? ` — ${winnerResult}` : ''}.
+					{:else if winnerResult}
 						{winnerResult} &mdash; {winner === mySign ? 'You win!' : 'You lose.'}
 					{:else}
 						{winner === mySign ? 'You win!' : 'You lose.'}
@@ -342,10 +362,10 @@
 		</div>
 
 		<div class="round__app__table">
-			<Clock clockData={oppClockData} running={oppClockRunning} position="top" {initialMs} turnStartedAt={clockState?.turnStartedAt} />
+			<Clock clockData={oppClockData} running={oppClockRunning} position="top" {initialMs} turnStartedAt={clockState?.turnStartedAt} onTimeout={isLocal ? () => handleTimeout(oppColor) : null} />
 			<div class="ruser ruser-top color-icon is {oppColor}">
 				<i class="line"></i>
-				<name>{gameSocket.opponent ?? (status === 'waiting' ? 'Waiting...' : oppColor)}</name>
+				<name>{isLocal ? oppColor : (gameSocket.opponent ?? (status === 'waiting' ? 'Waiting...' : oppColor))}</name>
 				{#if opponentCaptures > 0}
 					<span class="material">+{opponentCaptures}</span>
 				{/if}
@@ -422,20 +442,35 @@
 			</div>
 
 			<div class="rcontrols">
-				{#if status === 'playing'}
+				{#if status === 'waiting'}
+					<button class="button button-red" onclick={abort}>Abort</button>
+				{:else if status === 'playing'}
 					<button class="button button-metal" onclick={pass} disabled={!isMyTurn}>Pass</button>
 					<button class="button button-red" onclick={resign}>Resign</button>
 				{:else if status === 'scoring'}
-					{@const myApproved = myColor === 'black' ? blackApproved : whiteApproved}
-					<button
-						class="button"
-						class:button-metal={!myApproved}
-						class:button-green={myApproved}
-						onclick={approveScore}
-						disabled={myApproved}
-					>
-						{myApproved ? 'Score accepted' : 'Accept score'}
-					</button>
+					{#if isLocal}
+						<button class="button" class:button-metal={!blackApproved} class:button-green={blackApproved}
+							onclick={() => { blackApproved = true; gameSocket.send({ type: 'approve_score', color: 'black', signMap: board.signMap }); }}
+							disabled={blackApproved}>
+							{blackApproved ? 'Black ✓' : 'Black accepts'}
+						</button>
+						<button class="button" class:button-metal={!whiteApproved} class:button-green={whiteApproved}
+							onclick={() => { whiteApproved = true; gameSocket.send({ type: 'approve_score', color: 'white', signMap: board.signMap }); }}
+							disabled={whiteApproved}>
+							{whiteApproved ? 'White ✓' : 'White accepts'}
+						</button>
+					{:else}
+						{@const myApproved = myColor === 'black' ? blackApproved : whiteApproved}
+						<button
+							class="button"
+							class:button-metal={!myApproved}
+							class:button-green={myApproved}
+							onclick={approveScore}
+							disabled={myApproved}
+						>
+							{myApproved ? 'Score accepted' : 'Accept score'}
+						</button>
+					{/if}
 				{/if}
 			</div>
 
@@ -446,7 +481,7 @@
 					<span class="material">+{myCaptures}</span>
 				{/if}
 			</div>
-			<Clock clockData={myClockData} running={myClockRunning} position="bottom" {initialMs} turnStartedAt={clockState?.turnStartedAt} />
+			<Clock clockData={myClockData} running={myClockRunning} position="bottom" {initialMs} turnStartedAt={clockState?.turnStartedAt} onTimeout={() => handleTimeout(myColor)} />
 		</div>
 	</div>
 </div>

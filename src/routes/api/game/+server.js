@@ -6,6 +6,7 @@ export async function POST({ request, locals }) {
 	const size = [9, 13, 19].includes(body.size) ? body.size : 19;
 	const color = ['black', 'white', 'random'].includes(body.color) ? body.color : 'random';
 	const timeControl = body.timeControl ?? { type: 'none' };
-	const room = createRoom(size, timeControl, color);
+	const local = body.local === true;
+	const room = createRoom(size, timeControl, color, local);
 	return json({ gameId: room.id });
 }

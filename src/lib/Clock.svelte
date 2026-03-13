@@ -1,25 +1,56 @@
 <script>
-	let { clockData, running, position = 'bottom', initialMs = null, turnStartedAt = null } = $props();
+	let { clockData, running, position = 'bottom', initialMs = null, turnStartedAt = null, onTimeout = null } = $props();
 
 	let displayMs = $state(0);
+	let clientInByo = $state(false);
+	let clientByoPeriods = $state(0);
 
-	// Sync from server — offset by however long this turn has already been running
-	$effect(() => {
-		if (!clockData) { displayMs = 0; return; }
-		const base = clockData.inByoYomi ? clockData.byoMs : clockData.mainMs;
+	function compute(clockData, running, turnStartedAt) {
+		if (!clockData) return { ms: 0, inByo: false, periods: 0 };
 		const elapsed = (running && turnStartedAt) ? Math.max(0, Date.now() - turnStartedAt) : 0;
-		displayMs = Math.max(0, base - elapsed);
+
+		if (clockData.inByoYomi) {
+			return computeByo(clockData.byoMs, clockData.byoPeriods, clockData.periodMs ?? 0, elapsed);
+		}
+
+		const mainRemaining = clockData.mainMs - elapsed;
+		if (mainRemaining <= 0 && clockData.byoPeriods > 0) {
+			const overflow = -mainRemaining;
+			const byoStartMs = clockData.byoMs;
+			return computeByo(byoStartMs, clockData.byoPeriods, clockData.periodMs ?? byoStartMs, overflow);
+		}
+		return { ms: Math.max(0, mainRemaining), inByo: false, periods: 0 };
+	}
+
+	function computeByo(byoMs, periods, periodMs, elapsed) {
+		let remaining = byoMs - elapsed;
+		let periodsLeft = periods;
+		const step = periodMs > 0 ? periodMs : byoMs;
+		while (remaining <= 0 && periodsLeft > 1) {
+			periodsLeft--;
+			remaining += step;
+		}
+		if (remaining <= 0) return { ms: 0, inByo: true, periods: 0 };
+		return { ms: remaining, inByo: true, periods: periodsLeft };
+	}
+
+	$effect(() => {
+		if (!clockData) { displayMs = 0; clientInByo = false; clientByoPeriods = 0; return; }
+		const { ms, inByo, periods } = compute(clockData, running, turnStartedAt);
+		displayMs = ms;
+		clientInByo = inByo;
+		clientByoPeriods = periods;
 	});
 
-	// Countdown interval — runs only when it's this player's turn
 	$effect(() => {
 		if (!running || !clockData) return;
-		const base = clockData.inByoYomi ? clockData.byoMs : clockData.mainMs;
-		const elapsed0 = turnStartedAt ? Math.max(0, Date.now() - turnStartedAt) : 0;
-		const startVal = Math.max(0, base - elapsed0);
-		const tickStart = Date.now();
 		const interval = setInterval(() => {
-			displayMs = Math.max(0, startVal - (Date.now() - tickStart));
+			const prev = displayMs;
+			const { ms, inByo, periods } = compute(clockData, running, turnStartedAt);
+			displayMs = ms;
+			clientInByo = inByo;
+			clientByoPeriods = periods;
+			if (ms === 0 && prev > 0) onTimeout?.();
 		}, 100);
 		return () => clearInterval(interval);
 	});
@@ -42,9 +73,12 @@
 	const barScale = $derived(
 		initialMs && initialMs > 0 ? Math.max(0, Math.min(1, displayMs / initialMs)) : 1
 	);
+	const byoPeriodSecs = $derived(
+		clockData?.periodMs ? Math.ceil(clockData.periodMs / 1000) : Math.ceil((clockData?.byoMs ?? 0) / 1000)
+	);
 	const byoLabel = $derived(
-		clockData?.inByoYomi && clockData.byoPeriods > 0
-			? `${clockData.byoPeriods}×${Math.ceil((clockData.byoMs ?? 0) / 1000)}s`
+		clientInByo && clientByoPeriods > 0
+			? `${clientByoPeriods}×${byoPeriodSecs}s`
 			: null
 	);
 </script>

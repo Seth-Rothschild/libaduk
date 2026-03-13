@@ -42,7 +42,7 @@ function initClock(timeControl) {
 		mainMs,
 		byoPeriods: isByoyomi ? (timeControl.periods ?? 5) : 0,
 		byoMs: isByoyomi ? (timeControl.periodTime ?? 30) * 1000 : 0,
-		inByoYomi: false
+		inByoYomi: isByoyomi && mainMs === 0
 	});
 	return {
 		black: playerClock(),
@@ -65,21 +65,30 @@ function deductTime(clock, color, elapsedMs) {
 				player.byoMs = 0;
 				return 'timeout';
 			}
-			// Reset period time — stored on the clock as periodMs
+			player.byoMs = clock.periodMs;
+		} else {
+			// Moved within the period: reset the period timer for the next turn
 			player.byoMs = clock.periodMs;
 		}
 	} else {
 		player.mainMs -= elapsedMs;
 		if (player.mainMs <= 0) {
 			if (player.byoPeriods > 0) {
+				const overflow = -player.mainMs;
 				player.inByoYomi = true;
 				player.mainMs = 0;
+				player.byoMs = Math.max(0, clock.periodMs - overflow);
+				if (player.byoMs <= 0) {
+					player.byoPeriods -= 1;
+					if (player.byoPeriods <= 0) {
+						player.byoPeriods = 0;
+						player.byoMs = 0;
+						return 'timeout';
+					}
+					player.byoMs = clock.periodMs;
+				}
 			} else {
 				player.mainMs = 0;
-				if (clock.increment > 0) {
-					// For Fischer, if mainMs hits 0 with no increment saved up, flag timeout
-					return 'timeout';
-				}
 				return 'timeout';
 			}
 		} else if (clock.increment > 0) {
@@ -95,15 +104,16 @@ function clockSnapshot(clock) {
 		black: { ...clock.black },
 		white: { ...clock.white },
 		activeColor: clock.activeColor,
-		turnStartedAt: clock.turnStartedAt
+		turnStartedAt: clock.turnStartedAt,
+		periodMs: clock.periodMs
 	};
 }
 
 // --- Room management ---
 
-export function createRoom(size = 19, timeControl = { type: 'none' }, color) {
+export function createRoom(size = 19, timeControl = { type: 'none' }, color, local = false) {
 	const id = uniqueId();
-	
+
 	const room = {
 		id,
 		size,
@@ -113,6 +123,7 @@ export function createRoom(size = 19, timeControl = { type: 'none' }, color) {
 		whiteName: null,
 		status: 'waiting',
 		timeControl,
+		local,
 		consecutivePasses: 0,
 		scoring: { active: false, deadStones: [], blackApproved: false, whiteApproved: false, signMap: null },
 		clock: initClock(timeControl)
@@ -208,7 +219,15 @@ function handleMessage(socket, raw) {
 		const isReturningBlack = room.blackName === username;
 		const isReturningWhite = room.whiteName === username;
 
-		if (isReturningBlack && !room.black) {
+		if (room.local) {
+			socket.color = 'black';
+			room.black = socket;
+			room.white = socket;
+			room.blackName = username;
+			room.whiteName = username;
+			room.status = 'playing';
+			db.updateGame(roomId, { blackName: username, whiteName: username, status: 'playing' });
+		} else if (isReturningBlack && !room.black) {
 			socket.color = 'black';
 			room.black = socket;
 		} else if (isReturningWhite && !room.white) {
@@ -242,7 +261,7 @@ function handleMessage(socket, raw) {
 			return;
 		}
 
-		if (room.black && room.white) {
+		if (!room.local && room.black && room.white) {
 			send(room.black, { type: 'opponent_joined', opponent: username, clock: clockSnapshot(room.clock) });
 			send(room.white, { type: 'opponent_joined', opponent: username, clock: clockSnapshot(room.clock) });
 		}
@@ -256,7 +275,8 @@ function handleMessage(socket, raw) {
 			gameId: roomId,
 			color: socket.color,
 			size: room.size,
-			opponent: opponent(room, socket)?.username ?? null,
+			local: room.local ?? false,
+			opponent: room.local ? null : (opponent(room, socket)?.username ?? null),
 			moves: game?.moves ?? [],
 			timeControl: room.timeControl,
 			clock: clockSnapshot(room.clock)
@@ -270,7 +290,7 @@ function handleMessage(socket, raw) {
 
 	if (msg.type === 'move' || msg.type === 'pass') {
 		const opp = opponent(room, socket);
-		const color = socket.color;
+		const color = room.local ? (msg.color ?? socket.color) : socket.color;
 
 		// Track consecutive passes server-side
 		if (msg.type === 'pass') {
@@ -310,8 +330,33 @@ function handleMessage(socket, raw) {
 			clockData = clockSnapshot(room.clock);
 		}
 
-		if (opp) send(opp, { ...msg, color, clock: clockData });
+		if (opp && opp !== socket) send(opp, { ...msg, color, clock: clockData });
 		if (clockData) send(socket, { type: 'clock_update', clock: clockData });
+		return;
+	}
+
+	if (msg.type === 'flag') {
+		if (room.status !== 'playing') return;
+		const loser = room.local ? (msg.loser ?? socket.color) : socket.color;
+		const winner = opponentColor(loser);
+		db.updateGame(socket.gameId, {
+			status: 'finished',
+			winner,
+			result: winner === 'black' ? 'B+T' : 'W+T',
+			endedAt: Date.now()
+		});
+		room.status = 'finished';
+		sendBoth(room, { type: 'timeout', loser });
+		return;
+	}
+
+	if (msg.type === 'abort') {
+		if (room.status !== 'waiting') return;
+		db.updateGame(socket.gameId, { status: 'aborted', endedAt: Date.now() });
+		room.status = 'aborted';
+		const opp = opponent(room, socket);
+		if (opp) send(opp, { type: 'aborted' });
+		send(socket, { type: 'aborted' });
 		return;
 	}
 
@@ -350,7 +395,8 @@ function handleMessage(socket, raw) {
 	}
 
 	if (msg.type === 'approve_score') {
-		if (socket.color === 'black') room.scoring.blackApproved = true;
+		const approvingColor = room.local ? (msg.color ?? socket.color) : socket.color;
+		if (approvingColor === 'black') room.scoring.blackApproved = true;
 		else room.scoring.whiteApproved = true;
 
 		// Store the signMap from the first approver

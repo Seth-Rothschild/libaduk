@@ -15,7 +15,7 @@
 	});
 
 	const REALTIME_PRESETS = ['1+0', '2+1', '3+0', '5+0', '5+3', '10+0', '15+0', '30+0'];
-	const BYOYOMI_PRESETS = ['1+3×10s', '3+3×20s', '10+5×30s', '20+5×30s', '60+5×60s'];
+	const BYOYOMI_PRESETS = ['0+3×10s', '1+3×10s', '3+3×20s', '10+5×30s', '20+5×30s', '60+5×60s'];
 	const CORR_PRESETS = ['1 day', '3 days', '7 days', '14 days'];
 
 	function parseTimeControl(mode, clockStr) {
@@ -61,20 +61,17 @@
 	}
 
 	async function submit() {
-		if (gameType === 'local') {
-			goto(`/play/local?size=${boardSize}`);
-			return;
-		}
 		loading = true;
 		try {
 			const timeControl = parseTimeControl(timeMode, selectedClock);
+			const isLocal = gameType === 'local';
 			const res = await fetch('/api/game', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ size: boardSize, timeControl, color })
+				body: JSON.stringify({ size: boardSize, timeControl, color: isLocal ? 'black' : color, local: isLocal })
 			});
 			const { gameId } = await res.json();
-			goto(`/play/${gameId}`);
+			goto(isLocal ? `/play/${gameId}?local=true` : `/play/${gameId}`);
 		} catch {
 			loading = false;
 		}
@@ -115,8 +112,8 @@
 				</div>
 			</div>
 
-			<!-- Time control (not shown for local play) -->
-			{#if gameType !== 'local'}
+			<!-- Time control -->
+			{#if true}
 				<div class="config-group time-control-tabs">
 					<div class="tabs-horiz">
 						<button
