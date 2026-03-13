@@ -438,7 +438,9 @@
 				<i class="line"></i>
 				<name
 					>{isLocal
-						? (oppColor === 'white' ? (gameSocket.whiteName ?? 'Guest') : (gameSocket.blackName ?? 'Guest'))
+						? oppColor === 'white'
+							? (gameSocket.whiteName ?? 'Guest')
+							: (gameSocket.blackName ?? 'Guest')
 						: (gameSocket.opponent ?? (status === 'waiting' ? 'Waiting...' : oppColor))}</name
 				>
 				{#if opponentCaptures > 0}
@@ -579,7 +581,7 @@
 
 			<div class="ruser ruser-bottom color-icon is {myColor} active">
 				<i class="line"></i>
-				<name>{isLocal ? (gameSocket.blackName ?? 'You') : (username || 'You')}</name>
+				<name>{isLocal ? (gameSocket.blackName ?? 'You') : username || 'You'}</name>
 				{#if myCaptures > 0}
 					<span class="material">+{myCaptures}</span>
 				{/if}

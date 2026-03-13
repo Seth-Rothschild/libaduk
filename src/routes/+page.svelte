@@ -48,7 +48,9 @@
 
 	// --- Tab state and game lists ---
 
-	let activeTab = $state('pools');
+	const VALID_TABS = ['pools', 'lobby', 'correspondence'];
+	const storedTab = typeof localStorage !== 'undefined' ? localStorage.getItem('lobby-tab') : null;
+	let activeTab = $state(VALID_TABS.includes(storedTab) ? storedTab : 'pools');
 	let pendingGames = $state([]);
 	let myGames = $state([]);
 	let liveGames = $state([]);
@@ -95,6 +97,7 @@
 
 	function switchTab(tab) {
 		activeTab = tab;
+		localStorage.setItem('lobby-tab', tab);
 		if (tab === 'lobby') startPolling(refreshPending);
 		else if (tab === 'now_playing') startPolling(refreshMyGames);
 		else stopPolling();

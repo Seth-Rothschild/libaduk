@@ -1,19 +1,16 @@
 import { randomUUID } from 'crypto';
-
-// Survive HMR reloads
-if (!global.__sessions) global.__sessions = new Map();
-const sessions = global.__sessions;
+import { createSession as dbCreate, getSession as dbGet, deleteSession as dbDelete } from './db.js';
 
 export function createSession(username) {
 	const token = randomUUID();
-	sessions.set(token, { username, createdAt: Date.now() });
+	dbCreate(token, username);
 	return token;
 }
 
 export function getSession(token) {
-	return token ? (sessions.get(token) ?? null) : null;
+	return dbGet(token);
 }
 
 export function deleteSession(token) {
-	sessions.delete(token);
+	dbDelete(token);
 }

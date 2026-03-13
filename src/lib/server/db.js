@@ -4,11 +4,12 @@ import { join } from 'path';
 const DATA_DIR = 'data';
 const DB_PATH = join(DATA_DIR, 'db.json');
 
-const EMPTY_DB = { users: {}, games: {} };
+const EMPTY_DB = { users: {}, games: {}, sessions: {} };
 
 function loadFromDisk() {
 	try {
-		return JSON.parse(readFileSync(DB_PATH, 'utf8'));
+		const saved = JSON.parse(readFileSync(DB_PATH, 'utf8'));
+		return { ...structuredClone(EMPTY_DB), ...saved };
 	} catch {
 		return structuredClone(EMPTY_DB);
 	}
@@ -130,4 +131,20 @@ export function getUserGames(username) {
 
 export function getAllActiveGames() {
 	return Object.values(db.games).filter((g) => g.status === 'playing');
+}
+
+// --- Sessions ---
+
+export function createSession(token, username) {
+	db.sessions[token] = { username, createdAt: Date.now() };
+	schedulFlush();
+}
+
+export function getSession(token) {
+	return token ? (db.sessions[token] ?? null) : null;
+}
+
+export function deleteSession(token) {
+	delete db.sessions[token];
+	schedulFlush();
 }

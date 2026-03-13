@@ -84,8 +84,18 @@
 					<span class="home">libaduk</span>
 				</a>
 				<div role="group">
-					<button onclick={async () => { await goto('/'); setupModal = 'hook'; }}>Create a game</button>
-					<button onclick={async () => { await goto('/'); setupModal = 'friend'; }}>Challenge a friend</button>
+					<button
+						onclick={async () => {
+							await goto('/');
+							setupModal = 'hook';
+						}}>Create a game</button
+					>
+					<button
+						onclick={async () => {
+							await goto('/');
+							setupModal = 'friend';
+						}}>Challenge a friend</button
+					>
 				</div>
 			</section>
 			<section>

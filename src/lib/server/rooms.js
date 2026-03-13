@@ -151,7 +151,14 @@ export function createRoom(size = 19, timeControl = { type: 'none' }, color, loc
 		}
 	}
 	rooms.set(id, room);
-	db.createGame({ id, size, blackName: room.blackName, whiteName: room.whiteName, timeControl, local });
+	db.createGame({
+		id,
+		size,
+		blackName: room.blackName,
+		whiteName: room.whiteName,
+		timeControl,
+		local
+	});
 	return room;
 }
 
@@ -219,9 +226,7 @@ function handleMessage(socket, raw) {
 				return;
 			}
 			const corrDeadlineMs =
-				game.timeControl?.type === 'correspondence'
-					? (game.timeControl.days ?? 3) * 86400000
-					: 0;
+				game.timeControl?.type === 'correspondence' ? (game.timeControl.days ?? 3) * 86400000 : 0;
 			room = {
 				id: roomId,
 				size: game.size,
@@ -675,8 +680,7 @@ export function attachWebSocketServer(httpServer) {
 				// Attach authenticated username from session cookie if present
 				const cookieStr = req.headers.cookie ?? '';
 				const sessionToken = parseCookieValue(cookieStr, 'session');
-				const sessions = global.__sessions;
-				const session = sessionToken && sessions ? sessions.get(sessionToken) : null;
+				const session = db.getSession(sessionToken);
 				ws.authenticatedUsername = session?.username ?? null;
 				wss.emit('connection', ws, req);
 			});
