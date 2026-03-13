@@ -328,7 +328,14 @@
 		const timer = setTimeout(() => {
 			gameSocket.send({ type: 'join', gameId, username: username || 'Anonymous' });
 		}, 100);
-		return () => clearTimeout(timer);
+
+		const mainWrap = document.getElementById('main-wrap');
+		if (mainWrap) mainWrap.style.display = 'block';
+
+		return () => {
+			clearTimeout(timer);
+			if (mainWrap) mainWrap.style.display = '';
+		};
 	});
 
 	onDestroy(() => {
@@ -523,10 +530,6 @@
 </div>
 
 <style>
-	:global(#main-wrap) {
-		display: block;
-	}
-
 	.corr-deadline {
 		font-size: 0.85em;
 		color: var(--c-font-dim);

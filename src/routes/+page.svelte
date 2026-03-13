@@ -18,6 +18,14 @@
 		return new Date(createdAt).toLocaleDateString();
 	}
 
+	function formatClock(timeControl) {
+		if (!timeControl) return '∞';
+		if (timeControl.type === 'correspondence') return 'Corr.';
+		if (timeControl.type === 'byoyomi') return `${timeControl.initial / 60}+${timeControl.periods}×${timeControl.periodTime}s`;
+		if (timeControl.type === 'fischer') return `${timeControl.initial / 60}+${timeControl.increment}`;
+		return '∞';
+	}
+
 	async function createGame(pool = null) {
 		if (!username) { goto('/login'); return; }
 		const body = { size: 19, color: 'random' };
@@ -148,25 +156,26 @@
 				{#if pendingGames.length === 0}
 					<p class="lobby__tab-empty">No open games.</p>
 				{:else}
-					<div class="lobby__game-list">
-						{#each pendingGames as game}
-							<a class="lobby__game-row" href="/play/{game.id}">
-								<span class="lobby__game-row__creator">{game.creator}</span>
-								<span class="lobby__game-row__info">{formatTime(game.createdAt)}</span>
-								<span class="lobby__game-row__info">
-									{#if game.timeControl?.type === 'correspondence'}
-										Correspondence
-									{:else if game.timeControl?.type === 'fischer'}
-										{game.timeControl.initial}+{game.timeControl.increment}
-									{:else}
-										No time
-									{/if}
-								</span>
-								<span class="lobby__game-row__info">{game.size}×{game.size}</span>
-								<span class="lobby__game-row__action button button-metal">Join</span>
-							</a>
-						{/each}
-					</div>
+					<table class="hooks__list">
+						<thead>
+							<tr>
+								<th>Player</th>
+								<th>Posted</th>
+								<th>Clock</th>
+								<th>Board</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each pendingGames as game}
+								<tr class="hook join" onclick={() => goto(`/play/${game.id}`)}>
+									<td>{game.creator}</td>
+									<td>{formatTime(game.createdAt)}</td>
+									<td>{formatClock(game.timeControl)}</td>
+									<td>{game.size}×{game.size}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
 				{/if}
 			{:else if activeTab === 'correspondence'}
 				<div class="lpools">
@@ -181,22 +190,30 @@
 				{#if myGames.length === 0}
 					<p class="lobby__tab-empty">No games in progress.</p>
 				{:else}
-					<div class="lobby__game-list">
-						{#each myGames as game}
-							<a class="lobby__game-row" href="/play/{game.id}">
-								<span class="lobby__game-row__creator">
-									{game.opponent ?? 'Waiting for opponent...'}
-								</span>
-								{#if game.timeControl?.type === 'correspondence'}
-									<span class="lobby__game-row__status" class:your-turn={game.isMyTurn}>
-										{game.isMyTurn === true ? 'Your turn' : game.isMyTurn === false ? 'Their turn' : 'Waiting'}
-									</span>
-								{:else}
-									<span class="lobby__game-row__status">{game.status}</span>
-								{/if}
-							</a>
-						{/each}
-					</div>
+					<table class="hooks__list">
+						<thead>
+							<tr>
+								<th>Opponent</th>
+								<th>Clock</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each myGames as game}
+								<tr class="hook join" onclick={() => goto(`/play/${game.id}`)}>
+									<td>{game.opponent ?? 'Waiting for opponent...'}</td>
+									<td>{formatClock(game.timeControl)}</td>
+									<td class:your-turn={game.isMyTurn === true}>
+										{#if game.timeControl?.type === 'correspondence'}
+											{game.isMyTurn === true ? 'Your turn' : game.isMyTurn === false ? 'Their turn' : 'Waiting'}
+										{:else}
+											{game.status}
+										{/if}
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
 				{/if}
 			{/if}
 		</div>
@@ -229,7 +246,7 @@
 
 	<!-- Start buttons -->
 	<div class="lobby__table">
-	
+
 		<div class="lobby__start">
 
 			<button
@@ -306,7 +323,7 @@
 
 	:global(.lobby__app .lpools),
 	.lobby__tab-empty,
-	.lobby__game-list {
+	:global(.hooks__list) {
 		position: relative;
 		z-index: 1;
 	}
@@ -323,55 +340,6 @@
 	.lobby__tab-empty {
 		padding: 1em;
 		color: var(--c-font-dim);
-	}
-
-	.lobby__game-list {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		padding: 9px;
-	}
-
-	.lobby__game-row {
-		display: flex;
-		align-items: center;
-		gap: 1em;
-		padding: 0.6em 0.8em;
-		background: var(--c-bg-box);
-		border-radius: var(--box-radius-size);
-		text-decoration: none;
-		color: var(--c-font);
-	}
-
-	.lobby__game-row__creator {
-		flex: 1;
-		font-weight: 500;
-	}
-
-	.lobby__game-row__info {
-		font-size: 0.9em;
-		color: var(--c-font-dim);
-		min-width: 80px;
-		text-align: center;
-	}
-
-	.lobby__game-row__action {
-		margin-left: auto;
-	}
-
-	.lobby__game-row:hover {
-		background: var(--c-bg-zebra);
-	}
-
-	.lobby__game-row__status {
-		font-size: 0.85em;
-		color: var(--c-font-dim);
-		text-transform: capitalize;
-	}
-
-	.lobby__game-row__status.your-turn {
-		color: var(--c-good);
-		font-weight: bold;
 	}
 
 	.lobby__counters {
