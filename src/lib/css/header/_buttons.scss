@@ -1,194 +1,194 @@
 %top-icon {
-  display: block;
-  height: $site-header-height;
-  line-height: $site-header-height;
+	display: block;
+	height: $site-header-height;
+	line-height: $site-header-height;
 }
 
 .site-buttons {
-  @extend %flex-center-nowrap;
+	@extend %flex-center-nowrap;
 
-  position: relative;
+	position: relative;
 
-  .link {
-    @include transition(color);
-    @extend %top-icon;
+	.link {
+		@include transition(color);
+		@extend %top-icon;
 
-    color: $c-font;
-    font-size: 1.1rem;
-    padding: 0 20px;
+		color: $c-font;
+		font-size: 1.1rem;
+		padding: 0 20px;
 
-    @include if-transp {
-      @extend %page-text;
-    }
+		@include if-transp {
+			@extend %page-text;
+		}
 
-    body[data-user] & {
-      padding: 0 0.7rem;
-    }
+		body[data-user] & {
+			padding: 0 0.7rem;
+		}
 
-    &:hover {
-      color: $c-font-clearer !important;
-    }
+		&:hover {
+			color: $c-font-clearer !important;
+		}
 
-    &::before,
-    span::before {
-      vertical-align: top;
-    }
+		&::before,
+		span::before {
+			vertical-align: top;
+		}
 
-    &:focus-visible {
-      border-radius: $box-radius-size / 2;
-    }
-  }
+		&:focus-visible {
+			border-radius: $box-radius-size / 2;
+		}
+	}
 
-  .toggle {
-    @extend %top-icon;
-  }
+	.toggle {
+		@extend %top-icon;
+	}
 
-  .initiating {
-    @extend %flex-center-center;
+	.initiating {
+		@extend %flex-center-center;
 
-    height: 300px;
-    width: 225px;
-  }
+		height: 300px;
+		width: 225px;
+	}
 
-  .dropdown {
-    @extend %dropdown-shadow;
+	.dropdown {
+		@extend %dropdown-shadow;
 
-    display: none;
-    position: absolute;
-    min-width: 225px;
+		display: none;
+		position: absolute;
+		min-width: 225px;
 
-    @include inline-end(0);
+		@include inline-end(0);
 
-    top: $site-header-height;
-    background: $c-bg-header-dropdown;
-    z-index: $z-dropdown-109;
-    padding: 5px 0;
+		top: $site-header-height;
+		background: $c-bg-header-dropdown;
+		z-index: $z-dropdown-109;
+		padding: 5px 0;
 
-    a:not(.status),
-    button:not(.theme-btn) {
-      @extend %nowrap-hidden;
+		a:not(.status),
+		button:not(.theme-btn) {
+			@extend %nowrap-hidden;
 
-      display: block;
-      padding: 0.5rem 1rem;
-      width: 100%;
-      text-align: start;
-      color: $c-header-dropdown;
+			display: block;
+			padding: 0.5rem 1rem;
+			width: 100%;
+			text-align: start;
+			color: $c-header-dropdown;
 
-      &:hover {
-        background: $c-dasher;
-        color: $c-over !important;
-      }
-    }
+			&:hover {
+				background: $c-dasher;
+				color: $c-over !important;
+			}
+		}
 
-    .dropdown__theme {
-      display: flex;
-      border-top: $border;
-      padding: 6px 8px;
-      gap: 4px;
+		.dropdown__theme {
+			display: flex;
+			border-top: $border;
+			padding: 6px 8px;
+			gap: 4px;
 
-      .theme-btn {
-        @extend %metal, %box-radius;
+			.theme-btn {
+				@extend %metal, %box-radius;
 
-        flex: 1 1 auto;
-        padding: 0.3rem 0;
-        font-size: 0.8rem;
-        color: $c-header-dropdown;
+				flex: 1 1 auto;
+				padding: 0.3rem 0;
+				font-size: 0.8rem;
+				color: $c-header-dropdown;
 
-        &.active {
-          @extend %active;
-        }
+				&.active {
+					@extend %active;
+				}
 
-        &:hover:not(.active) {
-          background: $c-dasher-light;
-        }
-      }
-    }
-  }
+				&:hover:not(.active) {
+					background: $c-dasher-light;
+				}
+			}
+		}
+	}
 
-  .shown {
-    .toggle {
-      background: $c-bg-header-dropdown;
-      color: $c-header-dropdown;
-    }
+	.shown {
+		.toggle {
+			background: $c-bg-header-dropdown;
+			color: $c-header-dropdown;
+		}
 
-    .dropdown {
-      display: block;
-    }
-  }
+		.dropdown {
+			display: block;
+		}
+	}
 
-  .signin-or-signup {
-    @extend %flex-center;
+	.signin-or-signup {
+		@extend %flex-center;
 
-    gap: 1em;
+		gap: 1em;
 
-    .signup {
-      background: none;
-      border: 2px solid $c-link;
-      color: $c-link;
-      order: -1;
-    }
-  }
+		.signup {
+			background: none;
+			border: 2px solid $c-link;
+			color: $c-link;
+			order: -1;
+		}
+	}
 
-  .link-center {
-    height: inherit;
-    line-height: inherit;
-  }
+	.link-center {
+		height: inherit;
+		line-height: inherit;
+	}
 
-  .report-score {
-    &:not(.report-score--high)::after {
-      background: $c-bg-page;
-      color: $c-brag;
-      text-shadow: none;
-      font-weight: normal;
-    }
+	.report-score {
+		&:not(.report-score--high)::after {
+			background: $c-bg-page;
+			color: $c-brag;
+			text-shadow: none;
+			font-weight: normal;
+		}
 
-    &--low::after {
-      color: $c-good !important;
-    }
-  }
+		&--low::after {
+			color: $c-good !important;
+		}
+	}
 
-  #warn-no-autoplay {
-    display: none;
-    padding: 0 0.8em;
+	#warn-no-autoplay {
+		display: none;
+		padding: 0 0.8em;
 
-    &.shown {
-      display: block;
-    }
+		&.shown {
+			display: block;
+		}
 
-    a {
-      color: $c-bad;
-    }
+		a {
+			color: $c-bad;
+		}
 
-    a:hover {
-      color: $m-bad_clearer--mix-80;
-    }
-  }
+		a:hover {
+			color: $m-bad_clearer--mix-80;
+		}
+	}
 
-  .dasher {
-    @extend %flex-center-nowrap;
-  }
+	.dasher {
+		@extend %flex-center-nowrap;
+	}
 }
 
 #user_tag {
-  @extend %flex-center-nowrap;
+	@extend %flex-center-nowrap;
 
-  white-space: nowrap;
-  gap: 0.5rem;
+	white-space: nowrap;
+	gap: 0.5rem;
 
-  &::after {
-    @include transition(color);
-    @extend %data-icon;
+	&::after {
+		@include transition(color);
+		@extend %data-icon;
 
-    color: $m-font_dimmer--mix-85;
-    content: $licon-AccountCircle;
-    font-size: 2rem;
-  }
+		color: $m-font_dimmer--mix-85;
+		content: $licon-AccountCircle;
+		font-size: 2rem;
+	}
 
-  &:hover::after {
-    color: $c-font-clearer;
-  }
+	&:hover::after {
+		color: $c-font-clearer;
+	}
 }
 
 #notify-app .initiating {
-  width: 25rem;
+	width: 25rem;
 }

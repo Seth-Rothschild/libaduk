@@ -6,12 +6,11 @@ This code is a prototype and has made heavy use of LLMs to get it where it is. I
 
 ![](./screenshot.png)
 
-
 ## Provenance
+
 Large parts of both code and inspiration have been taken from lila, and this repository happily preserves its AGPL license. Go [support that project](https://lichess.org/patron)!
 
 The game board, board logic, and board feel is heavily inspired by [Sabaki](https://github.com/SabakiHQ) and uses Sabaki components where possible.
-
 
 ## Development
 

@@ -1,29 +1,29 @@
 .calendar-mselect {
-  @extend %box-neat, %flex-between-nowrap;
+	@extend %box-neat, %flex-between-nowrap;
 
-  font-size: 1.5em;
-  background: $c-bg-zebra;
-  padding: 1em 2em;
+	font-size: 1.5em;
+	background: $c-bg-zebra;
+	padding: 1em 2em;
 
-  &--top {
-    margin-bottom: 2em;
-  }
+	&--top {
+		margin-bottom: 2em;
+	}
 
-  &--bottom {
-    margin-top: 2em;
-  }
+	&--bottom {
+		margin-top: 2em;
+	}
 
-  &__selects {
-    @extend %flex-center-center; // for col1
+	&__selects {
+		@extend %flex-center-center; // for col1
 
-    gap: 1em;
-  }
+		gap: 1em;
+	}
 
-  > a {
-    font-size: 2em;
+	> a {
+		font-size: 2em;
 
-    &.disabled {
-      opacity: 0.3;
-    }
-  }
+		&.disabled {
+			opacity: 0.3;
+		}
+	}
 }

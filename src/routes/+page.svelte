@@ -21,18 +21,27 @@
 	function formatClock(timeControl) {
 		if (!timeControl) return '∞';
 		if (timeControl.type === 'correspondence') return 'Corr.';
-		if (timeControl.type === 'byoyomi') return `${timeControl.initial / 60}+${timeControl.periods}×${timeControl.periodTime}s`;
-		if (timeControl.type === 'fischer') return `${timeControl.initial / 60}+${timeControl.increment}`;
+		if (timeControl.type === 'byoyomi')
+			return `${timeControl.initial / 60}+${timeControl.periods}×${timeControl.periodTime}s`;
+		if (timeControl.type === 'fischer')
+			return `${timeControl.initial / 60}+${timeControl.increment}`;
 		return '∞';
 	}
 
 	async function createGame(pool = null) {
-		if (!username) { goto('/login'); return; }
+		if (!username) {
+			goto('/login');
+			return;
+		}
 		const body = { size: 19, color: 'random' };
 		if (pool) {
 			body.timeControl = pool.timeControl;
 		}
-		const res = await fetch('/api/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+		const res = await fetch('/api/game', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(body)
+		});
 		const { gameId } = await res.json();
 		goto(`/play/${gameId}`);
 	}
@@ -66,7 +75,9 @@
 	$effect(() => {
 		refreshLiveGames();
 		liveGamesInterval = setInterval(refreshLiveGames, 3000);
-		return () => { if (liveGamesInterval) clearInterval(liveGamesInterval); };
+		return () => {
+			if (liveGamesInterval) clearInterval(liveGamesInterval);
+		};
 	});
 
 	function startPolling(fn) {
@@ -90,28 +101,59 @@
 	}
 
 	const LIVE_POOLS = [
-		{ clock: '1+3×20s',  label: 'Bullet',     timeControl: { type: 'byoyomi', initial: 60,   periods: 3, periodTime: 20 } },
-		{ clock: '3+3×20s',  label: 'Bullet',     timeControl: { type: 'byoyomi', initial: 180,  periods: 3, periodTime: 20 } },
-		{ clock: '5+3×20s',  label: 'Blitz',     timeControl: { type: 'byoyomi', initial: 300,  periods: 3, periodTime: 20 } },
-		{ clock: '10+3×20s', label: 'Blitz',     timeControl: { type: 'byoyomi', initial: 600,  periods: 3, periodTime: 20 } },
-		{ clock: '20+3×30s', label: 'Rapid',     timeControl: { type: 'byoyomi', initial: 1200, periods: 3, periodTime: 30 } },
-		{ clock: '30+5×30s', label: 'Rapid',     timeControl: { type: 'byoyomi', initial: 1800, periods: 5, periodTime: 30 } },
-		{ clock: '40+0',     label: 'Standard',  timeControl: { type: 'fischer', initial: 40,   increment: 0 } },
-		{ clock: '60+5×60s', label: 'Classical', timeControl: { type: 'byoyomi', initial: 3600, periods: 5, periodTime: 60 } },
+		{
+			clock: '1+3×20s',
+			label: 'Bullet',
+			timeControl: { type: 'byoyomi', initial: 60, periods: 3, periodTime: 20 }
+		},
+		{
+			clock: '3+3×20s',
+			label: 'Bullet',
+			timeControl: { type: 'byoyomi', initial: 180, periods: 3, periodTime: 20 }
+		},
+		{
+			clock: '5+3×20s',
+			label: 'Blitz',
+			timeControl: { type: 'byoyomi', initial: 300, periods: 3, periodTime: 20 }
+		},
+		{
+			clock: '10+3×20s',
+			label: 'Blitz',
+			timeControl: { type: 'byoyomi', initial: 600, periods: 3, periodTime: 20 }
+		},
+		{
+			clock: '20+3×30s',
+			label: 'Rapid',
+			timeControl: { type: 'byoyomi', initial: 1200, periods: 3, periodTime: 30 }
+		},
+		{
+			clock: '30+5×30s',
+			label: 'Rapid',
+			timeControl: { type: 'byoyomi', initial: 1800, periods: 5, periodTime: 30 }
+		},
+		{
+			clock: '40+0',
+			label: 'Standard',
+			timeControl: { type: 'fischer', initial: 40, increment: 0 }
+		},
+		{
+			clock: '60+5×60s',
+			label: 'Classical',
+			timeControl: { type: 'byoyomi', initial: 3600, periods: 5, periodTime: 60 }
+		}
 	];
 
 	let setupModal = $state(null); // 'hook' | 'friend' | null
 
 	const CORR_POOLS = [
-		{ clock: '1 day',   label: 'Correspondence', timeControl: { type: 'correspondence', days: 1 } },
-		{ clock: '3 days',  label: 'Correspondence', timeControl: { type: 'correspondence', days: 3 } },
-		{ clock: '7 days',  label: 'Correspondence', timeControl: { type: 'correspondence', days: 7 } },
-		{ clock: '14 days', label: 'Correspondence', timeControl: { type: 'correspondence', days: 14 } },
+		{ clock: '1 day', label: 'Correspondence', timeControl: { type: 'correspondence', days: 1 } },
+		{ clock: '3 days', label: 'Correspondence', timeControl: { type: 'correspondence', days: 3 } },
+		{ clock: '7 days', label: 'Correspondence', timeControl: { type: 'correspondence', days: 7 } },
+		{ clock: '14 days', label: 'Correspondence', timeControl: { type: 'correspondence', days: 14 } }
 	];
 </script>
 
 <div class="lobby">
-
 	<!-- Tabs + quick pairing (center) -->
 	<div class="lobby__app">
 		<div class="tabs-horiz">
@@ -127,28 +169,45 @@
 			>
 				Correspondence
 			</button>
-			<button
-				class:active={activeTab === 'now_playing'}
-				onclick={() => switchTab('now_playing')}
-			>
+			<button class:active={activeTab === 'now_playing'} onclick={() => switchTab('now_playing')}>
 				Now playing
 			</button>
 		</div>
 
 		<div class="lobby__pools-wrap">
 			<svg class="lobby-bg-circle" viewBox="0 0 100 100" aria-hidden="true">
-				<circle class="lobby-bg-circle__ring" cx="50" cy="50" r="46" fill="none" stroke="currentColor" />
+				<circle
+					class="lobby-bg-circle__ring"
+					cx="50"
+					cy="50"
+					r="46"
+					fill="none"
+					stroke="currentColor"
+				/>
 			</svg>
 
 			{#if activeTab === 'pools'}
 				<div class="lpools">
 					{#each LIVE_POOLS as pool}
-						<div class="lpool" role="button" tabindex="0" onclick={() => createGame(pool)} onkeydown={(e) => e.key === 'Enter' && createGame(pool)}>
+						<div
+							class="lpool"
+							role="button"
+							tabindex="0"
+							onclick={() => createGame(pool)}
+							onkeydown={(e) => e.key === 'Enter' && createGame(pool)}
+						>
 							<span class="clock">{pool.clock}</span>
 							<span class="perf">{pool.label}</span>
 						</div>
 					{/each}
-					<div class="lpool lpool--custom" role="button" tabindex="0" onclick={() => username ? (setupModal = 'hook') : goto('/login')} onkeydown={(e) => e.key === 'Enter' && (username ? (setupModal = 'hook') : goto('/login'))}>
+					<div
+						class="lpool lpool--custom"
+						role="button"
+						tabindex="0"
+						onclick={() => (username ? (setupModal = 'hook') : goto('/login'))}
+						onkeydown={(e) =>
+							e.key === 'Enter' && (username ? (setupModal = 'hook') : goto('/login'))}
+					>
 						<span class="clock">Custom</span>
 					</div>
 				</div>
@@ -180,41 +239,49 @@
 			{:else if activeTab === 'correspondence'}
 				<div class="lpools">
 					{#each CORR_POOLS as pool}
-						<div class="lpool" role="button" tabindex="0" onclick={() => createGame(pool)} onkeydown={(e) => e.key === 'Enter' && createGame(pool)}>
+						<div
+							class="lpool"
+							role="button"
+							tabindex="0"
+							onclick={() => createGame(pool)}
+							onkeydown={(e) => e.key === 'Enter' && createGame(pool)}
+						>
 							<span class="clock">{pool.clock}</span>
 							<span class="perf">{pool.label}</span>
 						</div>
 					{/each}
 				</div>
+			{:else if myGames.length === 0}
+				<p class="lobby__tab-empty">No games in progress.</p>
 			{:else}
-				{#if myGames.length === 0}
-					<p class="lobby__tab-empty">No games in progress.</p>
-				{:else}
-					<table class="hooks__list">
-						<thead>
-							<tr>
-								<th>Opponent</th>
-								<th>Clock</th>
-								<th>Status</th>
+				<table class="hooks__list">
+					<thead>
+						<tr>
+							<th>Opponent</th>
+							<th>Clock</th>
+							<th>Status</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each myGames as game}
+							<tr class="hook join" onclick={() => goto(`/play/${game.id}`)}>
+								<td>{game.opponent ?? 'Waiting for opponent...'}</td>
+								<td>{formatClock(game.timeControl)}</td>
+								<td class:your-turn={game.isMyTurn === true}>
+									{#if game.timeControl?.type === 'correspondence'}
+										{game.isMyTurn === true
+											? 'Your turn'
+											: game.isMyTurn === false
+												? 'Their turn'
+												: 'Waiting'}
+									{:else}
+										{game.status}
+									{/if}
+								</td>
 							</tr>
-						</thead>
-						<tbody>
-							{#each myGames as game}
-								<tr class="hook join" onclick={() => goto(`/play/${game.id}`)}>
-									<td>{game.opponent ?? 'Waiting for opponent...'}</td>
-									<td>{formatClock(game.timeControl)}</td>
-									<td class:your-turn={game.isMyTurn === true}>
-										{#if game.timeControl?.type === 'correspondence'}
-											{game.isMyTurn === true ? 'Your turn' : game.isMyTurn === false ? 'Their turn' : 'Waiting'}
-										{:else}
-											{game.status}
-										{/if}
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				{/if}
+						{/each}
+					</tbody>
+				</table>
 			{/if}
 		</div>
 	</div>
@@ -246,18 +313,16 @@
 
 	<!-- Start buttons -->
 	<div class="lobby__table">
-
 		<div class="lobby__start">
-
 			<button
 				class="button button-metal lobby__start__button lobby__start__button--hook"
-				onclick={() => username ? (setupModal = 'hook') : goto('/signup')}
+				onclick={() => (username ? (setupModal = 'hook') : goto('/signup'))}
 			>
 				Create a game
 			</button>
 			<button
 				class="button button-metal lobby__start__button lobby__start__button--friend"
-				onclick={() => username ? (setupModal = 'friend') : goto('/signup')}
+				onclick={() => (username ? (setupModal = 'friend') : goto('/signup'))}
 			>
 				Challenge a friend
 			</button>
@@ -278,7 +343,7 @@
 			</div>
 		</div>
 
-	<!-- Stats bar -->
+		<!-- Stats bar -->
 	</div>
 
 	{#if setupModal}

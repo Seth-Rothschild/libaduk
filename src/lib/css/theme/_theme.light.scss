@@ -1,11 +1,11 @@
 @import 'theme.default';
 
 @function clear($color, $weight: 17%) {
-  @return mix(#000, $color, $weight);
+	@return mix(#000, $color, $weight);
 }
 
 @function dim($color, $weight: 17%) {
-  @return mix(#fff, $color, $weight);
+	@return mix(#fff, $color, $weight);
 }
 
 $c-bg: hsl(0, 0%, 100%); // $c-bg-high
@@ -33,31 +33,31 @@ $c-clearer: #000;
 $patron-colors: $patron-colors-light;
 
 html.light {
-  @include shared-color-defs;
+	@include shared-color-defs;
 
-  --c-bg-input: #{change-color($c-bg-page, $lightness: 98%)};
-  --c-bg-variation: #{$c-bg-zebra2};
-  --c-bg-header-dropdown: #{$c-bg};
-  --c-header-dropdown: #{$c-font};
-  --c-page-input: #{$c-bg-low};
-  --c-metal-top: hsl(0, 0%, 96%);
-  --c-metal-bottom: hsl(0, 0%, 93%);
-  --c-metal-top-hover: hsl(0, 0%, 98%);
-  --c-metal-bottom-hover: hsl(0, 0%, 95%);
-  --c-font-dim: #{$c-font-dim};
-  --c-font-dimmer: #{change-color($c-font, $lightness: 70%)};
-  --c-font-clear: #{change-color($c-font, $lightness: 12%)};
-  --c-font-clearer: #{change-color($c-font, $lightness: 0%)};
-  --c-font-page: #{change-color($c-font, $lightness: 37%)};
-  --c-font-shadow: #fff;
-  --c-primary-dim: #{dim($c-primary)};
-  --c-link-hover: #{clear(saturate($c-primary, 100%), 35%)};
-  --c-chat-host-bg: rgba(125, 170, 73, 0.4);
-  --c-chat-mention-bg: rgba(161, 194, 124, 0.4);
-  --c-fancy: hsl(294, 61%, 62%);
-  --c-border-page: hsl(0, 0%, 80%);
-  --c-border-tour: #{mix(hsl(0, 0%, 80%), $c-bg-page, 50)};
-  --c-border-light: hsl(0, 0%, 80%);
+	--c-bg-input: #{change-color($c-bg-page, $lightness: 98%)};
+	--c-bg-variation: #{$c-bg-zebra2};
+	--c-bg-header-dropdown: #{$c-bg};
+	--c-header-dropdown: #{$c-font};
+	--c-page-input: #{$c-bg-low};
+	--c-metal-top: hsl(0, 0%, 96%);
+	--c-metal-bottom: hsl(0, 0%, 93%);
+	--c-metal-top-hover: hsl(0, 0%, 98%);
+	--c-metal-bottom-hover: hsl(0, 0%, 95%);
+	--c-font-dim: #{$c-font-dim};
+	--c-font-dimmer: #{change-color($c-font, $lightness: 70%)};
+	--c-font-clear: #{change-color($c-font, $lightness: 12%)};
+	--c-font-clearer: #{change-color($c-font, $lightness: 0%)};
+	--c-font-page: #{change-color($c-font, $lightness: 37%)};
+	--c-font-shadow: #fff;
+	--c-primary-dim: #{dim($c-primary)};
+	--c-link-hover: #{clear(saturate($c-primary, 100%), 35%)};
+	--c-chat-host-bg: rgba(125, 170, 73, 0.4);
+	--c-chat-mention-bg: rgba(161, 194, 124, 0.4);
+	--c-fancy: hsl(294, 61%, 62%);
+	--c-border-page: hsl(0, 0%, 80%);
+	--c-border-tour: #{mix(hsl(0, 0%, 80%), $c-bg-page, 50)};
+	--c-border-light: hsl(0, 0%, 80%);
 
-  @include light-mix;
+	@include light-mix;
 }

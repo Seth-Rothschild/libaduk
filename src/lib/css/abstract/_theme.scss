@@ -7,39 +7,39 @@ $border: $border-width $border-style $c-border;
 $outline: 2px solid $c-primary;
 
 @mixin if-light {
-  html.light & {
-    @content;
-  }
+	html.light & {
+		@content;
+	}
 }
 
 @mixin if-transp {
-  html.transp & {
-    @content;
-  }
+	html.transp & {
+		@content;
+	}
 }
 
 @mixin if-not-light {
-  html:not(.light) & {
-    @content;
-  }
+	html:not(.light) & {
+		@content;
+	}
 }
 
 @mixin if-not-transp {
-  html:not(.transp) & {
-    @content;
-  }
+	html:not(.transp) & {
+		@content;
+	}
 }
 
 @mixin theme-style {
-  html.transp::before {
-    content: ' ';
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    background-position: center center;
-    background-repeat: no-repeat;
-    background-size: cover;
-    will-change: transform;
-    z-index: -1;
-  }
+	html.transp::before {
+		content: ' ';
+		position: fixed;
+		width: 100%;
+		height: 100%;
+		background-position: center center;
+		background-repeat: no-repeat;
+		background-size: cover;
+		will-change: transform;
+		z-index: -1;
+	}
 }

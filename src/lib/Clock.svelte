@@ -1,5 +1,12 @@
 <script>
-	let { clockData, running, position = 'bottom', initialMs = null, turnStartedAt = null, onTimeout = null } = $props();
+	let {
+		clockData,
+		running,
+		position = 'bottom',
+		initialMs = null,
+		turnStartedAt = null,
+		onTimeout = null
+	} = $props();
 
 	let displayMs = $state(0);
 	let clientInByo = $state(false);
@@ -7,7 +14,7 @@
 
 	function compute(clockData, running, turnStartedAt) {
 		if (!clockData) return { ms: 0, inByo: false, periods: 0 };
-		const elapsed = (running && turnStartedAt) ? Math.max(0, Date.now() - turnStartedAt) : 0;
+		const elapsed = running && turnStartedAt ? Math.max(0, Date.now() - turnStartedAt) : 0;
 
 		if (clockData.inByoYomi) {
 			return computeByo(clockData.byoMs, clockData.byoPeriods, clockData.periodMs ?? 0, elapsed);
@@ -17,7 +24,12 @@
 		if (mainRemaining <= 0 && clockData.byoPeriods > 0) {
 			const overflow = -mainRemaining;
 			const byoStartMs = clockData.byoMs;
-			return computeByo(byoStartMs, clockData.byoPeriods, clockData.periodMs ?? byoStartMs, overflow);
+			return computeByo(
+				byoStartMs,
+				clockData.byoPeriods,
+				clockData.periodMs ?? byoStartMs,
+				overflow
+			);
 		}
 		return { ms: Math.max(0, mainRemaining), inByo: false, periods: 0 };
 	}
@@ -35,7 +47,12 @@
 	}
 
 	$effect(() => {
-		if (!clockData) { displayMs = 0; clientInByo = false; clientByoPeriods = 0; return; }
+		if (!clockData) {
+			displayMs = 0;
+			clientInByo = false;
+			clientByoPeriods = 0;
+			return;
+		}
 		const { ms, inByo, periods } = compute(clockData, running, turnStartedAt);
 		displayMs = ms;
 		clientInByo = inByo;
@@ -74,22 +91,17 @@
 		initialMs && initialMs > 0 ? Math.max(0, Math.min(1, displayMs / initialMs)) : 1
 	);
 	const byoPeriodSecs = $derived(
-		clockData?.periodMs ? Math.ceil(clockData.periodMs / 1000) : Math.ceil((clockData?.byoMs ?? 0) / 1000)
+		clockData?.periodMs
+			? Math.ceil(clockData.periodMs / 1000)
+			: Math.ceil((clockData?.byoMs ?? 0) / 1000)
 	);
 	const byoLabel = $derived(
-		clientInByo && clientByoPeriods > 0
-			? `${clientByoPeriods}×${byoPeriodSecs}s`
-			: null
+		clientInByo && clientByoPeriods > 0 ? `${clientByoPeriods}×${byoPeriodSecs}s` : null
 	);
 </script>
 
 {#if clockData}
-	<div
-		class="rclock rclock-{position}"
-		class:running
-		class:emerg={isEmerg}
-		class:outoftime={isOut}
-	>
+	<div class="rclock rclock-{position}" class:running class:emerg={isEmerg} class:outoftime={isOut}>
 		<div class="time" class:hour={isHour}>
 			{formatTime(displayMs)}
 			{#if byoLabel}

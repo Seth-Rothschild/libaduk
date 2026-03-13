@@ -47,9 +47,11 @@
 	let whiteApproved = $state(false);
 	let finalScore = $state(null);
 	let boardContainerWidth = $state(0);
-	const vertexSize = $derived(boardContainerWidth > 0 ? Math.floor(boardContainerWidth / (SIZE + 0.8)) : 24);
+	const vertexSize = $derived(
+		boardContainerWidth > 0 ? Math.floor(boardContainerWidth / (SIZE + 0.8)) : 24
+	);
 
-const signMap = $derived(board.signMap);
+	const signMap = $derived(board.signMap);
 	const blackCaptures = $derived(board.getCaptures(1));
 	const whiteCaptures = $derived(board.getCaptures(-1));
 
@@ -189,8 +191,6 @@ const signMap = $derived(board.signMap);
 		whiteApproved = false;
 		finalScore = null;
 	}
-
-
 </script>
 
 <div class="round">
@@ -210,7 +210,7 @@ const signMap = $derived(board.signMap);
 					{winner === 1 ? 'Black' : 'White'} is victorious.
 				</section>
 			{/if}
-			</div>
+		</div>
 	</aside>
 
 	<div class="round__app">

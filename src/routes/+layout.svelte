@@ -99,11 +99,7 @@
 	</div>
 
 	<div class="site-buttons">
-		<div
-			id="clinput"
-			onmouseenter={onSearchMouseEnter}
-			onmouseleave={onSearchMouseLeave}
-		>
+		<div id="clinput" onmouseenter={onSearchMouseEnter} onmouseleave={onSearchMouseLeave}>
 			<a data-icon="&#xe057;" aria-label="Search" class="link"></a>
 			<input
 				type="text"
@@ -138,8 +134,8 @@
 						class="text"
 						class:active={themeState.setting === value}
 						data-icon="&#xe023;"
-						onclick={() => themeState.set(value)}
-					>{label}</button>
+						onclick={() => themeState.set(value)}>{label}</button
+					>
 				{/each}
 			</div>
 		{/snippet}
@@ -163,7 +159,12 @@
 		{#if signedIn}
 			<a id="user_tag" href="/" class="link">{username}</a>
 			<div class="dasher" class:shown={settingsOpen}>
-				<button class="toggle link" data-icon="&#xe005;" aria-label="Settings" onclick={toggleSettings}></button>
+				<button
+					class="toggle link"
+					data-icon="&#xe005;"
+					aria-label="Settings"
+					onclick={toggleSettings}
+				></button>
 				<div class="dropdown">
 					{#if dasherPane === 'background'}
 						{@render backgroundPane()}
@@ -171,9 +172,21 @@
 						{@render boardPane()}
 					{:else}
 						<a class="text" data-icon="&#xe005;" href="/">Settings</a>
-						<button class="text" data-icon="&#xe028;" onclick={() => (dasherPane = 'board')}>Board</button>
-						<button class="text" data-icon="&#xe061;" onclick={() => (dasherPane = 'background')}>Background</button>
-						<button class="text signout" data-icon="&#xe055;" onclick={() => { signOut(); settingsOpen = false; dasherPane = 'main'; }}>Sign out</button>
+						<button class="text" data-icon="&#xe028;" onclick={() => (dasherPane = 'board')}
+							>Board</button
+						>
+						<button class="text" data-icon="&#xe061;" onclick={() => (dasherPane = 'background')}
+							>Background</button
+						>
+						<button
+							class="text signout"
+							data-icon="&#xe055;"
+							onclick={() => {
+								signOut();
+								settingsOpen = false;
+								dasherPane = 'main';
+							}}>Sign out</button
+						>
 					{/if}
 					{@render pingStatus()}
 				</div>

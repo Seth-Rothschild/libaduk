@@ -1,63 +1,63 @@
 .toggle-box {
-  @extend %box-radius;
+	@extend %box-radius;
 
-  border: $border;
-  background: $c-bg-zebra;
-  margin: 1rem 0 3rem 0;
-  padding: 2rem var(---box-padding) 0 var(---box-padding);
+	border: $border;
+	background: $c-bg-zebra;
+	margin: 1rem 0 3rem 0;
+	padding: 2rem var(---box-padding) 0 var(---box-padding);
 
-  legend {
-    @extend %box-radius;
-    @include prevent-select;
+	legend {
+		@extend %box-radius;
+		@include prevent-select;
 
-    background: $c-bg-zebra;
-    padding: 0.5em 1.5em;
-    text-align: right;
-    font-size: 1.2em;
-    line-height: 26px;
+		background: $c-bg-zebra;
+		padding: 0.5em 1.5em;
+		text-align: right;
+		font-size: 1.2em;
+		line-height: 26px;
 
-    &:focus-visible {
-      outline: $outline;
-    }
-  }
+		&:focus-visible {
+			outline: $outline;
+		}
+	}
 }
 
 .toggle-box--toggle {
-  legend {
-    border: 1px solid transparent;
-    border-top-color: $c-border;
-    cursor: pointer;
+	legend {
+		border: 1px solid transparent;
+		border-top-color: $c-border;
+		cursor: pointer;
 
-    &::after {
-      content: '▲';
-      margin-left: 1ch;
-    }
-  }
+		&::after {
+			content: '▲';
+			margin-left: 1ch;
+		}
+	}
 }
 
 .toggle-box--toggle-off {
-  background: none;
-  border-color: transparent;
-  border-top-color: $c-border;
-  border-radius: 0;
-  padding-top: 0;
+	background: none;
+	border-color: transparent;
+	border-top-color: $c-border;
+	border-radius: 0;
+	padding-top: 0;
 
-  legend {
-    border: $border;
-    background: none;
+	legend {
+		border: $border;
+		background: none;
 
-    &:hover {
-      @extend %box-neat;
+		&:hover {
+			@extend %box-neat;
 
-      background: $c-bg-zebra;
-    }
+			background: $c-bg-zebra;
+		}
 
-    &::after {
-      content: '▼';
-    }
-  }
+		&::after {
+			content: '▼';
+		}
+	}
 
-  > *:not(legend) {
-    display: none;
-  }
+	> *:not(legend) {
+		display: none;
+	}
 }

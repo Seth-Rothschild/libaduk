@@ -1,46 +1,46 @@
 .hooks__list {
-  width: 100%;
-  border-collapse: collapse;
+	width: 100%;
+	border-collapse: collapse;
 
-  tr.join:hover td {
-    background: $m-accent--fade-50;
-    cursor: pointer;
-  }
+	tr.join:hover td {
+		background: $m-accent--fade-50;
+		cursor: pointer;
+	}
 
-  tr.cancel td {
-    background: $m-secondary--fade-60;
-  }
+	tr.cancel td {
+		background: $m-secondary--fade-60;
+	}
 
-  th {
-    @extend %roboto;
+	th {
+		@extend %roboto;
 
-    padding: 1em 0.7em;
-    text-align: left;
-    font-size: 0.85rem;
-    color: $c-font-dim;
-    border-bottom: $border;
+		padding: 1em 0.7em;
+		text-align: left;
+		font-size: 0.85rem;
+		color: $c-font-dim;
+		border-bottom: $border;
 
-    &:first-child {
-      padding-inline-start: 1.5em;
-    }
-  }
+		&:first-child {
+			padding-inline-start: 1.5em;
+		}
+	}
 
-  td {
-    padding: 0.5em 0.7em;
-    border-bottom: $border;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    background: $m-bg--fade-50;
+	td {
+		padding: 0.5em 0.7em;
+		border-bottom: $border;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		background: $m-bg--fade-50;
 
-    &:first-child {
-      padding-inline-start: 1.5em;
-      font-weight: 500;
-    }
+		&:first-child {
+			padding-inline-start: 1.5em;
+			font-weight: 500;
+		}
 
-    &.your-turn {
-      color: $c-good;
-      font-weight: bold;
-    }
-  }
+		&.your-turn {
+			color: $c-good;
+			font-weight: bold;
+		}
+	}
 }

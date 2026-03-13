@@ -26,21 +26,21 @@
 	});
 
 	const BYOYOMI_PRESETS = [
-		{ label: '1+3×20s',  min: 1,  periods: 3, sec: 20 },
-		{ label: '3+3×20s',  min: 3,  periods: 3, sec: 20 },
-		{ label: '5+3×20s',  min: 5,  periods: 3, sec: 20 },
+		{ label: '1+3×20s', min: 1, periods: 3, sec: 20 },
+		{ label: '3+3×20s', min: 3, periods: 3, sec: 20 },
+		{ label: '5+3×20s', min: 5, periods: 3, sec: 20 },
 		{ label: '10+3×20s', min: 10, periods: 3, sec: 20 },
 		{ label: '20+3×30s', min: 20, periods: 3, sec: 30 },
 		{ label: '30+5×30s', min: 30, periods: 5, sec: 30 },
-		{ label: '60+5×60s', min: 60, periods: 5, sec: 60 },
+		{ label: '60+5×60s', min: 60, periods: 5, sec: 60 }
 	];
 
 	const FISCHER_PRESETS = [
-		{ label: '5+0',  min: 5,  inc: 0 },
+		{ label: '5+0', min: 5, inc: 0 },
 		{ label: '10+0', min: 10, inc: 0 },
 		{ label: '15+10', min: 15, inc: 10 },
 		{ label: '30+0', min: 30, inc: 0 },
-		{ label: '40+0', min: 40, inc: 0 },
+		{ label: '40+0', min: 40, inc: 0 }
 	];
 
 	const CORR_PRESETS = [1, 3, 7, 14];
@@ -49,15 +49,18 @@
 	const BUTTON_LABELS = {
 		hook: 'Create a game',
 		friend: 'Challenge a friend',
-		local: 'Play locally',
+		local: 'Play locally'
 	};
 
 	function switchTimeMode(mode) {
 		timeMode = mode;
 		if (mode === 'byoyomi') {
-			byoMin = 10; byoPeriods = 3; byoSec = 20;
+			byoMin = 10;
+			byoPeriods = 3;
+			byoSec = 20;
 		} else if (mode === 'realtime') {
-			fischerMin = 10; fischerInc = 0;
+			fischerMin = 10;
+			fischerInc = 0;
 		} else if (mode === 'correspondence') {
 			corrDays = 3;
 		}
@@ -66,7 +69,8 @@
 	function buildTimeControl() {
 		if (timeMode === 'unlimited') return { type: 'none' };
 		if (timeMode === 'correspondence') return { type: 'correspondence', days: corrDays };
-		if (timeMode === 'byoyomi') return { type: 'byoyomi', initial: byoMin * 60, periods: byoPeriods, periodTime: byoSec };
+		if (timeMode === 'byoyomi')
+			return { type: 'byoyomi', initial: byoMin * 60, periods: byoPeriods, periodTime: byoSec };
 		return { type: 'fischer', initial: fischerMin * 60, increment: fischerInc };
 	}
 
@@ -78,7 +82,12 @@
 			const res = await fetch('/api/game', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ size: boardSize, timeControl, color: isLocal ? 'black' : color, local: isLocal }),
+				body: JSON.stringify({
+					size: boardSize,
+					timeControl,
+					color: isLocal ? 'black' : color,
+					local: isLocal
+				})
 			});
 			const { gameId } = await res.json();
 			goto(isLocal ? `/play/${gameId}?local=true` : `/play/${gameId}`);
@@ -129,16 +138,10 @@
 			<!-- Time control -->
 			<div class="config-group time-control-tabs">
 				<div class="tabs-horiz">
-					<button
-						class:active={timeMode === 'byoyomi'}
-						onclick={() => switchTimeMode('byoyomi')}
-					>
+					<button class:active={timeMode === 'byoyomi'} onclick={() => switchTimeMode('byoyomi')}>
 						Byo-yomi
 					</button>
-					<button
-						class:active={timeMode === 'realtime'}
-						onclick={() => switchTimeMode('realtime')}
-					>
+					<button class:active={timeMode === 'realtime'} onclick={() => switchTimeMode('realtime')}>
 						Fischer
 					</button>
 					<button
@@ -160,20 +163,39 @@
 						<div class="sliders">
 							<div class="slider-row">
 								<span class="slider-label">Minutes per side</span>
-								<input class="range" type="range" min="0" max="60" value={byoMin}
-									oninput={(e) => byoMin = +e.target.value} />
+								<input
+									class="range"
+									type="range"
+									min="0"
+									max="60"
+									value={byoMin}
+									oninput={(e) => (byoMin = +e.target.value)}
+								/>
 								<span class="val-box">{byoMin}</span>
 							</div>
 							<div class="slider-row">
 								<span class="slider-label">Byo-yomi periods</span>
-								<input class="range" type="range" min="1" max="10" value={byoPeriods}
-									oninput={(e) => byoPeriods = +e.target.value} />
+								<input
+									class="range"
+									type="range"
+									min="1"
+									max="10"
+									value={byoPeriods}
+									oninput={(e) => (byoPeriods = +e.target.value)}
+								/>
 								<span class="val-box">{byoPeriods}</span>
 							</div>
 							<div class="slider-row">
 								<span class="slider-label">Period time (seconds)</span>
-								<input class="range" type="range" min="5" max="120" step="5" value={byoSec}
-									oninput={(e) => byoSec = +e.target.value} />
+								<input
+									class="range"
+									type="range"
+									min="5"
+									max="120"
+									step="5"
+									value={byoSec}
+									oninput={(e) => (byoSec = +e.target.value)}
+								/>
 								<span class="val-box">{byoSec}s</span>
 							</div>
 						</div>
@@ -182,7 +204,11 @@
 								<button
 									class="preset-btn"
 									class:active={byoMin === p.min && byoPeriods === p.periods && byoSec === p.sec}
-									onclick={() => { byoMin = p.min; byoPeriods = p.periods; byoSec = p.sec; }}
+									onclick={() => {
+										byoMin = p.min;
+										byoPeriods = p.periods;
+										byoSec = p.sec;
+									}}
 								>
 									{p.label}
 								</button>
@@ -197,8 +223,14 @@
 									<label>Minutes per side</label>
 									<span class="val-box">{fischerMin}</span>
 								</div>
-								<input class="range" type="range" min="1" max="60" value={fischerMin}
-									oninput={(e) => fischerMin = +e.target.value} />
+								<input
+									class="range"
+									type="range"
+									min="1"
+									max="60"
+									value={fischerMin}
+									oninput={(e) => (fischerMin = +e.target.value)}
+								/>
 							</div>
 							<div class="slider-separator">+</div>
 							<div class="slider-container">
@@ -206,8 +238,14 @@
 									<span class="val-box">{fischerInc}s</span>
 									<label>Increment (seconds)</label>
 								</div>
-								<input class="range" type="range" min="0" max="60" value={fischerInc}
-									oninput={(e) => fischerInc = +e.target.value} />
+								<input
+									class="range"
+									type="range"
+									min="0"
+									max="60"
+									value={fischerInc}
+									oninput={(e) => (fischerInc = +e.target.value)}
+								/>
 							</div>
 						</div>
 						<div class="presets">
@@ -215,7 +253,10 @@
 								<button
 									class="preset-btn"
 									class:active={fischerMin === p.min && fischerInc === p.inc}
-									onclick={() => { fischerMin = p.min; fischerInc = p.inc; }}
+									onclick={() => {
+										fischerMin = p.min;
+										fischerInc = p.inc;
+									}}
 								>
 									{p.label}
 								</button>
@@ -229,8 +270,14 @@
 								<label>Days per turn</label>
 								<span class="val-box">{corrLabel(corrDays)}</span>
 							</div>
-							<input class="range" type="range" min="1" max="14" value={corrDays}
-								oninput={(e) => corrDays = +e.target.value} />
+							<input
+								class="range"
+								type="range"
+								min="1"
+								max="14"
+								value={corrDays}
+								oninput={(e) => (corrDays = +e.target.value)}
+							/>
 						</div>
 						<div class="presets">
 							{#each CORR_PRESETS as days}
@@ -256,11 +303,7 @@
 				<div class="label">Side</div>
 				<div class="color-choices">
 					{#each [['black', 'Black'], ['random', 'Random'], ['white', 'White']] as [key, name]}
-						<button
-							class="color-choice"
-							class:active={color === key}
-							onclick={() => (color = key)}
-						>
+						<button class="color-choice" class:active={color === key} onclick={() => (color = key)}>
 							<div class="color-picker__button {key}"><i></i></div>
 							<span class="text">{name}</span>
 						</button>

@@ -114,7 +114,8 @@ function clockSnapshot(clock) {
 export function createRoom(size = 19, timeControl = { type: 'none' }, color, local = false) {
 	const id = uniqueId();
 
-	const corrDeadlineMs = timeControl.type === 'correspondence' ? (timeControl.days ?? 3) * 86400000 : 0;
+	const corrDeadlineMs =
+		timeControl.type === 'correspondence' ? (timeControl.days ?? 3) * 86400000 : 0;
 	const room = {
 		id,
 		size,
@@ -126,7 +127,13 @@ export function createRoom(size = 19, timeControl = { type: 'none' }, color, loc
 		timeControl,
 		local,
 		consecutivePasses: 0,
-		scoring: { active: false, deadStones: [], blackApproved: false, whiteApproved: false, signMap: null },
+		scoring: {
+			active: false,
+			deadStones: [],
+			blackApproved: false,
+			whiteApproved: false,
+			signMap: null
+		},
 		clock: initClock(timeControl),
 		corrState: null,
 		corrDeadlineMs
@@ -212,7 +219,8 @@ function handleMessage(socket, raw) {
 				return;
 			}
 			// Reconstruct skeleton room from DB for reconnection
-			const corrDeadlineMs = game.timeControl?.type === 'correspondence' ? (game.timeControl.days ?? 3) * 86400000 : 0;
+			const corrDeadlineMs =
+				game.timeControl?.type === 'correspondence' ? (game.timeControl.days ?? 3) * 86400000 : 0;
 			room = {
 				id: roomId,
 				size: game.size,
@@ -223,9 +231,17 @@ function handleMessage(socket, raw) {
 				status: game.status,
 				timeControl: game.timeControl,
 				consecutivePasses: 0,
-				scoring: { active: false, deadStones: [], blackApproved: false, whiteApproved: false, signMap: null },
+				scoring: {
+					active: false,
+					deadStones: [],
+					blackApproved: false,
+					whiteApproved: false,
+					signMap: null
+				},
 				clock: initClock(game.timeControl),
-				corrState: game.corrActiveColor ? { activeColor: game.corrActiveColor, turnDeadline: game.corrTurnDeadline } : null,
+				corrState: game.corrActiveColor
+					? { activeColor: game.corrActiveColor, turnDeadline: game.corrTurnDeadline }
+					: null,
 				corrDeadlineMs
 			};
 			rooms.set(roomId, room);
@@ -280,15 +296,33 @@ function handleMessage(socket, raw) {
 		}
 
 		// Initialize correspondence state when game first starts
-		if (room.timeControl?.type === 'correspondence' && !room.corrState && room.black && room.white) {
+		if (
+			room.timeControl?.type === 'correspondence' &&
+			!room.corrState &&
+			room.black &&
+			room.white
+		) {
 			room.corrState = { activeColor: 'black', turnDeadline: Date.now() + room.corrDeadlineMs };
-			db.updateGame(roomId, { corrActiveColor: 'black', corrTurnDeadline: room.corrState.turnDeadline });
+			db.updateGame(roomId, {
+				corrActiveColor: 'black',
+				corrTurnDeadline: room.corrState.turnDeadline
+			});
 		}
 
 		if (!room.local && room.black && room.white) {
 			const corrState = room.corrState ? { ...room.corrState } : null;
-			send(room.black, { type: 'opponent_joined', opponent: username, clock: clockSnapshot(room.clock), corrState });
-			send(room.white, { type: 'opponent_joined', opponent: username, clock: clockSnapshot(room.clock), corrState });
+			send(room.black, {
+				type: 'opponent_joined',
+				opponent: username,
+				clock: clockSnapshot(room.clock),
+				corrState
+			});
+			send(room.white, {
+				type: 'opponent_joined',
+				opponent: username,
+				clock: clockSnapshot(room.clock),
+				corrState
+			});
 		}
 
 		socket.gameId = roomId;
@@ -296,10 +330,19 @@ function handleMessage(socket, raw) {
 
 		// Check correspondence deadline on join
 		let corrTimeoutLoser = null;
-		if (room.corrState?.turnDeadline && Date.now() > room.corrState.turnDeadline && room.status === 'playing') {
+		if (
+			room.corrState?.turnDeadline &&
+			Date.now() > room.corrState.turnDeadline &&
+			room.status === 'playing'
+		) {
 			corrTimeoutLoser = room.corrState.activeColor;
 			const winner = opponentColor(corrTimeoutLoser);
-			db.updateGame(roomId, { status: 'finished', winner, result: winner === 'black' ? 'B+T' : 'W+T', endedAt: Date.now() });
+			db.updateGame(roomId, {
+				status: 'finished',
+				winner,
+				result: winner === 'black' ? 'B+T' : 'W+T',
+				endedAt: Date.now()
+			});
 			room.status = 'finished';
 		}
 
@@ -367,11 +410,15 @@ function handleMessage(socket, raw) {
 			}
 			room.corrState.activeColor = opponentColor(color);
 			room.corrState.turnDeadline = Date.now() + room.corrDeadlineMs;
-			db.updateGame(socket.gameId, { corrActiveColor: room.corrState.activeColor, corrTurnDeadline: room.corrState.turnDeadline });
+			db.updateGame(socket.gameId, {
+				corrActiveColor: room.corrState.activeColor,
+				corrTurnDeadline: room.corrState.turnDeadline
+			});
 			newCorrState = { ...room.corrState };
 		}
 
-		if (opp && opp !== socket) send(opp, { ...msg, color, clock: clockData, corrState: newCorrState });
+		if (opp && opp !== socket)
+			send(opp, { ...msg, color, clock: clockData, corrState: newCorrState });
 		if (clockData) send(socket, { type: 'clock_update', clock: clockData });
 		if (newCorrState) send(socket, { type: 'corr_update', corrState: newCorrState });
 		return;

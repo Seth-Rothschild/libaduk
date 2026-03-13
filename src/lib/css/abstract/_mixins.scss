@@ -1,168 +1,174 @@
 @mixin box-radius {
-  border-radius: $box-radius-size;
+	border-radius: $box-radius-size;
 }
 
 @mixin box-radius-top {
-  border-radius: $box-radius-size $box-radius-size 0 0;
+	border-radius: $box-radius-size $box-radius-size 0 0;
 }
 
 @mixin box-shadow {
-  box-shadow:
-    0 2px 2px 0 rgba(0, 0, 0, 0.14),
-    0 3px 1px -2px rgba(0, 0, 0, 0.2),
-    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+	box-shadow:
+		0 2px 2px 0 rgba(0, 0, 0, 0.14),
+		0 3px 1px -2px rgba(0, 0, 0, 0.2),
+		0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }
 
 @mixin box-neat {
-  @include box-radius;
-  @include box-shadow;
+	@include box-radius;
+	@include box-shadow;
 }
 
 @mixin debug-zoom-input {
-  #zoom-input {
-    display: none;
+	#zoom-input {
+		display: none;
 
-    @include mq-zoom-enabled {
-      @include inline-end(3px);
+		@include mq-zoom-enabled {
+			@include inline-end(3px);
 
-      display: block;
-      position: fixed;
-      bottom: 3px;
-      width: 10vw;
-    }
-  }
+			display: block;
+			position: fixed;
+			bottom: 3px;
+			width: 10vw;
+		}
+	}
 }
 
 @mixin transition($prop: all, $dur: $transition-duration, $timing: ease) {
-  @if type-of($prop) == 'list' and length($prop) > 1 {
-    $out: ();
+	@if type-of($prop) == 'list' and length($prop) > 1 {
+		$out: ();
 
-    @for $i from 1 through length($prop) {
-      $out: append($out, nth($prop, $i) $dur $timing, comma);
-    }
+		@for $i from 1 through length($prop) {
+			$out: append($out, nth($prop, $i) $dur $timing, comma);
+		}
 
-    transition: $out;
-  } @else {
-    transition: $prop $dur $timing;
-  }
+		transition: $out;
+	} @else {
+		transition: $prop $dur $timing;
+	}
 }
 
 @mixin hoverflow {
-  scrollbar-gutter: stable;
-  overflow-y: auto;
+	scrollbar-gutter: stable;
+	overflow-y: auto;
 
-  @media (hover: hover) {
-    &:not(:hover) {
-      overflow: hidden;
-    }
-  }
+	@media (hover: hover) {
+		&:not(:hover) {
+			overflow: hidden;
+		}
+	}
 }
 
 @mixin ellipsis {
-  overflow: hidden;
-  text-overflow: ellipsis;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 @mixin crosstable-large {
-  .crosstable__users {
-    flex: 7 1 auto;
-  }
+	.crosstable__users {
+		flex: 7 1 auto;
+	}
 }
 
 @mixin crosstable-small {
-  .crosstable__users {
-    flex: 1 1 auto;
-  }
+	.crosstable__users {
+		flex: 1 1 auto;
+	}
 }
 
 @mixin body-fixed-scroll {
-  body {
-    /* prevents scroll bar flicker when dragging a piece out */
-    overflow-y: scroll;
-  }
+	body {
+		/* prevents scroll bar flicker when dragging a piece out */
+		overflow-y: scroll;
+	}
 }
 
 @mixin back-blur($size: 6px) {
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-    backdrop-filter: blur($size);
-  }
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: -1;
+		backdrop-filter: blur($size);
+	}
 }
 
 @mixin backdrop-blur-if-transparent($size: 6px) {
-  @include if-transp {
-    backdrop-filter: blur($size);
-  }
+	@include if-transp {
+		backdrop-filter: blur($size);
+	}
 }
 
 @mixin topnav-unsticky {
-  #top {
-    position: relative;
-    max-width: 1800px;
-    top: unset;
-    padding: 0;
-    width: unset;
-    background: unset;
-    border-bottom-color: transparent;
-    transform: unset;
+	#top {
+		position: relative;
+		max-width: 1800px;
+		top: unset;
+		padding: 0;
+		width: unset;
+		background: unset;
+		border-bottom-color: transparent;
+		transform: unset;
 
-    ---site-header-sticky-padding: 0;
+		---site-header-sticky-padding: 0;
 
-    #topnav,
-    .dropdown {
-      opacity: unset;
-      visibility: unset;
-      pointer-events: unset;
-      transition: unset;
-    }
-  }
+		#topnav,
+		.dropdown {
+			opacity: unset;
+			visibility: unset;
+			pointer-events: unset;
+			transition: unset;
+		}
+	}
 
-  #main-wrap {
-    margin-top: var(---sticky-gap);
-  }
+	#main-wrap {
+		margin-top: var(---sticky-gap);
+	}
 }
 
 @mixin broken-img($aspect-ratio) {
-  display: block;
-  position: relative;
-  aspect-ratio: $aspect-ratio;
+	display: block;
+	position: relative;
+	aspect-ratio: $aspect-ratio;
 
-  &::after {
-    @extend %flex-center-center;
+	&::after {
+		@extend %flex-center-center;
 
-    content: attr(alt);
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: $c-font-dimmer;
-    color: $c-font-dim;
-  }
+		content: attr(alt);
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: $c-font-dimmer;
+		color: $c-font-dim;
+	}
 }
 
 @mixin gradient-border($c, $ltr-dir, $rtl-dir) {
-  background: linear-gradient($ltr-dir, $c 0, $c 5px, rgba(0, 0, 0, 0) 5px, rgba(0, 0, 0, 0) 100%);
+	background: linear-gradient($ltr-dir, $c 0, $c 5px, rgba(0, 0, 0, 0) 5px, rgba(0, 0, 0, 0) 100%);
 
-  @include if-rtl {
-    background: linear-gradient($rtl-dir, $c 0, $c 5px, rgba(0, 0, 0, 0) 5px, rgba(0, 0, 0, 0) 100%);
-  }
+	@include if-rtl {
+		background: linear-gradient(
+			$rtl-dir,
+			$c 0,
+			$c 5px,
+			rgba(0, 0, 0, 0) 5px,
+			rgba(0, 0, 0, 0) 100%
+		);
+	}
 }
 
 @mixin line-clamp($lines) {
-  display: -webkit-box;
-  -webkit-line-clamp: $lines;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+	display: -webkit-box;
+	-webkit-line-clamp: $lines;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 @mixin prevent-select {
-  user-select: none;
+	user-select: none;
 }

@@ -58,13 +58,15 @@
 	let whiteApproved = $state(false);
 	let finalScore = $state(null);
 
-	const vertexSize = $derived(boardContainerWidth > 0 ? Math.floor(boardContainerWidth / (boardSize + 0.8)) : 24);
+	const vertexSize = $derived(
+		boardContainerWidth > 0 ? Math.floor(boardContainerWidth / (boardSize + 0.8)) : 24
+	);
 
 	const signMap = $derived(board.signMap);
 	const blackCaptures = $derived(board.getCaptures(1));
 	const whiteCaptures = $derived(board.getCaptures(-1));
 
-	const mySign = $derived(isLocal ? 1 : (gameSocket.color === 'black' ? 1 : -1));
+	const mySign = $derived(isLocal ? 1 : gameSocket.color === 'black' ? 1 : -1);
 	const myColor = $derived(mySign === 1 ? 'black' : 'white');
 	const oppColor = $derived(myColor === 'black' ? 'white' : 'black');
 	const myCaptures = $derived(mySign === 1 ? blackCaptures : whiteCaptures);
@@ -73,9 +75,9 @@
 	const isCorrGame = $derived(timeControl.type === 'correspondence');
 	const isMyTurn = $derived(
 		status === 'playing' &&
-		timedOutColor === null &&
-		(isLocal || currentSign === mySign) &&
-		(!isCorrGame || corrState?.activeColor === myColor)
+			timedOutColor === null &&
+			(isLocal || currentSign === mySign) &&
+			(!isCorrGame || corrState?.activeColor === myColor)
 	);
 
 	function handleTimeout(loser) {
@@ -97,8 +99,12 @@
 
 	const myClockData = $derived(clockState?.[myColor] ?? null);
 	const oppClockData = $derived(clockState?.[oppColor] ?? null);
-	const myClockRunning = $derived(status === 'playing' && !!clockState?.turnStartedAt && clockState?.activeColor === myColor);
-	const oppClockRunning = $derived(status === 'playing' && !!clockState?.turnStartedAt && clockState?.activeColor === oppColor);
+	const myClockRunning = $derived(
+		status === 'playing' && !!clockState?.turnStartedAt && clockState?.activeColor === myColor
+	);
+	const oppClockRunning = $derived(
+		status === 'playing' && !!clockState?.turnStartedAt && clockState?.activeColor === oppColor
+	);
 
 	const initialMs = $derived(
 		timeControl.type === 'none' || timeControl.type === 'correspondence'
@@ -139,7 +145,13 @@
 		let sign = 1;
 		for (const move of moves) {
 			if (move.type === 'move') {
-				try { b = b.makeMove(sign, [move.x, move.y], { preventSuicide: true, preventOverwrite: true, preventKo: true }); } catch {}
+				try {
+					b = b.makeMove(sign, [move.x, move.y], {
+						preventSuicide: true,
+						preventOverwrite: true,
+						preventKo: true
+					});
+				} catch {}
 			}
 			sign = sign === 1 ? -1 : 1;
 		}
@@ -182,7 +194,10 @@
 			const analysis = board.analyzeMove(movingSign, [x, y]);
 			if (analysis.overwrite || analysis.suicide || analysis.ko) return;
 			const ok = applyMove(x, y, movingSign);
-			if (ok) gameSocket.send(isLocal ? { type: 'move', x, y, color: movingColor } : { type: 'move', x, y });
+			if (ok)
+				gameSocket.send(
+					isLocal ? { type: 'move', x, y, color: movingColor } : { type: 'move', x, y }
+				);
 		} else if (status === 'scoring') {
 			toggleDeadGroup(x, y);
 		}
@@ -313,7 +328,7 @@
 			winnerResult = msg.result;
 			status = 'gameover';
 		}
-			if (msg.type === 'clock_update') {
+		if (msg.type === 'clock_update') {
 			if (msg.clock) clockState = msg.clock;
 		}
 		if (msg.type === 'corr_update') {
@@ -353,10 +368,18 @@
 				</div>
 				<div class="game__meta__players">
 					<div class="player color-icon is black text">
-						{isLocal ? 'Black' : (myColor === 'black' ? (username || 'You') : (gameSocket.opponent ?? '...'))}
+						{isLocal
+							? 'Black'
+							: myColor === 'black'
+								? username || 'You'
+								: (gameSocket.opponent ?? '...')}
 					</div>
 					<div class="player color-icon is white text">
-						{isLocal ? 'White' : (myColor === 'white' ? (username || 'You') : (gameSocket.opponent ?? '...'))}
+						{isLocal
+							? 'White'
+							: myColor === 'white'
+								? username || 'You'
+								: (gameSocket.opponent ?? '...')}
 					</div>
 				</div>
 			</section>
@@ -396,11 +419,22 @@
 
 		<div class="round__app__table">
 			{#if !isCorrGame}
-			<Clock clockData={oppClockData} running={oppClockRunning} position="top" {initialMs} turnStartedAt={clockState?.turnStartedAt} onTimeout={isLocal ? () => handleTimeout(oppColor) : null} />
-		{/if}
+				<Clock
+					clockData={oppClockData}
+					running={oppClockRunning}
+					position="top"
+					{initialMs}
+					turnStartedAt={clockState?.turnStartedAt}
+					onTimeout={isLocal ? () => handleTimeout(oppColor) : null}
+				/>
+			{/if}
 			<div class="ruser ruser-top color-icon is {oppColor}">
 				<i class="line"></i>
-				<name>{isLocal ? oppColor : (gameSocket.opponent ?? (status === 'waiting' ? 'Waiting...' : oppColor))}</name>
+				<name
+					>{isLocal
+						? oppColor
+						: (gameSocket.opponent ?? (status === 'waiting' ? 'Waiting...' : oppColor))}</name
+				>
 				{#if opponentCaptures > 0}
 					<span class="material">+{opponentCaptures}</span>
 				{/if}
@@ -420,12 +454,16 @@
 							{#if isMyTurn}
 								You play the {myColor} stones<br /><strong>It's your turn!</strong>
 								{#if isCorrGame && corrState?.turnDeadline}
-									<br /><span class="corr-deadline">{formatCorrDeadline(corrState.turnDeadline)}</span>
+									<br /><span class="corr-deadline"
+										>{formatCorrDeadline(corrState.turnDeadline)}</span
+									>
 								{/if}
 							{:else}
 								Waiting for opponent...
 								{#if isCorrGame && corrState?.turnDeadline}
-									<br /><span class="corr-deadline">{formatCorrDeadline(corrState.turnDeadline)}</span>
+									<br /><span class="corr-deadline"
+										>{formatCorrDeadline(corrState.turnDeadline)}</span
+									>
 								{/if}
 							{/if}
 						</div>
@@ -459,8 +497,12 @@
 						</div>
 					{/if}
 					<div class="score-approvals">
-						<span class="approval" class:approved={blackApproved}>Black {blackApproved ? '&#x2713;' : '&hellip;'}</span>
-						<span class="approval" class:approved={whiteApproved}>White {whiteApproved ? '&#x2713;' : '&hellip;'}</span>
+						<span class="approval" class:approved={blackApproved}
+							>Black {blackApproved ? '&#x2713;' : '&hellip;'}</span
+						>
+						<span class="approval" class:approved={whiteApproved}
+							>White {whiteApproved ? '&#x2713;' : '&hellip;'}</span
+						>
 					</div>
 				{:else if status === 'gameover'}
 					<div class="message" data-icon={ICON_INFO}>
@@ -490,14 +532,28 @@
 					<button class="button button-red" onclick={resign}>Resign</button>
 				{:else if status === 'scoring'}
 					{#if isLocal}
-						<button class="button" class:button-metal={!blackApproved} class:button-green={blackApproved}
-							onclick={() => { blackApproved = true; gameSocket.send({ type: 'approve_score', color: 'black', signMap: board.signMap }); }}
-							disabled={blackApproved}>
+						<button
+							class="button"
+							class:button-metal={!blackApproved}
+							class:button-green={blackApproved}
+							onclick={() => {
+								blackApproved = true;
+								gameSocket.send({ type: 'approve_score', color: 'black', signMap: board.signMap });
+							}}
+							disabled={blackApproved}
+						>
 							{blackApproved ? 'Black ✓' : 'Black accepts'}
 						</button>
-						<button class="button" class:button-metal={!whiteApproved} class:button-green={whiteApproved}
-							onclick={() => { whiteApproved = true; gameSocket.send({ type: 'approve_score', color: 'white', signMap: board.signMap }); }}
-							disabled={whiteApproved}>
+						<button
+							class="button"
+							class:button-metal={!whiteApproved}
+							class:button-green={whiteApproved}
+							onclick={() => {
+								whiteApproved = true;
+								gameSocket.send({ type: 'approve_score', color: 'white', signMap: board.signMap });
+							}}
+							disabled={whiteApproved}
+						>
 							{whiteApproved ? 'White ✓' : 'White accepts'}
 						</button>
 					{:else}
@@ -523,8 +579,15 @@
 				{/if}
 			</div>
 			{#if !isCorrGame}
-			<Clock clockData={myClockData} running={myClockRunning} position="bottom" {initialMs} turnStartedAt={clockState?.turnStartedAt} onTimeout={() => handleTimeout(myColor)} />
-		{/if}
+				<Clock
+					clockData={myClockData}
+					running={myClockRunning}
+					position="bottom"
+					{initialMs}
+					turnStartedAt={clockState?.turnStartedAt}
+					onTimeout={() => handleTimeout(myColor)}
+				/>
+			{/if}
 		</div>
 	</div>
 </div>

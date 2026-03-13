@@ -90,7 +90,9 @@
 	}
 </script>
 
-<div style="display: inline-grid; grid-template-columns: {boardSize}px; grid-template-rows: {boardSize}px; font-size: {vertexSize}px;">
+<div
+	style="display: inline-grid; grid-template-columns: {boardSize}px; grid-template-rows: {boardSize}px; font-size: {vertexSize}px;"
+>
 	<div
 		class="go-goban go-goban-image"
 		class:go-turn-black={currentSign === 1}
@@ -129,13 +131,41 @@
 				>
 					{#each colLabels as label, i}
 						{@const cx = fl((2 * i + 1) * half - 0.5) + 0.5}
-						<text x={cx} y={coordOffset} text-anchor="middle" dominant-baseline="middle" font-size={coordFontSize} class="go-coord-text">{label}</text>
-						<text x={cx} y={svgSize - coordOffset} text-anchor="middle" dominant-baseline="middle" font-size={coordFontSize} class="go-coord-text">{label}</text>
+						<text
+							x={cx}
+							y={coordOffset}
+							text-anchor="middle"
+							dominant-baseline="middle"
+							font-size={coordFontSize}
+							class="go-coord-text">{label}</text
+						>
+						<text
+							x={cx}
+							y={svgSize - coordOffset}
+							text-anchor="middle"
+							dominant-baseline="middle"
+							font-size={coordFontSize}
+							class="go-coord-text">{label}</text
+						>
 					{/each}
 					{#each rowLabels as num, i}
 						{@const cy = fl((2 * i + 1) * half - 0.5) + 0.5}
-						<text x={coordOffset} y={cy} text-anchor="middle" dominant-baseline="middle" font-size={coordFontSize} class="go-coord-text">{num}</text>
-						<text x={svgSize - coordOffset} y={cy} text-anchor="middle" dominant-baseline="middle" font-size={coordFontSize} class="go-coord-text">{num}</text>
+						<text
+							x={coordOffset}
+							y={cy}
+							text-anchor="middle"
+							dominant-baseline="middle"
+							font-size={coordFontSize}
+							class="go-coord-text">{num}</text
+						>
+						<text
+							x={svgSize - coordOffset}
+							y={cy}
+							text-anchor="middle"
+							dominant-baseline="middle"
+							font-size={coordFontSize}
+							class="go-coord-text">{num}</text
+						>
 					{/each}
 				</svg>
 			{/if}
@@ -164,7 +194,11 @@
 							data-y={y}
 						>
 							{#if sign !== 0}
-								<div class="go-stone" class:go-dead={isDead} style="position: absolute; z-index: 2;">
+								<div
+									class="go-stone"
+									class:go-dead={isDead}
+									style="position: absolute; z-index: 2;"
+								>
 									<div class="go-inner go-sign_{sign}"></div>
 									{#if isLast && !isDead}
 										<svg class="go-last-marker" viewBox="0 0 1 1">
@@ -178,8 +212,22 @@
 									{/if}
 									{#if isDead}
 										<svg class="go-dead-x" viewBox="0 0 1 1">
-											<line x1="0.2" y1="0.2" x2="0.8" y2="0.8" stroke-width="0.12" stroke-linecap="round" />
-											<line x1="0.8" y1="0.2" x2="0.2" y2="0.8" stroke-width="0.12" stroke-linecap="round" />
+											<line
+												x1="0.2"
+												y1="0.2"
+												x2="0.8"
+												y2="0.8"
+												stroke-width="0.12"
+												stroke-linecap="round"
+											/>
+											<line
+												x1="0.8"
+												y1="0.2"
+												x2="0.2"
+												y2="0.8"
+												stroke-width="0.12"
+												stroke-linecap="round"
+											/>
 										</svg>
 									{/if}
 								</div>

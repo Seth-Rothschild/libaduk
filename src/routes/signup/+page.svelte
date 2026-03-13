@@ -47,7 +47,8 @@
 				bind:value={usernameInput}
 			/>
 			<small class="form-help">
-				2–20 characters: letters, numbers, underscores. Choose carefully — you won't be able to change it.
+				2–20 characters: letters, numbers, underscores. Choose carefully — you won't be able to
+				change it.
 			</small>
 		</div>
 

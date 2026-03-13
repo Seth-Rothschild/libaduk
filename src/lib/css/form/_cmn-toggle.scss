@@ -1,88 +1,88 @@
 .cmn-toggle-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.8ch;
-  cursor: pointer;
-  user-select: none;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.8ch;
+	cursor: pointer;
+	user-select: none;
 }
 
 .cmn-toggle input {
-  @extend %double-tap, %visually-hidden;
+	@extend %double-tap, %visually-hidden;
 }
 
 .cmn-toggle label {
-  @include prevent-select;
-  @include transition(background box-shadow);
+	@include prevent-select;
+	@include transition(background box-shadow);
 
-  display: block;
-  position: relative;
-  cursor: pointer;
-  outline: none;
-  padding: 1px;
-  width: 40px;
-  height: 24px;
-  border: $border;
-  border-radius: 24px;
-  background-clip: padding-box;
-  background-color: $c-font-dimmer;
+	display: block;
+	position: relative;
+	cursor: pointer;
+	outline: none;
+	padding: 1px;
+	width: 40px;
+	height: 24px;
+	border: $border;
+	border-radius: 24px;
+	background-clip: padding-box;
+	background-color: $c-font-dimmer;
 
-  &::before,
-  &::after {
-    display: block;
-    position: absolute;
-    content: '';
-    width: 22px;
-    height: 22px;
-    bottom: 0;
+	&::before,
+	&::after {
+		display: block;
+		position: absolute;
+		content: '';
+		width: 22px;
+		height: 22px;
+		bottom: 0;
 
-    @include inline-start(0);
-  }
+		@include inline-start(0);
+	}
 
-  &::before {
-    @extend %data-icon;
-    @include transition(margin color);
+	&::before {
+		@extend %data-icon;
+		@include transition(margin color);
 
-    font-size: 1em;
-    z-index: 1;
-    text-align: center;
-    line-height: 22px;
-    content: $licon-X;
-    color: $c-font-dimmer;
-  }
+		font-size: 1em;
+		z-index: 1;
+		text-align: center;
+		line-height: 22px;
+		content: $licon-X;
+		color: $c-font-dimmer;
+	}
 
-  &::after {
-    @extend %metal;
-    @include transition(margin box-shadow);
+	&::after {
+		@extend %metal;
+		@include transition(margin box-shadow);
 
-    border-radius: 100%;
-    box-shadow: 0 1px 2.5px rgba(0, 0, 0, 0.3);
+		border-radius: 100%;
+		box-shadow: 0 1px 2.5px rgba(0, 0, 0, 0.3);
 
-    @include if-transp {
-      background: linear-gradient(to bottom, hsl($site-hue, 7%, 22), hsl($site-hue, 5%, 19) 100%);
-    }
-  }
+		@include if-transp {
+			background: linear-gradient(to bottom, hsl($site-hue, 7%, 22), hsl($site-hue, 5%, 19) 100%);
+		}
+	}
 }
 
 .cmn-toggle input:checked + label {
-  background-color: $c-good;
+	background-color: $c-good;
 
-  &::before,
-  &::after {
-    margin-inline-start: 16px;
-  }
+	&::before,
+	&::after {
+		margin-inline-start: 16px;
+	}
 
-  &::before {
-    content: $licon-Checkmark;
-    color: $c-good;
-  }
+	&::before {
+		content: $licon-Checkmark;
+		color: $c-good;
+	}
 }
 
 .cmn-toggle input:disabled + label {
-  opacity: 0.6;
-  cursor: not-allowed !important;
+	opacity: 0.6;
+	cursor: not-allowed !important;
 }
 
 .cmn-toggle input:focus-visible:not(:disabled) + label {
-  box-shadow: 0 0 12px $c-font-dimmer;
-  border-color: $c-primary;
+	box-shadow: 0 0 12px $c-font-dimmer;
+	border-color: $c-primary;
 }

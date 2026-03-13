@@ -1,11 +1,11 @@
 .continue-with {
-  @extend %flex-column;
+	@extend %flex-column;
 
-  @media (hover: none) {
-    padding: 2em;
-  }
+	@media (hover: none) {
+		padding: 2em;
+	}
 
-  > *:not(:first-child) {
-    margin-top: 1em;
-  }
+	> *:not(:first-child) {
+		margin-top: 1em;
+	}
 }

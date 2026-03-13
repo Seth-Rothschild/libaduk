@@ -9,7 +9,10 @@ export async function POST({ request, cookies }) {
 	const username = (body.username ?? '').trim();
 
 	if (!USERNAME_RE.test(username)) {
-		return json({ error: 'Username must be 2–20 characters: letters, numbers, underscores only' }, { status: 400 });
+		return json(
+			{ error: 'Username must be 2–20 characters: letters, numbers, underscores only' },
+			{ status: 400 }
+		);
 	}
 
 	if (getUser(username)) {
@@ -18,6 +21,12 @@ export async function POST({ request, cookies }) {
 
 	createUser(username);
 	const token = createSession(username);
-	cookies.set('session', token, { path: '/', httpOnly: true, sameSite: 'lax', secure: false, maxAge: 60 * 60 * 24 * 30 });
+	cookies.set('session', token, {
+		path: '/',
+		httpOnly: true,
+		sameSite: 'lax',
+		secure: false,
+		maxAge: 60 * 60 * 24 * 30
+	});
 	return json({ username });
 }

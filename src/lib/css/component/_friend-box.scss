@@ -1,96 +1,96 @@
 #friend_box {
-  @include inline-end(0);
-  @include hoverflow;
+	@include inline-end(0);
+	@include hoverflow;
 
-  display: none;
-  position: fixed;
-  bottom: 0;
-  z-index: $z-friend-box-2;
-  background: $c-bg-popup;
-  border: $border;
-  border-inline-end: 0;
-  border-bottom: 0;
-  border-top-left-radius: $box-radius-size;
-  font-size: 0.9rem;
-  min-width: 150px;
-  max-height: 95%;
-  backface-visibility: hidden; // improve scroll perfs
+	display: none;
+	position: fixed;
+	bottom: 0;
+	z-index: $z-friend-box-2;
+	background: $c-bg-popup;
+	border: $border;
+	border-inline-end: 0;
+	border-bottom: 0;
+	border-top-left-radius: $box-radius-size;
+	font-size: 0.9rem;
+	min-width: 150px;
+	max-height: 95%;
+	backface-visibility: hidden; // improve scroll perfs
 
-  @include mq-topnav-visible-and-tall {
-    display: block;
-  }
+	@include mq-topnav-visible-and-tall {
+		display: block;
+	}
 
-  .friend_box_title {
-    @extend %metal;
+	.friend_box_title {
+		@extend %metal;
 
-    cursor: pointer;
-    padding: 3px 5px;
-    border-bottom: $border;
+		cursor: pointer;
+		padding: 3px 5px;
+		border-bottom: $border;
 
-    &:hover {
-      @extend %metal-hover;
-    }
-  }
+		&:hover {
+			@extend %metal-hover;
+		}
+	}
 
-  .content {
-    max-height: 80vh;
-    overflow-x: hidden;
-    overflow-y: auto;
+	.content {
+		max-height: 80vh;
+		overflow-x: hidden;
+		overflow-y: auto;
 
-    div {
-      display: flex;
+		div {
+			display: flex;
 
-      &:hover {
-        background: $m-secondary_bg-popup--mix-10;
-      }
-    }
+			&:hover {
+				background: $m-secondary_bg-popup--mix-10;
+			}
+		}
 
-    a {
-      flex: 1 1 100%;
-      padding: 3px 0;
-      display: block;
-      transition: background 0.13s;
+		a {
+			flex: 1 1 100%;
+			padding: 3px 0;
+			display: block;
+			transition: background 0.13s;
 
-      &:hover {
-        color: $c-font;
-      }
+			&:hover {
+				color: $c-font;
+			}
 
-      &.user-link {
-        @extend %ellipsis;
+			&.user-link {
+				@extend %ellipsis;
 
-        max-width: 150px;
-      }
+				max-width: 150px;
+			}
 
-      &.tv {
-        flex: 0 0 auto;
-        padding: 0 5px;
-      }
+			&.tv {
+				flex: 0 0 auto;
+				padding: 0 5px;
+			}
 
-      &.friend-study {
-        flex: 0 0 auto;
-        padding: 2px 5px 0 5px;
-      }
-    }
-  }
+			&.friend-study {
+				flex: 0 0 auto;
+				padding: 2px 5px 0 5px;
+			}
+		}
+	}
 
-  .nobody {
-    text-align: center;
-    height: 100%;
-    padding: 3px 5px;
+	.nobody {
+		text-align: center;
+		height: 100%;
+		padding: 3px 5px;
 
-    span {
-      display: block;
-      margin: 5px;
-    }
-  }
+		span {
+			display: block;
+			margin: 5px;
+		}
+	}
 
-  a.find {
-    display: none;
-    margin: 7px;
-    font-style: normal;
-  }
+	a.find {
+		display: none;
+		margin: 7px;
+		font-style: normal;
+	}
 
-  .nobody:hover a.find {
-    display: block;
-  }
+	.nobody:hover a.find {
+		display: block;
+	}
 }
