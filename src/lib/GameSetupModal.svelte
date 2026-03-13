@@ -14,8 +14,36 @@
 		dialog?.showModal();
 	});
 
-	const REALTIME_PRESETS = ['5+0', '5+3', '10+0', '15+0', '30+0', '60+0', '90+30'];
+	const REALTIME_PRESETS = ['1+0', '2+1', '3+0', '5+0', '5+3', '10+0', '15+0', '30+0'];
+	const BYOYOMI_PRESETS = ['1+3×10s', '3+3×20s', '10+5×30s', '20+5×30s', '60+5×60s'];
 	const CORR_PRESETS = ['1 day', '3 days', '7 days', '14 days'];
+
+	function parseTimeControl(mode, clockStr) {
+		if (mode === 'unlimited') return { type: 'none' };
+		if (mode === 'correspondence') {
+			const days = parseInt(clockStr);
+			return { type: 'correspondence', days };
+		}
+		if (mode === 'byoyomi') {
+			// Format: "10+5×30s" → initial=10min, periods=5, periodTime=30s
+			const match = clockStr.match(/^(\d+)\+(\d+)×(\d+)s$/);
+			if (match) {
+				return {
+					type: 'byoyomi',
+					initial: parseInt(match[1]) * 60,
+					periods: parseInt(match[2]),
+					periodTime: parseInt(match[3])
+				};
+			}
+		}
+		// Fischer: "10+0" or "5+3"
+		const parts = clockStr.split('+');
+		return {
+			type: 'fischer',
+			initial: parseInt(parts[0]) * 60,
+			increment: parseInt(parts[1] ?? '0')
+		};
+	}
 	const SIZE_OPTIONS = [9, 13, 19];
 
 	const BUTTON_LABELS = {
@@ -26,7 +54,10 @@
 
 	function switchTimeMode(mode) {
 		timeMode = mode;
-		selectedClock = mode === 'realtime' ? '10+0' : mode === 'correspondence' ? '3 days' : null;
+		if (mode === 'realtime') selectedClock = '10+0';
+		else if (mode === 'byoyomi') selectedClock = '10+5×30s';
+		else if (mode === 'correspondence') selectedClock = '3 days';
+		else selectedClock = null;
 	}
 
 	async function submit() {
@@ -36,10 +67,11 @@
 		}
 		loading = true;
 		try {
+			const timeControl = parseTimeControl(timeMode, selectedClock);
 			const res = await fetch('/api/game', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ size: boardSize })
+				body: JSON.stringify({ size: boardSize, timeControl, color })
 			});
 			const { gameId } = await res.json();
 			goto(`/play/${gameId}`);
@@ -91,7 +123,13 @@
 							class:active={timeMode === 'realtime'}
 							onclick={() => switchTimeMode('realtime')}
 						>
-							Realtime
+							Fischer
+						</button>
+						<button
+							class:active={timeMode === 'byoyomi'}
+							onclick={() => switchTimeMode('byoyomi')}
+						>
+							Byo-yomi
 						</button>
 						<button
 							class:active={timeMode === 'correspondence'}
@@ -111,6 +149,20 @@
 						<div class="time-panel">
 							<div class="presets">
 								{#each REALTIME_PRESETS as preset}
+									<button
+										class="preset-btn"
+										class:active={selectedClock === preset}
+										onclick={() => (selectedClock = preset)}
+									>
+										{preset}
+									</button>
+								{/each}
+							</div>
+						</div>
+					{:else if timeMode === 'byoyomi'}
+						<div class="time-panel">
+							<div class="presets">
+								{#each BYOYOMI_PRESETS as preset}
 									<button
 										class="preset-btn"
 										class:active={selectedClock === preset}

@@ -41,16 +41,40 @@
     }
 
     &__table {
-      flex: 1 1 auto;
-      display: flex;
-      flex-direction: column;
-      min-width: 220px;
-      max-width: 360px;
+      flex: 0 0 auto;
+      align-self: center;
+      display: grid;
+      grid-template-rows: auto auto auto auto auto auto;
+      grid-template-areas:
+        'clock-top'
+        'user-top'
+        'moves'
+        'controls'
+        'user-bot'
+        'clock-bot';
+      min-width: 180px;
       background: $c-bg-box;
 
       @extend %box-radius;
     }
   }
+}
+
+// Grid area assignments for table children
+.ruser-top { grid-area: user-top; }
+.ruser-bottom { grid-area: user-bot; }
+.rmoves { grid-area: moves; }
+.rcontrols { grid-area: controls; }
+
+// Clocks occupy their own rows above/below the player strips
+.rclock-top {
+  grid-area: clock-top;
+  isolation: isolate;
+}
+
+.rclock-bottom {
+  grid-area: clock-bot;
+  isolation: isolate;
 }
 
 // Player strips

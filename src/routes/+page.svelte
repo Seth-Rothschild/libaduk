@@ -1,22 +1,14 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { getUsername, setUsername } from '$lib/user.svelte.js';
 	import GameSetupModal from '$lib/GameSetupModal.svelte';
+	import { pingState } from '$lib/ping.svelte.js';
 
-	const username = $derived(getUsername());
-	let usernameInput = $state('');
-
-	function submitUsername() {
-		const trimmed = usernameInput.trim();
-		if (trimmed.length > 0) setUsername(trimmed);
-	}
-
-	function onUsernameKeydown(e) {
-		if (e.key === 'Enter') submitUsername();
-	}
+	let { data } = $props();
+	const username = $derived(data.user?.username ?? '');
 
 	async function createGame() {
-		const res = await fetch('/api/game', { method: 'POST' });
+		if (!username) { goto('/signup'); return; }
+		const res = await fetch('/api/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ size: 19 }) });
 		const { gameId } = await res.json();
 		goto(`/play/${gameId}`);
 	}
@@ -26,6 +18,7 @@
 	let activeTab = $state('pools');
 	let pendingGames = $state([]);
 	let myGames = $state([]);
+	let liveGames = $state([]);
 
 	async function refreshPending() {
 		const res = await fetch('/api/games');
@@ -38,7 +31,19 @@
 		myGames = await res.json();
 	}
 
+	async function refreshLiveGames() {
+		const res = await fetch('/api/live-games');
+		liveGames = await res.json();
+	}
+
 	let pollInterval = $state(null);
+	let liveGamesInterval = $state(null);
+
+	$effect(() => {
+		refreshLiveGames();
+		liveGamesInterval = setInterval(refreshLiveGames, 3000);
+		return () => { if (liveGamesInterval) clearInterval(liveGamesInterval); };
+	});
 
 	function startPolling(fn) {
 		stopPolling();
@@ -86,6 +91,16 @@
 </script>
 
 <div class="lobby">
+	<!-- Stats bar -->
+	<div class="lobby__counters">
+		<span class="lobby__counter">
+			<strong>{pingState.lobbyStats.playersOnline}</strong> players online
+		</span>
+		<span class="lobby__counter">
+			<strong>{pingState.lobbyStats.gamesInPlay}</strong> games in play
+		</span>
+	</div>
+
 	<!-- Tabs + quick pairing (center) -->
 	<div class="lobby__app">
 		<div class="tabs-horiz">
@@ -164,14 +179,27 @@
 		</div>
 	</div>
 
-	<!-- Side panel -->
+	<!-- Side panel: active games -->
 	<div class="lobby__side">
 		<div class="lobby__box">
 			<div class="lobby__box__top">
-				<span>Recent activity</span>
+				<span>Active games</span>
 			</div>
 			<div class="lobby__box__content">
-				<p style="padding: 1em; color: var(--c-font-dim);">Nothing yet.</p>
+				{#if liveGames.length === 0}
+					<p class="lobby__side-empty">No games in progress.</p>
+				{:else}
+					<div class="lobby__live-list">
+						{#each liveGames as game}
+							<a class="lobby__live-row" href="/play/{game.id}">
+								<span class="lobby__live-row__players">
+									{game.black} vs {game.white ?? '?'}
+								</span>
+								<span class="lobby__live-row__moves">{game.moveCount} moves</span>
+							</a>
+						{/each}
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -181,13 +209,13 @@
 		<div class="lobby__start">
 			<button
 				class="button button-metal lobby__start__button lobby__start__button--hook"
-				onclick={() => (setupModal = 'hook')}
+				onclick={() => username ? (setupModal = 'hook') : goto('/signup')}
 			>
 				Create a game
 			</button>
 			<button
 				class="button button-metal lobby__start__button lobby__start__button--friend"
-				onclick={() => (setupModal = 'friend')}
+				onclick={() => username ? (setupModal = 'friend') : goto('/signup')}
 			>
 				Challenge a friend
 			</button>
@@ -204,32 +232,11 @@
 		<GameSetupModal gameType={setupModal} onClose={() => (setupModal = null)} />
 	{/if}
 
-	<!-- Username prompt (shown when no username set) -->
-	{#if !username}
-		<div class="lobby__username-prompt">
-			<div class="lobby__username-prompt__inner">
-				<p>Choose a username to play</p>
-				<div class="lobby__username-prompt__form">
-					<input
-						type="text"
-						class="login-username"
-						placeholder="Username"
-						maxlength="20"
-						bind:value={usernameInput}
-						onkeydown={onUsernameKeydown}
-					/>
-					<button class="button button-metal" onclick={submitUsername}>Play</button>
-				</div>
-			</div>
-		</div>
-	{/if}
-
 	<!-- About links -->
 	<div class="lobby__about">
-		<a href="/about">About</a>
-		<a href="/faq">FAQ</a>
-		<a href="/contact">Contact</a>
-		<a href="/source">Source code</a>
+		<a href="https://github.com/Seth-Rothschild/libaduk/blob/main/README.md">About</a>
+		<a href="https://github.com/Seth-Rothschild/libaduk/issues">Contact</a>
+		<a href="https://github.com/Seth-Rothschild/libaduk">Source code</a>
 	</div>
 </div>
 
@@ -300,32 +307,51 @@
 		text-transform: capitalize;
 	}
 
-	.lobby__username-prompt {
-		grid-area: side;
+	.lobby__counters {
 		display: flex;
-		align-items: flex-start;
-		padding-top: 1em;
+		gap: 1.5em;
+		padding: 0.6em 1em;
+		font-size: 0.9em;
+		color: var(--c-font-dim);
+		grid-column: 1 / -1;
 	}
 
-	.lobby__username-prompt__inner {
-		background: var(--c-bg-box);
-		border-radius: var(--box-radius-size);
-		padding: 1.2em 1.5em;
-		width: 100%;
+	.lobby__counter strong {
+		color: var(--c-font);
 	}
 
-	.lobby__username-prompt__inner p {
-		margin: 0 0 0.8em;
-		font-weight: bold;
+	.lobby__side-empty {
+		padding: 1em;
+		color: var(--c-font-dim);
+		font-size: 0.9em;
 	}
 
-	.lobby__username-prompt__form {
+	.lobby__live-list {
 		display: flex;
-		gap: 0.5em;
+		flex-direction: column;
 	}
 
-	.lobby__username-prompt__form input {
-		flex: 1;
-		min-width: 0;
+	.lobby__live-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.5em 0.8em;
+		text-decoration: none;
+		color: var(--c-font);
+		font-size: 0.9em;
+		border-bottom: 1px solid var(--c-border);
+	}
+
+	.lobby__live-row:last-child {
+		border-bottom: none;
+	}
+
+	.lobby__live-row:hover {
+		background: var(--c-bg-zebra);
+	}
+
+	.lobby__live-row__moves {
+		color: var(--c-font-dim);
+		font-size: 0.85em;
 	}
 </style>

@@ -1,13 +1,41 @@
 <script>
-	let remember = $state(false);
+	import { goto, invalidateAll } from '$app/navigation';
+	import { setUsername } from '$lib/user.svelte.js';
+
+	let usernameInput = $state('');
+	let error = $state('');
+	let submitting = $state(false);
+
+	async function submit(e) {
+		e.preventDefault();
+		error = '';
+		submitting = true;
+		try {
+			const res = await fetch('/api/auth/login', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ username: usernameInput })
+			});
+			const data = await res.json();
+			if (res.ok) {
+				setUsername(data.username);
+				await invalidateAll();
+				goto('/');
+			} else {
+				error = data.error ?? 'Something went wrong';
+			}
+		} finally {
+			submitting = false;
+		}
+	}
 </script>
 
 <main class="auth auth-login box box-pad">
 	<h1 class="box__top">Sign in</h1>
 
-	<form class="form3" method="post" action="/login">
+	<form class="form3" onsubmit={submit}>
 		<div class="form-group">
-			<label class="form-label" for="form3-username">Username or email</label>
+			<label class="form-label" for="form3-username">Username</label>
 			<input
 				id="form3-username"
 				name="username"
@@ -16,39 +44,22 @@
 				required
 				autofocus
 				autocomplete="username"
+				bind:value={usernameInput}
 			/>
 		</div>
 
-		<div class="form-group">
-			<label class="form-label" for="form3-password">Password</label>
-			<div class="password-wrapper">
-				<input
-					id="form3-password"
-					name="password"
-					type="password"
-					class="form-control"
-					required
-					autocomplete="current-password"
-				/>
+		{#if error}
+			<div class="form-group">
+				<p class="error">{error}</p>
 			</div>
-		</div>
+		{/if}
 
-		<button type="submit" class="submit button button-metal text">Sign in</button>
-
-		<label class="login-remember">
-			<input
-				name="remember"
-				type="checkbox"
-				value="true"
-				bind:checked={remember}
-			/>
-			Keep me logged in
-		</label>
+		<button type="submit" class="submit button button-metal text" disabled={submitting}>
+			{submitting ? 'Signing in…' : 'Sign in'}
+		</button>
 	</form>
 
 	<div class="alternative">
 		<a href="/signup">Register</a>
-		<a href="/password-reset">Password reset</a>
-		<a href="/login-by-email">Log in by email</a>
 	</div>
 </main>

@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 
 class PingState {
 	ping = $state(null);
+	lobbyStats = $state({ playersOnline: 0, gamesInPlay: 0 });
 
 	get lagRating() {
 		if (!this.ping) return 0;
@@ -29,6 +30,9 @@ class PingState {
 			const msg = JSON.parse(e.data);
 			if (msg.type === 'pong' && this.#sentAt != null) {
 				this.ping = Date.now() - this.#sentAt;
+				if (msg.playersOnline !== undefined) {
+					this.lobbyStats = { playersOnline: msg.playersOnline, gamesInPlay: msg.gamesInPlay };
+				}
 			}
 		});
 

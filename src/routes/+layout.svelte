@@ -1,11 +1,13 @@
 <script>
 	import '../app.scss';
-	import { getUsername, clearUsername } from '$lib/user.svelte.js';
+	import { setUsername, clearUsername } from '$lib/user.svelte.js';
 	import { pingState } from '$lib/ping.svelte.js';
 	import { themeState } from '$lib/theme.svelte.js';
 	import { boardState } from '$lib/boardState.svelte.js';
 	import GameSetupModal from '$lib/GameSetupModal.svelte';
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto, invalidateAll } from '$app/navigation';
 
 	onMount(() => {
 		themeState.init();
@@ -14,10 +16,23 @@
 		return () => pingState.stop();
 	});
 
-	let { children } = $props();
+	let { children, data } = $props();
 
-	const username = $derived(getUsername());
+	// Server is authoritative; keep localStorage in sync for client-side reads
+	$effect(() => {
+		if (data.user) setUsername(data.user.username);
+		else clearUsername();
+	});
+
+	const username = $derived(data.user?.username ?? '');
 	const signedIn = $derived(username.length > 0);
+
+	async function signOut() {
+		await fetch('/api/auth/logout', { method: 'POST' });
+		clearUsername();
+		await invalidateAll();
+		goto('/');
+	}
 
 	let searchExpanded = $state(false);
 	let settingsOpen = $state(false);
@@ -74,10 +89,10 @@
 				</div>
 			</section>
 			<section>
-				<a href="/players">Community</a>
+				<a href="/">Community</a>
 				<div role="group">
-					<a href="/players">Players</a>
-					<a href="/teams">Teams</a>
+					<a href="/">Players</a>
+					<a href="/">Teams</a>
 				</div>
 			</section>
 		</nav>
@@ -146,7 +161,7 @@
 		{/snippet}
 
 		{#if signedIn}
-			<a id="user_tag" href="/profile" class="link">{username}</a>
+			<a id="user_tag" href="/" class="link">{username}</a>
 			<div class="dasher" class:shown={settingsOpen}>
 				<button class="toggle link" data-icon="&#xe005;" aria-label="Settings" onclick={toggleSettings}></button>
 				<div class="dropdown">
@@ -155,10 +170,10 @@
 					{:else if dasherPane === 'board'}
 						{@render boardPane()}
 					{:else}
-						<a href="/settings">Settings</a>
+						<a href="/">Settings</a>
 						<button onclick={() => (dasherPane = 'board')}>Board</button>
 						<button onclick={() => (dasherPane = 'background')}>Background</button>
-						<button onclick={() => { clearUsername(); settingsOpen = false; dasherPane = 'main'; }}>Sign out</button>
+						<button onclick={() => { signOut(); settingsOpen = false; dasherPane = 'main'; }}>Sign out</button>
 					{/if}
 					{@render pingStatus()}
 				</div>

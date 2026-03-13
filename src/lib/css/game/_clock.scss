@@ -1,3 +1,6 @@
+// Round layout constants (from lila ui/round/css/_constants.scss)
+$col1-player-clock-height: 50px;
+
 .rclock {
   @include prevent-select;
 
@@ -194,7 +197,7 @@
   .tour-rank,
   .moretime,
   .berserked {
-    @extend %flex-center, %zen;
+    @extend %flex-center, %zen !optional;
 
     display: none;
 
