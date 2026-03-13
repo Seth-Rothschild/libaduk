@@ -29,3 +29,5 @@ CLAUDE.md
 
 # Local data store
 /data/
+
+deploy.sh

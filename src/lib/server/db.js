@@ -53,12 +53,12 @@ export function getGame(id) {
 	return db.games[id] ?? null;
 }
 
-export function createGame({ id, size, blackName, timeControl = { type: 'none' }, komi = 6.5 }) {
+export function createGame({ id, size, blackName, whiteName, timeControl = { type: 'none' }, komi = 6.5 }) {
 	const game = {
 		id,
 		size,
 		blackName,
-		whiteName: null,
+		whiteName,
 		moves: [],
 		status: 'waiting',
 		timeControl,
@@ -88,9 +88,10 @@ export function appendMove(id, moveEntry) {
 }
 
 export function getPendingGames() {
+	console.log('all games', db.games);
 	return Object.values(db.games)
-		.filter((g) => g.status === 'waiting' && g.blackName)
-		.map((g) => ({ id: g.id, creator: g.blackName, size: g.size }));
+		.filter((g) => g.status === 'waiting' && (g.blackName || g.whiteName))
+		.map((g) => ({ id: g.id, creator: g.blackName || g.whiteName, size: g.size, timeControl: g.timeControl, createdAt: g.createdAt }));
 }
 
 export function getUserGames(username) {

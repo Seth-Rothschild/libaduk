@@ -18,6 +18,6 @@ export async function POST({ request, cookies }) {
 
 	createUser(username);
 	const token = createSession(username);
-	cookies.set('session', token, { path: '/', httpOnly: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 30 });
+	cookies.set('session', token, { path: '/', httpOnly: true, sameSite: 'lax', secure: false, maxAge: 60 * 60 * 24 * 30 });
 	return json({ username });
 }

@@ -10,7 +10,7 @@
     @extend %flex-column;
 
     flex: 1 1 auto;
-    justify-content: stretch;
+    // justify-content: stretch;
     gap: 9px; // grid gap in app/_pool.scss
 
     &__button {

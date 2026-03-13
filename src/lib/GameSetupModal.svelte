@@ -199,7 +199,7 @@
 			<div class="config-group">
 				<div class="label">Side</div>
 				<div class="color-choices">
-					{#each [['white', 'White'], ['black', 'Black'], ['random', 'Random']] as [key, name]}
+					{#each [['black', 'Black'],  ['random', 'Random'], ['white', 'White']] as [key, name]}
 						<button
 							class="color-choice"
 							class:active={color === key}

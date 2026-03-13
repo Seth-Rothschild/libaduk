@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
-import { handler } from './build/index.js';
-import { attachWebSocketServer } from './src/lib/server/rooms.js';
+import { handler } from './build/handler.js';
+import { attachWebSocketServer } from './rooms.js';
 
 const port = process.env.PORT ?? 3000;
 

@@ -6,9 +6,30 @@
 	let { data } = $props();
 	const username = $derived(data.user?.username ?? '');
 
-	async function createGame() {
+	function formatTime(createdAt) {
+		const now = Date.now();
+		const diff = now - createdAt;
+		const seconds = Math.floor(diff / 1000);
+		const minutes = Math.floor(seconds / 60);
+		const hours = Math.floor(minutes / 60);
+		if (seconds < 60) return 'just now';
+		if (minutes < 60) return `${minutes}m ago`;
+		if (hours < 24) return `${hours}h ago`;
+		return new Date(createdAt).toLocaleDateString();
+	}
+
+	async function createGame(pool = null) {
 		if (!username) { goto('/signup'); return; }
-		const res = await fetch('/api/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ size: 19 }) });
+		const body = { size: 19, color: 'random' };
+		if (pool) {
+			if (pool.clock.includes('day')) {
+				body.timeControl = { type: 'correspondence' };
+			} else {
+				const [initial, increment] = pool.clock.split('+').map(Number);
+				body.timeControl = { type: 'fischer', initial, increment };
+			}
+		}
+		const res = await fetch('/api/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 		const { gameId } = await res.json();
 		goto(`/play/${gameId}`);
 	}
@@ -91,15 +112,6 @@
 </script>
 
 <div class="lobby">
-	<!-- Stats bar -->
-	<div class="lobby__counters">
-		<span class="lobby__counter">
-			<strong>{pingState.lobbyStats.playersOnline}</strong> players online
-		</span>
-		<span class="lobby__counter">
-			<strong>{pingState.lobbyStats.gamesInPlay}</strong> games in play
-		</span>
-	</div>
 
 	<!-- Tabs + quick pairing (center) -->
 	<div class="lobby__app">
@@ -132,7 +144,7 @@
 			{#if activeTab === 'pools'}
 				<div class="lpools">
 					{#each LIVE_POOLS as pool}
-						<div class="lpool" role="button" tabindex="0" onclick={createGame} onkeydown={(e) => e.key === 'Enter' && createGame()}>
+						<div class="lpool" role="button" tabindex="0" onclick={() => createGame(pool)} onkeydown={(e) => e.key === 'Enter' && createGame(pool)}>
 							<span class="clock">{pool.clock}</span>
 							<span class="perf">{pool.label}</span>
 						</div>
@@ -146,6 +158,17 @@
 						{#each pendingGames as game}
 							<a class="lobby__game-row" href="/play/{game.id}">
 								<span class="lobby__game-row__creator">{game.creator}</span>
+								<span class="lobby__game-row__info">{formatTime(game.createdAt)}</span>
+								<span class="lobby__game-row__info">
+									{#if game.timeControl?.type === 'correspondence'}
+										Correspondence
+									{:else if game.timeControl?.type === 'fischer'}
+										{game.timeControl.initial}+{game.timeControl.increment}
+									{:else}
+										No time
+									{/if}
+								</span>
+								<span class="lobby__game-row__info">{game.size}×{game.size}</span>
 								<span class="lobby__game-row__action button button-metal">Join</span>
 							</a>
 						{/each}
@@ -154,7 +177,7 @@
 			{:else if activeTab === 'correspondence'}
 				<div class="lpools">
 					{#each CORR_POOLS as pool}
-						<div class="lpool" role="button" tabindex="0" onclick={createGame} onkeydown={(e) => e.key === 'Enter' && createGame()}>
+						<div class="lpool" role="button" tabindex="0" onclick={() => createGame(pool)} onkeydown={(e) => e.key === 'Enter' && createGame(pool)}>
 							<span class="clock">{pool.clock}</span>
 							<span class="perf">{pool.label}</span>
 						</div>
@@ -206,7 +229,9 @@
 
 	<!-- Start buttons -->
 	<div class="lobby__table">
+	
 		<div class="lobby__start">
+
 			<button
 				class="button button-metal lobby__start__button lobby__start__button--hook"
 				onclick={() => username ? (setupModal = 'hook') : goto('/signup')}
@@ -225,7 +250,18 @@
 			>
 				Play locally
 			</button>
+
+			<div class="lobby__counters">
+				<span class="lobby__counter">
+					<strong>{pingState.lobbyStats.playersOnline}</strong> players online
+				</span>
+				<span class="lobby__counter">
+					<strong>{pingState.lobbyStats.gamesInPlay}</strong> games in play
+				</span>
+			</div>
 		</div>
+
+	<!-- Stats bar -->
 	</div>
 
 	{#if setupModal}
@@ -235,6 +271,7 @@
 	<!-- About links -->
 	<div class="lobby__about">
 		<a href="https://github.com/Seth-Rothschild/libaduk/blob/main/README.md">About</a>
+		<a href="https://github.com/Seth-Rothschild/libaduk/issues">FAQ</a>
 		<a href="https://github.com/Seth-Rothschild/libaduk/issues">Contact</a>
 		<a href="https://github.com/Seth-Rothschild/libaduk">Source code</a>
 	</div>
@@ -289,12 +326,28 @@
 	.lobby__game-row {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
+		gap: 1em;
 		padding: 0.6em 0.8em;
 		background: var(--c-bg-box);
 		border-radius: var(--box-radius-size);
 		text-decoration: none;
 		color: var(--c-font);
+	}
+
+	.lobby__game-row__creator {
+		flex: 1;
+		font-weight: 500;
+	}
+
+	.lobby__game-row__info {
+		font-size: 0.9em;
+		color: var(--c-font-dim);
+		min-width: 80px;
+		text-align: center;
+	}
+
+	.lobby__game-row__action {
+		margin-left: auto;
 	}
 
 	.lobby__game-row:hover {

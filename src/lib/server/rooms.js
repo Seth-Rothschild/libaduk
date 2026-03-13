@@ -121,9 +121,16 @@ export function createRoom(size = 19, timeControl = { type: 'none' }, color) {
 		room.blackName = 'black';
 	} else if (color === 'white') {
 		room.whiteName = 'white';
+	} else if (color === 'random') {
+		const randomColor = Math.random() > 0.5 ? 'black' : 'white';
+		if (randomColor === 'black') {
+			room.blackName = 'black';
+		} else {
+			room.whiteName = 'white';
+		}
 	}
 	rooms.set(id, room);
-	db.createGame({ id, size, blackName: null, timeControl });
+	db.createGame({ id, size, blackName: room.blackName, whiteName: room.whiteName, timeControl });
 	return room;
 }
 
