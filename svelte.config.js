@@ -6,7 +6,10 @@ const config = {
 		adapter: adapter()
 	},
 	vitePlugin: {
-		dynamicCompileOptions: ({ filename }) => ({ runes: !filename.includes('node_modules') })
+		dynamicCompileOptions: ({ filename }) => {
+			if (filename.includes('node_modules')) return {};
+			return { runes: true };
+		}
 	}
 };
 

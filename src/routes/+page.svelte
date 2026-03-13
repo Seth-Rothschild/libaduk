@@ -1,32 +1,15 @@
 <script>
 	import { goto } from '$app/navigation';
 	import GameSetupModal from '$lib/GameSetupModal.svelte';
+	import LobbyTabs from '$lib/LobbyTabs.svelte';
+	import PoolGrid from '$lib/PoolGrid.svelte';
+	import HookTable from '$lib/HookTable.svelte';
+	import ActiveGamesPanel from '$lib/ActiveGamesPanel.svelte';
+	import StartButtons from '$lib/StartButtons.svelte';
 	import { pingState } from '$lib/ping.svelte.js';
 
 	let { data } = $props();
 	const username = $derived(data.user?.username ?? '');
-
-	function formatTime(createdAt) {
-		const now = Date.now();
-		const diff = now - createdAt;
-		const seconds = Math.floor(diff / 1000);
-		const minutes = Math.floor(seconds / 60);
-		const hours = Math.floor(minutes / 60);
-		if (seconds < 60) return 'just now';
-		if (minutes < 60) return `${minutes}m ago`;
-		if (hours < 24) return `${hours}h ago`;
-		return new Date(createdAt).toLocaleDateString();
-	}
-
-	function formatClock(timeControl) {
-		if (!timeControl) return '∞';
-		if (timeControl.type === 'correspondence') return 'Corr.';
-		if (timeControl.type === 'byoyomi')
-			return `${timeControl.initial / 60}+${timeControl.periods}×${timeControl.periodTime}s`;
-		if (timeControl.type === 'fischer')
-			return `${timeControl.initial / 60}+${timeControl.increment}`;
-		return '∞';
-	}
 
 	async function createGame(pool = null) {
 		if (!username) {
@@ -152,30 +135,18 @@
 		{ clock: '1 day', label: 'Correspondence', timeControl: { type: 'correspondence', days: 1 } },
 		{ clock: '3 days', label: 'Correspondence', timeControl: { type: 'correspondence', days: 3 } },
 		{ clock: '7 days', label: 'Correspondence', timeControl: { type: 'correspondence', days: 7 } },
-		{ clock: '14 days', label: 'Correspondence', timeControl: { type: 'correspondence', days: 14 } }
+		{
+			clock: '14 days',
+			label: 'Correspondence',
+			timeControl: { type: 'correspondence', days: 14 }
+		}
 	];
 </script>
 
 <div class="lobby">
 	<!-- Tabs + quick pairing (center) -->
 	<div class="lobby__app">
-		<div class="tabs-horiz">
-			<button class:active={activeTab === 'pools'} onclick={() => switchTab('pools')}>
-				Quick pairing
-			</button>
-			<button class:active={activeTab === 'lobby'} onclick={() => switchTab('lobby')}>
-				Lobby
-			</button>
-			<button
-				class:active={activeTab === 'correspondence'}
-				onclick={() => switchTab('correspondence')}
-			>
-				Correspondence
-			</button>
-			<!-- <button class:active={activeTab === 'now_playing'} onclick={() => switchTab('now_playing')}>
-				Now playing
-			</button> -->
-		</div>
+		<LobbyTabs {activeTab} onTabChange={switchTab} />
 
 		<div class="lobby__pools-wrap">
 			<svg class="lobby-bg-circle" viewBox="0 0 100 100" aria-hidden="true">
@@ -190,163 +161,32 @@
 			</svg>
 
 			{#if activeTab === 'pools'}
-				<div class="lpools">
-					{#each LIVE_POOLS as pool}
-						<div
-							class="lpool"
-							role="button"
-							tabindex="0"
-							onclick={() => createGame(pool)}
-							onkeydown={(e) => e.key === 'Enter' && createGame(pool)}
-						>
-							<span class="clock">{pool.clock}</span>
-							<span class="perf">{pool.label}</span>
-						</div>
-					{/each}
-					<div
-						class="lpool lpool--custom"
-						role="button"
-						tabindex="0"
-						onclick={() => (username ? (setupModal = 'hook') : goto('/login'))}
-						onkeydown={(e) =>
-							e.key === 'Enter' && (username ? (setupModal = 'hook') : goto('/login'))}
-					>
-						<span class="clock">Custom</span>
-					</div>
-				</div>
+				<PoolGrid
+					pools={LIVE_POOLS}
+					onSelect={createGame}
+					showCustom={true}
+					onCustom={() => (username ? (setupModal = 'hook') : goto('/login'))}
+				/>
 			{:else if activeTab === 'lobby'}
-				{#if pendingGames.length === 0}
-					<p class="lobby__tab-empty">No open games.</p>
-				{:else}
-					<table class="hooks__list">
-						<thead>
-							<tr>
-								<th>Player</th>
-								<th>Posted</th>
-								<th>Clock</th>
-								<th>Board</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each pendingGames as game}
-								<tr class="hook join" onclick={() => goto(`/play/${game.id}`)}>
-									<td>{game.creator}</td>
-									<td>{formatTime(game.createdAt)}</td>
-									<td>{formatClock(game.timeControl)}</td>
-									<td>{game.size}×{game.size}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				{/if}
+				<HookTable games={pendingGames} onJoin={(id) => goto(`/play/${id}`)} />
 			{:else if activeTab === 'correspondence'}
-				<div class="lpools">
-					{#each CORR_POOLS as pool}
-						<div
-							class="lpool"
-							role="button"
-							tabindex="0"
-							onclick={() => createGame(pool)}
-							onkeydown={(e) => e.key === 'Enter' && createGame(pool)}
-						>
-							<span class="clock">{pool.clock}</span>
-							<span class="perf">{pool.label}</span>
-						</div>
-					{/each}
-				</div>
-			{:else if myGames.length === 0}
-				<p class="lobby__tab-empty">No games in progress.</p>
-			{:else}
-				<table class="hooks__list">
-					<thead>
-						<tr>
-							<th>Opponent</th>
-							<th>Clock</th>
-							<th>Status</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each myGames as game}
-							<tr class="hook join" onclick={() => goto(`/play/${game.id}`)}>
-								<td>{game.opponent ?? 'Waiting for opponent...'}</td>
-								<td>{formatClock(game.timeControl)}</td>
-								<td class:your-turn={game.isMyTurn === true}>
-									{#if game.timeControl?.type === 'correspondence'}
-										{game.isMyTurn === true
-											? 'Your turn'
-											: game.isMyTurn === false
-												? 'Their turn'
-												: 'Waiting'}
-									{:else}
-										{game.status}
-									{/if}
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
+				<PoolGrid pools={CORR_POOLS} onSelect={createGame} showCustom={false} />
 			{/if}
 		</div>
 	</div>
 
 	<!-- Side panel: active games -->
-	<div class="lobby__side">
-		<div class="lobby__box">
-			<div class="lobby__box__top">
-				<span>Active games</span>
-			</div>
-			<div class="lobby__box__content">
-				{#if liveGames.length === 0}
-					<p class="lobby__side-empty">No games in progress.</p>
-				{:else}
-					<div class="lobby__live-list">
-						{#each liveGames as game}
-							<a class="lobby__live-row" href="/play/{game.id}">
-								<span class="lobby__live-row__players">
-									{game.black} vs {game.white ?? '?'}
-								</span>
-								<span class="lobby__live-row__moves">{game.moveCount} moves</span>
-							</a>
-						{/each}
-					</div>
-				{/if}
-			</div>
-		</div>
-	</div>
+	<ActiveGamesPanel games={liveGames} />
 
 	<!-- Start buttons -->
 	<div class="lobby__table">
-		<div class="lobby__start">
-			<button
-				class="button button-metal lobby__start__button lobby__start__button--hook"
-				onclick={() => (username ? (setupModal = 'hook') : goto('/signup'))}
-			>
-				Create a game
-			</button>
-			<button
-				class="button button-metal lobby__start__button lobby__start__button--friend"
-				onclick={() => (username ? (setupModal = 'friend') : goto('/signup'))}
-			>
-				Challenge a friend
-			</button>
-			<button
-				class="button button-metal lobby__start__button lobby__start__button--ai"
-				onclick={() => (setupModal = 'local')}
-			>
-				Play locally
-			</button>
-
-			<div class="lobby__counters">
-				<span class="lobby__counter">
-					<strong>{pingState.lobbyStats.playersOnline}</strong> players online
-				</span>
-				<span class="lobby__counter">
-					<strong>{pingState.lobbyStats.gamesInPlay}</strong> games in play
-				</span>
-			</div>
-		</div>
-
-		<!-- Stats bar -->
+		<StartButtons
+			playersOnline={pingState.lobbyStats.playersOnline}
+			gamesInPlay={pingState.lobbyStats.gamesInPlay}
+			onCreateGame={() => (username ? (setupModal = 'hook') : goto('/signup'))}
+			onChallengeFriend={() => (username ? (setupModal = 'friend') : goto('/signup'))}
+			onPlayLocally={() => (setupModal = 'local')}
+		/>
 	</div>
 
 	{#if setupModal}
@@ -390,7 +230,6 @@
 	}
 
 	:global(.lobby__app .lpools),
-	.lobby__tab-empty,
 	:global(.hooks__list) {
 		position: relative;
 		z-index: 1;
@@ -403,58 +242,5 @@
 
 	:global(.lpool--custom) {
 		opacity: 0.7;
-	}
-
-	.lobby__tab-empty {
-		padding: 1em;
-		color: var(--c-font-dim);
-	}
-
-	.lobby__counters {
-		display: flex;
-		gap: 1.5em;
-		padding: 0.6em 1em;
-		font-size: 0.9em;
-		color: var(--c-font-dim);
-		grid-column: 1 / -1;
-	}
-
-	.lobby__counter strong {
-		color: var(--c-font);
-	}
-
-	.lobby__side-empty {
-		padding: 1em;
-		color: var(--c-font-dim);
-		font-size: 0.9em;
-	}
-
-	.lobby__live-list {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.lobby__live-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 0.5em 0.8em;
-		text-decoration: none;
-		color: var(--c-font);
-		font-size: 0.9em;
-		border-bottom: 1px solid var(--c-border);
-	}
-
-	.lobby__live-row:last-child {
-		border-bottom: none;
-	}
-
-	.lobby__live-row:hover {
-		background: var(--c-bg-zebra);
-	}
-
-	.lobby__live-row__moves {
-		color: var(--c-font-dim);
-		font-size: 0.85em;
 	}
 </style>
