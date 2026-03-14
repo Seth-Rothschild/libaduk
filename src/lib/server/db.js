@@ -133,6 +133,13 @@ export function getAllActiveGames() {
 	return Object.values(db.games).filter((g) => g.status === 'playing');
 }
 
+export function getAllUserGames(username) {
+	return Object.values(db.games)
+		.filter((g) => g.blackName === username || g.whiteName === username)
+		.filter((g) => g.status !== 'aborted')
+		.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+}
+
 // --- Sessions ---
 
 export function createSession(token, username) {

@@ -22,7 +22,7 @@
 
 	&__board {
 		flex: 0 0 16rem;
-		margin-inline-end: 1em;
+		margin-inline-end: 0;
 
 		@media (max-width: at-most($small)) {
 			display: none;

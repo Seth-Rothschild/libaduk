@@ -12,10 +12,6 @@
 	const username = $derived(data.user?.username ?? '');
 
 	async function createGame(pool = null) {
-		if (!username) {
-			goto('/login');
-			return;
-		}
 		const body = { size: 19, color: 'random' };
 		if (pool) {
 			body.timeControl = pool.timeControl;
@@ -156,7 +152,7 @@
 					pools={LIVE_POOLS}
 					onSelect={createGame}
 					showCustom={true}
-					onCustom={() => (username ? (setupModal = 'hook') : goto('/login'))}
+					onCustom={() => (setupModal = 'hook')}
 				/>
 			{:else if activeTab === 'lobby'}
 				<HookTable games={pendingGames} onJoin={(id) => goto(`/play/${id}`)} />
@@ -174,8 +170,8 @@
 		<StartButtons
 			playersOnline={pingState.lobbyStats.playersOnline}
 			gamesInPlay={pingState.lobbyStats.gamesInPlay}
-			onCreateGame={() => (username ? (setupModal = 'hook') : goto('/signup'))}
-			onChallengeFriend={() => (username ? (setupModal = 'friend') : goto('/signup'))}
+			onCreateGame={() => (setupModal = 'hook')}
+			onChallengeFriend={() => (setupModal = 'friend')}
 			onPlayLocally={() => (setupModal = 'local')}
 		/>
 	</div>

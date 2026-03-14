@@ -167,7 +167,7 @@
 		{/snippet}
 
 		{#if signedIn}
-			<a id="user_tag" href="/" class="link">{username}</a>
+			<a id="user_tag" href="/profile/{username}" class="link">{username}</a>
 			<div class="dasher" class:shown={settingsOpen}>
 				<button
 					class="toggle link"

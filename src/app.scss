@@ -84,6 +84,12 @@ html {
 
 /* Game */
 @import 'lib/css/game/clock';
+@import 'lib/css/game/row';
+
+/* User */
+@import 'lib/css/component/number-menu';
+@import 'lib/css/page/user-show';
+@import 'lib/css/page/sub-rating';
 
 /* Lobby */
 @import 'lib/css/lobby/defs';

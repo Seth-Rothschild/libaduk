@@ -8,80 +8,47 @@
 	import Clock from '$lib/Clock.svelte';
 	import { gameSocket } from '$lib/socket.svelte.js';
 	import { boardState } from '$lib/boardState.svelte.js';
+	import { getGuestId } from '$lib/guestId.js';
+	import { GameState } from '$lib/gameLogic.svelte.js';
 
 	let { data } = $props();
 	const username = $derived(data.user?.username ?? '');
+	const displayName = $derived(username || getGuestId());
 
 	const KOMI = 6.5;
 	const ICON_INFO = '\ue060';
-
-	function emptyShiftMap(size) {
-		return Array.from({ length: size }, () => new Array(size).fill(0));
-	}
-
-	function readjustShifts(shiftMap, x, y) {
-		const direction = shiftMap[y]?.[x];
-		if (!direction) return;
-		const neighbors = [
-			[[1, 5, 8], x - 1, y, [3, 7, 6]],
-			[[2, 5, 6], x, y - 1, [4, 7, 8]],
-			[[3, 7, 6], x + 1, y, [1, 5, 8]],
-			[[4, 7, 8], x, y + 1, [2, 5, 6]]
-		];
-		for (const [dirs, qx, qy, removeShifts] of neighbors) {
-			if (!dirs.includes(direction)) continue;
-			if (shiftMap[qy]?.[qx] && removeShifts.includes(shiftMap[qy][qx])) {
-				shiftMap[qy][qx] = 0;
-			}
-		}
-	}
 
 	const gameId = $derived(page.params.gameId);
 	const isLocal = $derived(page.url.searchParams.get('local') === 'true');
 
 	let boardContainerWidth = $state(0);
-	let boardSize = $state(19);
-	let board = $state(GoBoardLib.fromDimensions(boardSize));
-	let currentSign = $state(1);
-	let consecutivePasses = $state(0);
-	let status = $state('waiting');
-	let lastMove = $state(null);
-	let winner = $state(null);
-	let winnerResult = $state(null);
-	let shiftMap = $state(emptyShiftMap(boardSize));
-	let animatedVertex = $state(null);
-	let timeControl = $state({ type: 'none' });
-	let clockState = $state(null);
-	let corrState = $state(null);
-	let deadStones = $state([]);
-	let blackApproved = $state(false);
-	let whiteApproved = $state(false);
-	let finalScore = $state(null);
+
+	let gs = $state(new GameState({ isLocal, onNavigate: goto }));
 
 	const vertexSize = $derived(
-		boardContainerWidth > 0 ? Math.floor(boardContainerWidth / (boardSize + 0.8)) : 24
+		boardContainerWidth > 0 ? Math.floor(boardContainerWidth / (gs.boardSize + 0.8)) : 24
 	);
 
-	const signMap = $derived(board.signMap);
-	const blackCaptures = $derived(board.getCaptures(1));
-	const whiteCaptures = $derived(board.getCaptures(-1));
+	const signMap = $derived(gs.board.signMap);
+	const blackCaptures = $derived(gs.board.getCaptures(1));
+	const whiteCaptures = $derived(gs.board.getCaptures(-1));
 
-	const mySign = $derived(isLocal ? 1 : gameSocket.color === 'black' ? 1 : -1);
+	const mySign = $derived(isLocal ? 1 : (gs.mySign ?? -1));
 	const myColor = $derived(mySign === 1 ? 'black' : 'white');
 	const oppColor = $derived(myColor === 'black' ? 'white' : 'black');
 	const myCaptures = $derived(mySign === 1 ? blackCaptures : whiteCaptures);
 	const opponentCaptures = $derived(mySign === 1 ? whiteCaptures : blackCaptures);
-	let timedOutColor = $state(null);
-	const isCorrGame = $derived(timeControl.type === 'correspondence');
+
+	const isCorrGame = $derived(gs.timeControl.type === 'correspondence');
 	const isMyTurn = $derived(
-		status === 'playing' &&
-			timedOutColor === null &&
-			(isLocal || currentSign === mySign) &&
-			(!isCorrGame || corrState?.activeColor === myColor)
+		gs.status === 'playing' &&
+			gs.timedOutColor === null &&
+			(isLocal || gs.currentSign === mySign) &&
+			(!isCorrGame || gs.corrState?.activeColor === myColor)
 	);
 
 	function handleTimeout(loser) {
-		timedOutColor = loser;
+		gs.timedOutColor = loser;
 		gameSocket.send({ type: 'flag', loser });
 	}
 
@@ -97,25 +64,29 @@
 		return `${minutes}m remaining`;
 	}
 
-	const myClockData = $derived(clockState?.[myColor] ?? null);
-	const oppClockData = $derived(clockState?.[oppColor] ?? null);
+	const myClockData = $derived(gs.clockState?.[myColor] ?? null);
+	const oppClockData = $derived(gs.clockState?.[oppColor] ?? null);
 	const myClockRunning = $derived(
-		status === 'playing' && !!clockState?.turnStartedAt && clockState?.activeColor === myColor
+		gs.status === 'playing' &&
+			!!gs.clockState?.turnStartedAt &&
+			gs.clockState?.activeColor === myColor
 	);
 	const oppClockRunning = $derived(
-		status === 'playing' && !!clockState?.turnStartedAt && clockState?.activeColor === oppColor
+		gs.status === 'playing' &&
+			!!gs.clockState?.turnStartedAt &&
+			gs.clockState?.activeColor === oppColor
 	);
 
 	const initialMs = $derived(
-		timeControl.type === 'none' || timeControl.type === 'correspondence'
+		gs.timeControl.type === 'none' || gs.timeControl.type === 'correspondence'
 			? null
-			: (timeControl.initial ?? 0) * 1000
+			: (gs.timeControl.initial ?? 0) * 1000
 	);
 
 	const scoreBoard = $derived.by(() => {
-		if (status !== 'scoring') return board;
-		const clone = board.clone();
-		for (const [x, y] of deadStones) {
+		if (gs.status !== 'scoring') return gs.board;
+		const clone = gs.board.clone();
+		for (const [x, y] of gs.deadStones) {
 			const sign = clone.get([x, y]);
 			if (sign === 0) continue;
 			clone.set([x, y], 0);
@@ -124,14 +95,14 @@
 		return clone;
 	});
 
-	const areaMap = $derived(status === 'scoring' ? influence.areaMap(scoreBoard.signMap) : null);
+	const areaMap = $derived(gs.status === 'scoring' ? influence.areaMap(scoreBoard.signMap) : null);
 
 	const score = $derived.by(() => {
 		if (!areaMap) return null;
 		let blackArea = 0;
 		let whiteArea = 0;
-		for (let y = 0; y < boardSize; y++) {
-			for (let x = 0; x < boardSize; x++) {
+		for (let y = 0; y < gs.boardSize; y++) {
+			for (let x = 0; x < gs.boardSize; x++) {
 				const z = areaMap[y][x];
 				if (z > 0) blackArea++;
 				if (z < 0) whiteArea++;
@@ -140,99 +111,53 @@
 		return { blackArea, whiteArea, blackScore: blackArea, whiteScore: whiteArea + KOMI };
 	});
 
-	function replayMoves(moves, size) {
-		let b = GoBoardLib.fromDimensions(size);
-		let sign = 1;
-		for (const move of moves) {
-			if (move.type === 'move') {
-				try {
-					b = b.makeMove(sign, [move.x, move.y], {
-						preventSuicide: true,
-						preventOverwrite: true,
-						preventKo: true
-					});
-				} catch {}
-			}
-			sign = sign === 1 ? -1 : 1;
-		}
-		return b;
-	}
-
-	function applyMove(x, y, sign) {
-		const vertex = [x, y];
-		const prevSignMap = board.signMap;
-		try {
-			board = board.makeMove(sign, vertex, {
-				preventSuicide: true,
-				preventOverwrite: true,
-				preventKo: true
-			});
-		} catch {
-			return false;
-		}
-		shiftMap[y][x] = Math.ceil(Math.random() * 8);
-		readjustShifts(shiftMap, x, y);
-		for (let ry = 0; ry < boardSize; ry++) {
-			for (let rx = 0; rx < boardSize; rx++) {
-				if (prevSignMap[ry][rx] !== 0 && board.signMap[ry][rx] === 0) {
-					shiftMap[ry][rx] = 0;
-				}
-			}
-		}
-		animatedVertex = vertex;
-		lastMove = vertex;
-		consecutivePasses = 0;
-		currentSign = currentSign === 1 ? -1 : 1;
-		return true;
-	}
-
 	function onVertexClick(x, y) {
-		if (status === 'playing') {
+		if (gs.status === 'playing') {
 			if (!isMyTurn) return;
-			const movingSign = isLocal ? currentSign : mySign;
+			const movingSign = isLocal ? gs.currentSign : mySign;
 			const movingColor = movingSign === 1 ? 'black' : 'white';
-			const analysis = board.analyzeMove(movingSign, [x, y]);
+			const analysis = gs.board.analyzeMove(movingSign, [x, y]);
 			if (analysis.overwrite || analysis.suicide || analysis.ko) return;
-			const ok = applyMove(x, y, movingSign);
+			const ok = gs.applyMove(x, y, movingSign);
 			if (ok)
 				gameSocket.send(
 					isLocal ? { type: 'move', x, y, color: movingColor } : { type: 'move', x, y }
 				);
-		} else if (status === 'scoring') {
+		} else if (gs.status === 'scoring') {
 			toggleDeadGroup(x, y);
 		}
 	}
 
 	function toggleDeadGroup(x, y) {
-		const sign = board.get([x, y]);
+		const sign = gs.board.get([x, y]);
 		if (sign === 0) return;
-		const chain = board.getChain([x, y]);
+		const chain = gs.board.getChain([x, y]);
 		const chainKeys = new Set(chain.map(([cx, cy]) => `${cx},${cy}`));
-		const currentDeadKeys = new Set(deadStones.map(([cx, cy]) => `${cx},${cy}`));
+		const currentDeadKeys = new Set(gs.deadStones.map(([cx, cy]) => `${cx},${cy}`));
 		const isCurrentlyDead = currentDeadKeys.has(`${x},${y}`);
 		if (isCurrentlyDead) {
-			deadStones = deadStones.filter(([cx, cy]) => !chainKeys.has(`${cx},${cy}`));
+			gs.deadStones = gs.deadStones.filter(([cx, cy]) => !chainKeys.has(`${cx},${cy}`));
 		} else {
-			deadStones = [...deadStones, ...chain];
+			gs.deadStones = [...gs.deadStones, ...chain];
 		}
-		blackApproved = false;
-		whiteApproved = false;
-		gameSocket.send({ type: 'mark_dead', stones: deadStones });
+		gs.blackApproved = false;
+		gs.whiteApproved = false;
+		gameSocket.send({ type: 'mark_dead', stones: gs.deadStones });
 	}
 
 	function pass() {
 		if (!isMyTurn) return;
-		const movingColor = isLocal ? (currentSign === 1 ? 'black' : 'white') : myColor;
-		consecutivePasses++;
-		lastMove = null;
-		animatedVertex = null;
-		currentSign = currentSign === 1 ? -1 : 1;
+		const movingColor = isLocal ? (gs.currentSign === 1 ? 'black' : 'white') : myColor;
+		gs.consecutivePasses++;
+		gs.lastMove = null;
+		gs.animatedVertex = null;
+		gs.currentSign = gs.currentSign === 1 ? -1 : 1;
 		gameSocket.send(isLocal ? { type: 'pass', color: movingColor } : { type: 'pass' });
-		if (consecutivePasses >= 2) {
-			status = 'scoring';
-			deadStones = [];
-			blackApproved = false;
-			whiteApproved = false;
+		if (gs.consecutivePasses >= 2) {
+			gs.status = 'scoring';
+			gs.deadStones = [];
+			gs.blackApproved = false;
+			gs.whiteApproved = false;
 			gameSocket.send({ type: 'score_phase' });
 		}
 	}
@@ -242,110 +167,21 @@
 	}
 
 	function resign() {
-		status = 'gameover';
-		winner = mySign === 1 ? -1 : 1;
-		winnerResult = null;
+		gs.status = 'gameover';
+		gs.winner = mySign === 1 ? -1 : 1;
+		gs.winnerResult = null;
 		gameSocket.send({ type: 'resign' });
 	}
 
 	function approveScore() {
-		if (myColor === 'black') blackApproved = true;
-		else whiteApproved = true;
-		gameSocket.send({ type: 'approve_score', signMap: board.signMap });
-	}
-
-	function handleMessage(msg) {
-		if (msg.type === 'joined') {
-			boardSize = msg.size ?? 19;
-			timeControl = msg.timeControl ?? { type: 'none' };
-			clockState = msg.clock ?? null;
-			corrState = msg.corrState ?? null;
-			shiftMap = emptyShiftMap(boardSize);
-			if (msg.moves && msg.moves.length > 0) {
-				board = replayMoves(msg.moves, boardSize);
-				consecutivePasses = 0;
-				currentSign = msg.moves.length % 2 === 0 ? 1 : -1;
-				const lastMoveEntry = msg.moves.at(-1);
-				if (lastMoveEntry?.type === 'move') lastMove = [lastMoveEntry.x, lastMoveEntry.y];
-			} else {
-				board = GoBoardLib.fromDimensions(boardSize);
-			}
-			if (msg.status === 'finished') {
-				status = 'gameover';
-				winner = msg.winner === 'black' ? 1 : msg.winner === 'white' ? -1 : null;
-				winnerResult = msg.result ?? null;
-			} else {
-				status = msg.status ?? (msg.local || msg.opponent ? 'playing' : 'waiting');
-			}
-		}
-		if (msg.type === 'opponent_joined') {
-			status = 'playing';
-			if (msg.clock) clockState = msg.clock;
-			if (msg.corrState) corrState = msg.corrState;
-		}
-		if (msg.type === 'opponent_left') {
-			if (status !== 'gameover') status = 'abandoned';
-		}
-		if (msg.type === 'move') {
-			const opponentSign = mySign === 1 ? -1 : 1;
-			applyMove(msg.x, msg.y, opponentSign);
-			if (msg.clock) clockState = msg.clock;
-			if (msg.corrState) corrState = msg.corrState;
-		}
-		if (msg.type === 'pass') {
-			consecutivePasses++;
-			lastMove = null;
-			animatedVertex = null;
-			currentSign = currentSign === 1 ? -1 : 1;
-			if (msg.clock) clockState = msg.clock;
-			if (msg.corrState) corrState = msg.corrState;
-		}
-		if (msg.type === 'aborted') {
-			goto('/');
-		}
-		if (msg.type === 'resign') {
-			status = 'gameover';
-			winner = mySign;
-			winnerResult = null;
-		}
-		if (msg.type === 'timeout') {
-			status = 'gameover';
-			winner = msg.loser === myColor ? (mySign === 1 ? -1 : 1) : mySign;
-			winnerResult = 'Time';
-		}
-		if (msg.type === 'score_phase') {
-			status = 'scoring';
-			deadStones = msg.deadStones ?? [];
-			blackApproved = false;
-			whiteApproved = false;
-		}
-		if (msg.type === 'dead_stones_update') {
-			deadStones = msg.deadStones ?? [];
-			blackApproved = false;
-			whiteApproved = false;
-		}
-		if (msg.type === 'approve_update') {
-			blackApproved = msg.blackApproved;
-			whiteApproved = msg.whiteApproved;
-		}
-		if (msg.type === 'score_result') {
-			finalScore = { blackScore: msg.blackScore, whiteScore: msg.whiteScore };
-			winner = msg.winner === 'black' ? 1 : -1;
-			winnerResult = msg.result;
-			status = 'gameover';
-		}
-		if (msg.type === 'clock_update') {
-			if (msg.clock) clockState = msg.clock;
-		}
-		if (msg.type === 'corr_update') {
-			if (msg.corrState) corrState = msg.corrState;
-		}
-		if (msg.type === 'error') console.error('Game error:', msg.message);
+		if (myColor === 'black') gs.blackApproved = true;
+		else gs.whiteApproved = true;
+		gameSocket.send({ type: 'approve_score', signMap: gs.board.signMap });
 	}
 
 	onMount(() => {
-		gameSocket.onMessage(handleMessage);
-		gameSocket.connect({ type: 'join', gameId, username: username || 'Anonymous' });
+		gameSocket.onMessage((msg) => gs.handleMessage(msg));
+		gameSocket.connect({ type: 'join', gameId, username: displayName });
 
 		const mainWrap = document.getElementById('main-wrap');
 		if (mainWrap) mainWrap.style.display = 'block';
@@ -366,37 +202,37 @@
 		<div class="game__meta">
 			<section>
 				<div class="game__meta__infos" data-icon="&#xe015;">
-					<div class="setup">Casual &bull; {boardSize}&times;{boardSize} &bull; Go</div>
+					<div class="setup">Casual &bull; {gs.boardSize}&times;{gs.boardSize} &bull; Go</div>
 				</div>
 				<div class="game__meta__players">
 					<div class="player color-icon is black text">
 						{isLocal
 							? (gameSocket.blackName ?? 'Black')
 							: myColor === 'black'
-								? username || 'You'
+								? displayName
 								: (gameSocket.opponent ?? '...')}
 					</div>
 					<div class="player color-icon is white text">
 						{isLocal
 							? (gameSocket.whiteName ?? 'White')
 							: myColor === 'white'
-								? username || 'You'
+								? displayName
 								: (gameSocket.opponent ?? '...')}
 					</div>
 				</div>
 			</section>
-			{#if status === 'gameover'}
+			{#if gs.status === 'gameover'}
 				<section class="status">
 					{#if isLocal}
-						{winner === 1 ? 'Black' : 'White'} wins{winnerResult ? ` — ${winnerResult}` : ''}.
-					{:else if winnerResult}
-						{winnerResult} &mdash; {winner === mySign ? 'You win!' : 'You lose.'}
+						{gs.winner === 1 ? 'Black' : 'White'} wins{gs.winnerResult ? ` — ${gs.winnerResult}` : ''}.
+					{:else if gs.winnerResult}
+						{gs.winnerResult} &mdash; {gs.winner === mySign ? 'You win!' : 'You lose.'}
 					{:else}
-						{winner === mySign ? 'You win!' : 'You lose.'}
+						{gs.winner === mySign ? 'You win!' : 'You lose.'}
 					{/if}
 				</section>
 			{/if}
-			{#if status === 'abandoned'}
+			{#if gs.status === 'abandoned'}
 				<section class="status">Opponent left.</section>
 			{/if}
 		</div>
@@ -406,16 +242,16 @@
 		<div class="round__app__board" bind:clientWidth={boardContainerWidth}>
 			<GoBoard
 				{signMap}
-				{lastMove}
-				{shiftMap}
-				{animatedVertex}
-				size={boardSize}
+				lastMove={gs.lastMove}
+				shiftMap={gs.shiftMap}
+				animatedVertex={gs.animatedVertex}
+				size={gs.boardSize}
 				{vertexSize}
 				{areaMap}
-				deadStones={status === 'scoring' ? deadStones : null}
+				deadStones={gs.status === 'scoring' ? gs.deadStones : null}
 				showCoords={boardState.showCoords}
-				{currentSign}
-				onVertexClick={status === 'playing' || status === 'scoring' ? onVertexClick : null}
+				currentSign={gs.currentSign}
+				onVertexClick={gs.status === 'playing' || gs.status === 'scoring' ? onVertexClick : null}
 			/>
 		</div>
 
@@ -426,7 +262,7 @@
 					running={oppClockRunning}
 					position="top"
 					{initialMs}
-					turnStartedAt={clockState?.turnStartedAt}
+					turnStartedAt={gs.clockState?.turnStartedAt}
 					onTimeout={isLocal ? () => handleTimeout(oppColor) : null}
 				/>
 			{/if}
@@ -437,7 +273,7 @@
 						? oppColor === 'white'
 							? (gameSocket.whiteName ?? 'Guest')
 							: (gameSocket.blackName ?? 'Guest')
-						: (gameSocket.opponent ?? (status === 'waiting' ? 'Waiting...' : oppColor))}</name
+						: (gameSocket.opponent ?? (gs.status === 'waiting' ? 'Waiting...' : oppColor))}</name
 				>
 				{#if opponentCaptures > 0}
 					<span class="material">+{opponentCaptures}</span>
@@ -445,34 +281,34 @@
 			</div>
 
 			<div class="rmoves">
-				{#if status === 'waiting'}
+				{#if gs.status === 'waiting'}
 					<div class="message" data-icon={ICON_INFO}>
 						<div>
 							You are <strong>{myColor}</strong><br />
 							Share this link to invite a friend.
 						</div>
 					</div>
-				{:else if status === 'playing'}
+				{:else if gs.status === 'playing'}
 					<div class="message" data-icon={ICON_INFO}>
 						<div>
 							{#if isMyTurn}
 								You play the {myColor} stones<br /><strong>It's your turn!</strong>
-								{#if isCorrGame && corrState?.turnDeadline}
+								{#if isCorrGame && gs.corrState?.turnDeadline}
 									<br /><span class="corr-deadline"
-										>{formatCorrDeadline(corrState.turnDeadline)}</span
+										>{formatCorrDeadline(gs.corrState.turnDeadline)}</span
 									>
 								{/if}
 							{:else}
 								Waiting for opponent...
-								{#if isCorrGame && corrState?.turnDeadline}
+								{#if isCorrGame && gs.corrState?.turnDeadline}
 									<br /><span class="corr-deadline"
-										>{formatCorrDeadline(corrState.turnDeadline)}</span
+										>{formatCorrDeadline(gs.corrState.turnDeadline)}</span
 									>
 								{/if}
 							{/if}
 						</div>
 					</div>
-				{:else if status === 'scoring'}
+				{:else if gs.status === 'scoring'}
 					<div class="message" data-icon={ICON_INFO}>
 						<div>
 							Counting territory<br />
@@ -501,27 +337,27 @@
 						</div>
 					{/if}
 					<div class="score-approvals">
-						<span class="approval" class:approved={blackApproved}
-							>Black {blackApproved ? '&#x2713;' : '&hellip;'}</span
+						<span class="approval" class:approved={gs.blackApproved}
+							>Black {gs.blackApproved ? '&#x2713;' : '&hellip;'}</span
 						>
-						<span class="approval" class:approved={whiteApproved}
-							>White {whiteApproved ? '&#x2713;' : '&hellip;'}</span
+						<span class="approval" class:approved={gs.whiteApproved}
+							>White {gs.whiteApproved ? '&#x2713;' : '&hellip;'}</span
 						>
 					</div>
-				{:else if status === 'gameover'}
+				{:else if gs.status === 'gameover'}
 					<div class="message" data-icon={ICON_INFO}>
 						<div>
-							{winner === mySign ? 'You win' : 'You lose'}
-							{#if winnerResult}
-								<br />{winnerResult}
-							{:else if finalScore}
-								<br />{finalScore.blackScore.toFixed(1)} &ndash; {finalScore.whiteScore.toFixed(1)}
+							{gs.winner === mySign ? 'You win' : 'You lose'}
+							{#if gs.winnerResult}
+								<br />{gs.winnerResult}
+							{:else if gs.finalScore}
+								<br />{gs.finalScore.blackScore.toFixed(1)} &ndash; {gs.finalScore.whiteScore.toFixed(1)}
 							{:else}
 								<br />by resignation
 							{/if}
 						</div>
 					</div>
-				{:else if status === 'abandoned'}
+				{:else if gs.status === 'abandoned'}
 					<div class="message" data-icon={ICON_INFO}>
 						<div>Your opponent has left the game.</div>
 					</div>
@@ -529,39 +365,39 @@
 			</div>
 
 			<div class="rcontrols">
-				{#if status === 'waiting'}
+				{#if gs.status === 'waiting'}
 					<button class="button button-red" onclick={abort}>Abort</button>
-				{:else if status === 'playing'}
+				{:else if gs.status === 'playing'}
 					<button class="button button-metal" onclick={pass} disabled={!isMyTurn}>Pass</button>
 					<button class="button button-red" onclick={resign}>Resign</button>
-				{:else if status === 'scoring'}
+				{:else if gs.status === 'scoring'}
 					{#if isLocal}
 						<button
 							class="button"
-							class:button-metal={!blackApproved}
-							class:button-green={blackApproved}
+							class:button-metal={!gs.blackApproved}
+							class:button-green={gs.blackApproved}
 							onclick={() => {
-								blackApproved = true;
-								gameSocket.send({ type: 'approve_score', color: 'black', signMap: board.signMap });
+								gs.blackApproved = true;
+								gameSocket.send({ type: 'approve_score', color: 'black', signMap: gs.board.signMap });
 							}}
-							disabled={blackApproved}
+							disabled={gs.blackApproved}
 						>
-							{blackApproved ? 'Black ✓' : 'Black accepts'}
+							{gs.blackApproved ? 'Black ✓' : 'Black accepts'}
 						</button>
 						<button
 							class="button"
-							class:button-metal={!whiteApproved}
-							class:button-green={whiteApproved}
+							class:button-metal={!gs.whiteApproved}
+							class:button-green={gs.whiteApproved}
 							onclick={() => {
-								whiteApproved = true;
-								gameSocket.send({ type: 'approve_score', color: 'white', signMap: board.signMap });
+								gs.whiteApproved = true;
+								gameSocket.send({ type: 'approve_score', color: 'white', signMap: gs.board.signMap });
 							}}
-							disabled={whiteApproved}
+							disabled={gs.whiteApproved}
 						>
-							{whiteApproved ? 'White ✓' : 'White accepts'}
+							{gs.whiteApproved ? 'White ✓' : 'White accepts'}
 						</button>
 					{:else}
-						{@const myApproved = myColor === 'black' ? blackApproved : whiteApproved}
+						{@const myApproved = myColor === 'black' ? gs.blackApproved : gs.whiteApproved}
 						<button
 							class="button"
 							class:button-metal={!myApproved}
@@ -577,7 +413,7 @@
 
 			<div class="ruser ruser-bottom color-icon is {myColor} active">
 				<i class="line"></i>
-				<name>{isLocal ? (gameSocket.blackName ?? 'You') : username || 'You'}</name>
+				<name>{isLocal ? (gameSocket.blackName ?? 'You') : displayName}</name>
 				{#if myCaptures > 0}
 					<span class="material">+{myCaptures}</span>
 				{/if}
@@ -588,7 +424,7 @@
 					running={myClockRunning}
 					position="bottom"
 					{initialMs}
-					turnStartedAt={clockState?.turnStartedAt}
+					turnStartedAt={gs.clockState?.turnStartedAt}
 					onTimeout={() => handleTimeout(myColor)}
 				/>
 			{/if}

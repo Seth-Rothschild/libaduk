@@ -1,4 +1,4 @@
-# libaduk-svelte
+# libaduk
 
 A Go game platform that looks and feels like [Lichess](https://lichess.org). Here we've taken the css from [lila](https://github.com/lichess-org/lila) the open-source Scala/Play server behind Lichess and applied the css to a Svelte app.
 
