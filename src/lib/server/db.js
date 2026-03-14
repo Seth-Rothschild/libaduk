@@ -4,7 +4,7 @@ import { join } from 'path';
 const DATA_DIR = 'data';
 const DB_PATH = join(DATA_DIR, 'db.json');
 
-const EMPTY_DB = { users: {}, games: {}, sessions: {} };
+const EMPTY_DB = { users: {}, games: {}, sessions: {}, credentials: {} };
 
 function loadFromDisk() {
 	try {
@@ -145,6 +145,37 @@ export function getAllUserGames(username) {
 		.filter((g) => g.blackName === username || g.whiteName === username)
 		.filter((g) => g.status !== 'aborted')
 		.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+}
+
+// --- WebAuthn Credentials ---
+
+export function getCredentials(username) {
+	const key = username.toLowerCase();
+	const stored = db.credentials[key] ?? [];
+	return stored.map((c) => ({
+		...c,
+		publicKey: new Uint8Array(Buffer.from(c.publicKey, 'base64url'))
+	}));
+}
+
+export function addCredential(username, credential) {
+	const key = username.toLowerCase();
+	if (!db.credentials[key]) db.credentials[key] = [];
+	db.credentials[key].push({
+		...credential,
+		publicKey: Buffer.from(credential.publicKey).toString('base64url')
+	});
+	schedulFlush();
+}
+
+export function updateCredentialCounter(username, credentialId, newCounter) {
+	const key = username.toLowerCase();
+	const creds = db.credentials[key] ?? [];
+	const cred = creds.find((c) => c.id === credentialId);
+	if (cred) {
+		cred.counter = newCounter;
+		schedulFlush();
+	}
 }
 
 // --- Sessions ---

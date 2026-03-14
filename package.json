@@ -48,6 +48,8 @@
 	"dependencies": {
 		"@sabaki/go-board": "^1.4.3",
 		"@sabaki/influence": "^1.2.2",
+		"@simplewebauthn/browser": "^13.3.0",
+		"@simplewebauthn/server": "^13.3.0",
 		"@sveltejs/adapter-node": "^5.5.4",
 		"ws": "^8.19.0"
 	}

@@ -1,6 +1,7 @@
 <script>
 	import { goto, invalidateAll } from '$app/navigation';
 	import { setUsername } from '$lib/user.svelte.js';
+	import { startRegistration } from '@simplewebauthn/browser';
 
 	let usernameInput = $state('');
 	let error = $state('');
@@ -11,18 +12,43 @@
 		error = '';
 		submitting = true;
 		try {
-			const res = await fetch('/api/auth/signup', {
+			const optionsRes = await fetch('/api/auth/webauthn/register-options', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ username: usernameInput })
 			});
-			const data = await res.json();
-			if (res.ok) {
-				setUsername(data.username);
+			const optionsData = await optionsRes.json();
+			if (!optionsRes.ok) {
+				error = optionsData.error ?? 'Something went wrong';
+				return;
+			}
+
+			let attResp;
+			try {
+				attResp = await startRegistration({ optionsJSON: optionsData });
+			} catch (err) {
+				if (err.name === 'InvalidStateError') {
+					error = 'A passkey is already registered on this device.';
+				} else if (err.name === 'NotAllowedError') {
+					error = 'Passkey creation was cancelled.';
+				} else {
+					error = err.message ?? 'Passkey creation failed.';
+				}
+				return;
+			}
+
+			const verifyRes = await fetch('/api/auth/webauthn/register-verify', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(attResp)
+			});
+			const verifyData = await verifyRes.json();
+			if (verifyRes.ok) {
+				setUsername(verifyData.username);
 				await invalidateAll();
 				goto('/');
 			} else {
-				error = data.error ?? 'Something went wrong';
+				error = verifyData.error ?? 'Something went wrong';
 			}
 		} finally {
 			submitting = false;
@@ -59,7 +85,7 @@
 		{/if}
 
 		<button type="submit" class="submit button button-metal text big" disabled={submitting}>
-			{submitting ? 'Creating account…' : 'Sign up'}
+			{submitting ? 'Creating account…' : 'Sign up with passkey'}
 		</button>
 	</form>
 
