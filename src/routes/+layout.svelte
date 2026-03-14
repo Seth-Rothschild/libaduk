@@ -39,6 +39,9 @@
 	let searchInput = $state(null);
 	let dasherPane = $state('main');
 	let setupModal = $state(null);
+	let searchQuery = $state('');
+	let searchResults = $state([]);
+	let searchDebounce = null;
 
 	$effect(() => {
 		document.body.classList.toggle('clinput', searchExpanded);
@@ -50,12 +53,36 @@
 	}
 
 	function onSearchMouseLeave() {
-		searchExpanded = false;
+		if (searchQuery.length === 0) searchExpanded = false;
 		searchInput?.blur();
 	}
 
 	function onSearchBlur() {
+		setTimeout(() => {
+			searchExpanded = false;
+			searchQuery = '';
+			searchResults = [];
+		}, 150);
+	}
+
+	function onSearchInput(e) {
+		searchQuery = e.target.value;
+		clearTimeout(searchDebounce);
+		if (searchQuery.length === 0) {
+			searchResults = [];
+			return;
+		}
+		searchDebounce = setTimeout(async () => {
+			const res = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`);
+			searchResults = await res.json();
+		}, 150);
+	}
+
+	function onSearchResultClick(username) {
+		searchQuery = '';
+		searchResults = [];
 		searchExpanded = false;
+		goto(`/profile/${username}`);
 	}
 
 	function toggleSettings() {
@@ -116,11 +143,22 @@
 				spellcheck="false"
 				autocomplete="off"
 				aria-label="Search"
-				placeholder="Search"
+				placeholder="Search players"
 				enterkeyhint="search"
 				bind:this={searchInput}
+				value={searchQuery}
+				oninput={onSearchInput}
 				onblur={onSearchBlur}
 			/>
+			{#if searchResults.length > 0}
+				<div class="search-results">
+					{#each searchResults as user}
+						<button class="search-result" onclick={() => onSearchResultClick(user.username)}>
+							{user.username}
+						</button>
+					{/each}
+				</div>
+			{/if}
 		</div>
 
 		{#snippet pingStatus()}
@@ -244,5 +282,39 @@
 	:global(.site-buttons .dasher .dropdown .signout:hover) {
 		background: var(--c-bad) !important;
 		color: #fff !important;
+	}
+
+	#clinput {
+		position: relative;
+	}
+
+	.search-results {
+		position: absolute;
+		top: 100%;
+		right: 0;
+		min-width: 160px;
+		background: var(--c-bg-box);
+		border: 1px solid var(--c-border);
+		border-radius: 3px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+		z-index: 100;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.search-result {
+		display: block;
+		width: 100%;
+		padding: 7px 12px;
+		text-align: left;
+		background: none;
+		border: none;
+		color: var(--c-font);
+		cursor: pointer;
+		font-size: 0.9em;
+	}
+
+	.search-result:hover {
+		background: var(--c-bg-zebra);
 	}
 </style>

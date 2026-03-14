@@ -39,6 +39,13 @@ export function getUser(username) {
 	return db.users[username.toLowerCase()] ?? null;
 }
 
+export function searchUsers(query, limit = 10) {
+	const needle = query.toLowerCase();
+	return Object.values(db.users)
+		.filter((u) => u.username.toLowerCase().includes(needle))
+		.slice(0, limit);
+}
+
 export function createUser(username) {
 	const key = username.toLowerCase();
 	if (db.users[key]) throw new Error('Username already taken');

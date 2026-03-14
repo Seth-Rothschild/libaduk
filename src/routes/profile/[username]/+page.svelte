@@ -1,5 +1,6 @@
 <script>
 	import GoBoard from '$lib/GoBoard.svelte';
+	import { replayMoves } from '$lib/gameLogic.svelte.js';
 
 	let { data } = $props();
 
@@ -79,8 +80,12 @@
 		return '\ue00a';
 	}
 
-	function emptySignMap(size) {
-		return Array.from({ length: size }, () => Array(size).fill(0));
+	function signMapForGame(game) {
+		const size = game.size ?? 19;
+		if (!game.moves || game.moves.length === 0) {
+			return Array.from({ length: size }, () => Array(size).fill(0));
+		}
+		return replayMoves(game.moves, size).signMap;
 	}
 
 	function formatMoveCoord(move) {
@@ -235,7 +240,7 @@
 				<article class="game-row">
 					<a class="game-row__overlay" href="/play/{game.id}"></a>
 					<div class="game-row__board mini-board" style="margin-right: 14px;">
-						<GoBoard signMap={emptySignMap(size)} {size} vertexSize={miniVertexSize(size)} />
+						<GoBoard signMap={signMapForGame(game)} {size} vertexSize={miniVertexSize(size)} />
 					</div>
 					<div class="game-row__infos">
 						<div class="header" data-icon={gameIcon(game.timeControl)}>

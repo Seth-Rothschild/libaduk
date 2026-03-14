@@ -21,7 +21,7 @@ function readjustShifts(shiftMap, x, y) {
 	}
 }
 
-function replayMoves(moves, size) {
+export function replayMoves(moves, size) {
 	let board = GoBoardLib.fromDimensions(size);
 	let sign = 1;
 	for (const move of moves) {
