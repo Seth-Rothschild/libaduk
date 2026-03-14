@@ -2,10 +2,7 @@ class GameSocket {
 	status = $state('disconnected');
 	gameId = $state(null);
 	color = $state(null);
-	size = $state(19);
 	opponent = $state(null);
-	blackName = $state(null);
-	whiteName = $state(null);
 
 	#ws = null;
 	#onMessage = null;
@@ -31,9 +28,6 @@ class GameSocket {
 			if (msg.type === 'joined') {
 				this.gameId = msg.gameId;
 				this.color = msg.color;
-				this.size = msg.size ?? 19;
-				this.blackName = msg.blackName ?? null;
-				this.whiteName = msg.whiteName ?? null;
 				if (msg.opponent) this.opponent = msg.opponent;
 			}
 			if (msg.type === 'opponent_joined') {
@@ -58,10 +52,7 @@ class GameSocket {
 		this.#ws?.close();
 		this.gameId = null;
 		this.color = null;
-		this.size = 19;
 		this.opponent = null;
-		this.blackName = null;
-		this.whiteName = null;
 	}
 }
 

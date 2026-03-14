@@ -19,7 +19,7 @@
 	const ICON_INFO = '\ue060';
 
 	const gameId = $derived(page.params.gameId);
-	const isLocal = $derived(page.url.searchParams.get('local') === 'true');
+	const isLocal = $derived(data.game.local === true);
 
 	let boardContainerWidth = $state(0);
 
@@ -33,6 +33,7 @@
 	const blackCaptures = $derived(gs.board.getCaptures(1));
 	const whiteCaptures = $derived(gs.board.getCaptures(-1));
 
+	const isSpectator = $derived(!isLocal && data.viewerColor === null);
 	const mySign = $derived(isLocal ? 1 : (gs.mySign ?? -1));
 	const myColor = $derived(mySign === 1 ? 'black' : 'white');
 	const oppColor = $derived(myColor === 'black' ? 'white' : 'black');
@@ -180,8 +181,13 @@
 	}
 
 	onMount(() => {
-		gameSocket.onMessage((msg) => gs.handleMessage(msg));
-		gameSocket.connect({ type: 'join', gameId, username: displayName });
+		gs.initFromData(data.game, data.viewerColor);
+
+		const isLive = ['waiting', 'playing', 'scoring'].includes(data.game.status);
+		if (isLive) {
+			gameSocket.onMessage((msg) => gs.handleMessage(msg));
+			gameSocket.connect({ type: 'join', gameId, username: displayName });
+		}
 
 		const mainWrap = document.getElementById('main-wrap');
 		if (mainWrap) mainWrap.style.display = 'block';
@@ -206,18 +212,18 @@
 				</div>
 				<div class="game__meta__players">
 					<div class="player color-icon is black text">
-						{isLocal
-							? (gameSocket.blackName ?? 'Black')
+						{isLocal || isSpectator
+							? (data.game.blackName ?? 'Black')
 							: myColor === 'black'
 								? displayName
-								: (gameSocket.opponent ?? '...')}
+								: (gameSocket.opponent ?? data.game.whiteName ?? '...')}
 					</div>
 					<div class="player color-icon is white text">
-						{isLocal
-							? (gameSocket.whiteName ?? 'White')
+						{isLocal || isSpectator
+							? (data.game.whiteName ?? 'White')
 							: myColor === 'white'
 								? displayName
-								: (gameSocket.opponent ?? '...')}
+								: (gameSocket.opponent ?? data.game.blackName ?? '...')}
 					</div>
 				</div>
 			</section>
@@ -234,6 +240,9 @@
 			{/if}
 			{#if gs.status === 'abandoned'}
 				<section class="status">Opponent left.</section>
+			{/if}
+			{#if gs.status === 'aborted'}
+				<section class="status">Game aborted.</section>
 			{/if}
 		</div>
 	</aside>
@@ -266,14 +275,16 @@
 					onTimeout={isLocal ? () => handleTimeout(oppColor) : null}
 				/>
 			{/if}
-			<div class="ruser ruser-top color-icon is {oppColor}">
+			<div class="ruser ruser-top color-icon is {isSpectator ? 'black' : oppColor}">
 				<i class="line"></i>
 				<name
 					>{isLocal
 						? oppColor === 'white'
-							? (gameSocket.whiteName ?? 'Guest')
-							: (gameSocket.blackName ?? 'Guest')
-						: (gameSocket.opponent ?? (gs.status === 'waiting' ? 'Waiting...' : oppColor))}</name
+							? (data.game.whiteName ?? 'Guest')
+							: (data.game.blackName ?? 'Guest')
+						: isSpectator
+							? (data.game.blackName ?? 'Black')
+							: (gameSocket.opponent ?? (gs.status === 'waiting' ? 'Waiting...' : oppColor))}</name
 				>
 				{#if opponentCaptures > 0}
 					<span class="material">+{opponentCaptures}</span>
@@ -361,6 +372,10 @@
 					<div class="message" data-icon={ICON_INFO}>
 						<div>Your opponent has left the game.</div>
 					</div>
+				{:else if gs.status === 'aborted'}
+					<div class="message" data-icon={ICON_INFO}>
+						<div>This game was aborted.</div>
+					</div>
 				{/if}
 			</div>
 
@@ -411,9 +426,9 @@
 				{/if}
 			</div>
 
-			<div class="ruser ruser-bottom color-icon is {myColor} active">
+			<div class="ruser ruser-bottom color-icon is {isSpectator ? 'white' : myColor}">
 				<i class="line"></i>
-				<name>{isLocal ? (gameSocket.blackName ?? 'You') : displayName}</name>
+				<name>{isLocal ? (data.game.blackName ?? 'You') : isSpectator ? (data.game.whiteName ?? 'White') : displayName}</name>
 				{#if myCaptures > 0}
 					<span class="material">+{myCaptures}</span>
 				{/if}

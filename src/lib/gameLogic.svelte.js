@@ -68,6 +68,66 @@ export class GameState {
 		if (isLocal) this.mySign = 1;
 	}
 
+	initFromData(game, viewerColor) {
+		this.boardSize = game.size ?? 19;
+		this.timeControl = game.timeControl ?? { type: 'none' };
+		this.shiftMap = emptyShiftMap(this.boardSize);
+
+		if (viewerColor === 'black') this.mySign = 1;
+		else if (viewerColor === 'white') this.mySign = -1;
+		else this.mySign = null;
+
+		if (game.moves && game.moves.length > 0) {
+			this.board = replayMoves(game.moves, this.boardSize);
+			this.consecutivePasses = 0;
+			this.currentSign = game.moves.length % 2 === 0 ? 1 : -1;
+			const lastMoveEntry = game.moves.at(-1);
+			if (lastMoveEntry?.type === 'move') this.lastMove = [lastMoveEntry.x, lastMoveEntry.y];
+		} else {
+			this.board = GoBoardLib.fromDimensions(this.boardSize);
+		}
+
+		if (game.clockBlack && game.clockWhite) {
+			const moves = game.moves ?? [];
+			const activeColor = moves.length % 2 === 0 ? 'black' : 'white';
+			this.clockState = {
+				black: { ...game.clockBlack },
+				white: { ...game.clockWhite },
+				activeColor,
+				turnStartedAt: null,
+				periodMs: game.timeControl?.periodTime ? game.timeControl.periodTime * 1000 : 0
+			};
+		} else {
+			this.clockState = null;
+		}
+
+		if (game.corrActiveColor) {
+			this.corrState = {
+				activeColor: game.corrActiveColor,
+				turnDeadline: game.corrTurnDeadline
+			};
+		} else {
+			this.corrState = null;
+		}
+
+		if (game.scoringActive) {
+			this.status = 'scoring';
+			this.deadStones = game.scoringDeadStones ?? [];
+			this.blackApproved = game.scoringBlackApproved ?? false;
+			this.whiteApproved = game.scoringWhiteApproved ?? false;
+		} else if (game.status === 'finished') {
+			this.status = 'gameover';
+			this.winner = game.winner === 'black' ? 1 : game.winner === 'white' ? -1 : null;
+			this.winnerResult = game.result ?? null;
+		} else if (game.status === 'abandoned') {
+			this.status = 'abandoned';
+		} else if (game.status === 'aborted') {
+			this.status = 'aborted';
+		} else {
+			this.status = game.status ?? 'waiting';
+		}
+	}
+
 	applyMove(x, y, sign) {
 		const vertex = [x, y];
 		const prevSignMap = this.board.signMap;
@@ -98,34 +158,11 @@ export class GameState {
 
 	handleMessage(msg) {
 		if (msg.type === 'joined') {
-			this.boardSize = msg.size ?? 19;
-			this.timeControl = msg.timeControl ?? { type: 'none' };
-			this.clockState = msg.clock ?? null;
-			this.corrState = msg.corrState ?? null;
-			this.shiftMap = emptyShiftMap(this.boardSize);
-			if (!this.isLocal) {
+			if (msg.color && !this.isLocal) {
 				this.mySign = msg.color === 'black' ? 1 : -1;
 			}
-			if (msg.moves && msg.moves.length > 0) {
-				this.board = replayMoves(msg.moves, this.boardSize);
-				this.consecutivePasses = 0;
-				this.currentSign = msg.moves.length % 2 === 0 ? 1 : -1;
-				const lastMoveEntry = msg.moves.at(-1);
-				if (lastMoveEntry?.type === 'move') this.lastMove = [lastMoveEntry.x, lastMoveEntry.y];
-			} else {
-				this.board = GoBoardLib.fromDimensions(this.boardSize);
-			}
-			if (msg.status === 'finished') {
-				this.status = 'gameover';
-				this.winner = msg.winner === 'black' ? 1 : msg.winner === 'white' ? -1 : null;
-				this.winnerResult = msg.result ?? null;
-			} else if (msg.status === 'scoring') {
-				this.status = 'scoring';
-				this.deadStones = msg.deadStones ?? [];
-				this.blackApproved = msg.scoringApprovals?.blackApproved ?? false;
-				this.whiteApproved = msg.scoringApprovals?.whiteApproved ?? false;
-			} else {
-				this.status = msg.status ?? (msg.local || msg.opponent ? 'playing' : 'waiting');
+			if (msg.status) {
+				this.status = msg.status === 'finished' ? 'gameover' : msg.status;
 			}
 		}
 		if (msg.type === 'opponent_joined') {

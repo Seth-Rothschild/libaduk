@@ -275,7 +275,7 @@ function handleMessage(socket, raw) {
 			rooms.set(roomId, room);
 		}
 
-		if (room.status === 'aborted') {
+		if (room.status === 'aborted' && !room.local) {
 			send(socket, { type: 'error', message: 'Game is over' });
 			return;
 		}
@@ -284,50 +284,43 @@ function handleMessage(socket, raw) {
 		const isAuthenticated = !!socket.authenticatedUsername;
 
 		// Abandoned rooms: only authenticated players who held a seat can return.
-		// Anyone else (third parties, anonymous users) is rejected.
+		// Anyone else (third parties, anonymous users) gets a read-only slim response.
 		if (room.status === 'abandoned') {
 			const wasBlack = isAuthenticated && room.blackName === username;
 			const wasWhite = isAuthenticated && room.whiteName === username;
 			if (!wasBlack && !wasWhite) {
-				send(socket, { type: 'error', message: 'Game is over' });
+				send(socket, {
+					type: 'joined',
+					gameId: roomId,
+					color: null,
+					status: 'abandoned'
+				});
 				return;
 			}
 			room.status = 'playing';
 		}
 
-		// Finished games are read-only: send the full historical state so the board
-		// can be replayed, but don't seat the player or modify any room/db state.
+		// Finished games: slim response, client has full state from HTTP.
 		if (room.status === 'finished') {
-			const game = db.getGame(roomId);
 			const color =
 				room.blackName === username ? 'black' : room.whiteName === username ? 'white' : null;
 			send(socket, {
 				type: 'joined',
 				gameId: roomId,
 				color,
-				size: room.size,
-				status: 'finished',
-				local: room.local ?? false,
-				blackName: room.blackName,
-				whiteName: room.whiteName,
-				opponent: null,
-				winner: game?.winner ?? null,
-				result: game?.result ?? null,
-				moves: game?.moves ?? [],
-				timeControl: room.timeControl,
-				clock: null,
-				corrState: null
+				status: 'finished'
 			});
 			return;
 		}
 
 		if (room.local) {
-			// Determine which side is the user from the color sentinel set at room creation.
-			// blackName === 'black' means the user chose black; otherwise they chose white.
-			const userIsBlack = room.blackName === 'black';
-			room.blackName = userIsBlack ? username : 'Guest';
-			room.whiteName = userIsBlack ? 'Guest' : username;
-			socket.color = 'black'; // single socket handles both sides
+			const isSentinel = room.blackName === 'black' || room.blackName === 'white';
+			if (isSentinel) {
+				const userIsBlack = room.blackName === 'black';
+				room.blackName = userIsBlack ? username : 'Guest';
+				room.whiteName = userIsBlack ? 'Guest' : username;
+			}
+			socket.color = 'black';
 			room.black = socket;
 			room.white = socket;
 			room.status = 'playing';
@@ -464,29 +457,14 @@ function handleMessage(socket, raw) {
 			room.status = 'finished';
 		}
 
-		const game = db.getGame(roomId);
 		const oppSocket = socket.color === 'black' ? room.white : room.black;
 		const inScoring = room.scoring.active;
 		send(socket, {
 			type: 'joined',
 			gameId: roomId,
 			color: socket.color,
-			size: room.size,
 			status: inScoring ? 'scoring' : room.status,
-			local: room.local ?? false,
-			blackName: room.blackName,
-			whiteName: room.whiteName,
-			opponent: room.local ? null : (oppSocket?.username ?? null),
-			winner: game?.winner ?? null,
-			result: game?.result ?? null,
-			moves: game?.moves ?? [],
-			timeControl: room.timeControl,
-			clock: clockSnapshot(room.clock),
-			corrState: room.corrState ? { ...room.corrState } : null,
-			deadStones: inScoring ? room.scoring.deadStones : undefined,
-			scoringApprovals: inScoring
-				? { blackApproved: room.scoring.blackApproved, whiteApproved: room.scoring.whiteApproved }
-				: undefined
+			opponent: room.local ? null : (oppSocket?.username ?? null)
 		});
 
 		if (corrTimeoutLoser !== null) {

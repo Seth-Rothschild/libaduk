@@ -124,13 +124,24 @@ describe('join', () => {
 		expect(sock.lastMsg()).toMatchObject({ type: 'error', message: 'Game is over' });
 	});
 
-	it('errors on abandoned game', () => {
-		const room = createRoom(19, { type: 'none' }, 'black');
-		dbMock._store.games[room.id].status = 'abandoned';
-		room.status = 'abandoned';
-		const sock = makeSocket();
-		join(sock, room.id, 'Alice');
-		expect(sock.lastMsg()).toMatchObject({ type: 'error', message: 'Game is over' });
+	it('sends slim joined for abandoned game (no moves — HTTP provides those)', () => {
+		const room = createRoom(9, { type: 'none' }, 'black');
+		const alice = makeSocket();
+		const bob = makeSocket();
+		join(alice, room.id, 'Alice');
+		join(bob, room.id, 'Bob');
+		send(alice, { type: 'move', x: 3, y: 3 });
+		send(bob, { type: 'move', x: 4, y: 4 });
+		handleDisconnect(alice);
+		handleDisconnect(bob);
+
+		const viewer = makeSocket();
+		join(viewer, room.id, 'Carol');
+		const msg = viewer.lastMsg();
+		expect(msg.type).toBe('joined');
+		expect(msg.status).toBe('abandoned');
+		expect(msg.color).toBeNull();
+		expect(msg.moves).toBeUndefined();
 	});
 
 	it('first player joins and gets waiting status', () => {
@@ -140,8 +151,7 @@ describe('join', () => {
 		expect(alice.lastMsg()).toMatchObject({
 			type: 'joined',
 			color: 'black',
-			status: 'waiting',
-			blackName: 'Alice'
+			status: 'waiting'
 		});
 	});
 
@@ -152,9 +162,7 @@ describe('join', () => {
 		join(alice, room.id, 'Alice');
 		alice.sent.length = 0;
 		join(bob, room.id, 'Bob');
-		// Bob gets joined with playing status
 		expect(bob.lastMsg()).toMatchObject({ type: 'joined', color: 'white', status: 'playing' });
-		// Alice gets opponent_joined
 		expect(alice.lastMsg()).toMatchObject({ type: 'opponent_joined', opponent: 'Bob' });
 	});
 
@@ -206,15 +214,18 @@ describe('join', () => {
 		expect(dbMock._store.games[room.id].blackName).toBe('Alice');
 	});
 
-	it('game settings (size, timeControl) are sent to the joining player', () => {
+	it('joined response includes color and status but not game data (HTTP provides that)', () => {
 		const room = createRoom(9, { type: 'fischer', initial: 300, increment: 5 }, 'black');
 		const alice = makeSocket();
 		join(alice, room.id, 'Alice');
-		expect(alice.lastMsg()).toMatchObject({ type: 'joined', size: 9 });
-		expect(alice.lastMsg().timeControl).toMatchObject({ type: 'fischer', initial: 300, increment: 5 });
+		const msg = alice.lastMsg();
+		expect(msg).toMatchObject({ type: 'joined', color: 'black', status: 'waiting' });
+		expect(msg.size).toBeUndefined();
+		expect(msg.timeControl).toBeUndefined();
+		expect(msg.moves).toBeUndefined();
 	});
 
-	it('returns historical state for finished game', () => {
+	it('sends slim joined for finished game (no moves — HTTP provides those)', () => {
 		const room = createRoom(19, { type: 'none' }, 'black');
 		const alice = makeSocket();
 		const bob = makeSocket();
@@ -223,7 +234,24 @@ describe('join', () => {
 		send(alice, { type: 'resign' });
 		const observer = makeSocket();
 		join(observer, room.id, 'Carol');
-		expect(observer.lastMsg()).toMatchObject({ type: 'joined', status: 'finished' });
+		const msg = observer.lastMsg();
+		expect(msg).toMatchObject({ type: 'joined', status: 'finished' });
+		expect(msg.moves).toBeUndefined();
+	});
+
+	it('finished game joined includes color for participants', () => {
+		const room = createRoom(19, { type: 'none' }, 'black');
+		const alice = makeSocket({ username: 'Alice' });
+		const bob = makeSocket({ username: 'Bob' });
+		join(alice, room.id, 'Alice');
+		join(bob, room.id, 'Bob');
+		send(alice, { type: 'resign' });
+		handleDisconnect(alice);
+		handleDisconnect(bob);
+		const alice2 = makeSocket({ username: 'Alice' });
+		join(alice2, room.id, 'Alice');
+		const msg = alice2.lastMsg();
+		expect(msg).toMatchObject({ type: 'joined', status: 'finished', color: 'black' });
 	});
 });
 
@@ -753,24 +781,14 @@ describe('reconnect — hot (room still in memory)', () => {
 		return { room, alice, bob };
 	}
 
-	it('joined response includes full move history', () => {
+	it('joined response has status and color but no moves (HTTP provides those)', () => {
 		const { room, alice } = setupWithMoves();
 		handleDisconnect(alice);
 		const alice2 = makeSocket({ username: 'Alice' });
 		join(alice2, room.id, 'Alice');
 		const msg = alice2.lastMsg();
-		expect(msg.type).toBe('joined');
-		expect(msg.moves).toHaveLength(2);
-		expect(msg.moves[0]).toMatchObject({ type: 'move', x: 3, y: 3 });
-		expect(msg.moves[1]).toMatchObject({ type: 'move', x: 4, y: 4 });
-	});
-
-	it('joined response has status playing', () => {
-		const { room, alice } = setupWithMoves();
-		handleDisconnect(alice);
-		const alice2 = makeSocket({ username: 'Alice' });
-		join(alice2, room.id, 'Alice');
-		expect(alice2.lastMsg()).toMatchObject({ type: 'joined', status: 'playing' });
+		expect(msg).toMatchObject({ type: 'joined', status: 'playing', color: 'black' });
+		expect(msg.moves).toBeUndefined();
 	});
 
 	it('already-connected opponent gets opponent_joined when player reconnects', () => {
@@ -780,22 +798,6 @@ describe('reconnect — hot (room still in memory)', () => {
 		const alice2 = makeSocket({ username: 'Alice' });
 		join(alice2, room.id, 'Alice');
 		expect(bob.lastMsg()).toMatchObject({ type: 'opponent_joined', opponent: 'Alice' });
-	});
-
-	it('reconnecting to a game with a timed clock sends clock state', () => {
-		const TC = { type: 'byoyomi', initial: 300, periods: 5, periodTime: 30 };
-		const room = createRoom(19, TC, 'black');
-		const alice = makeSocket({ username: 'Alice' });
-		const bob = makeSocket({ username: 'Bob' });
-		join(alice, room.id, 'Alice');
-		join(bob, room.id, 'Bob');
-		send(alice, { type: 'move', x: 3, y: 3 });
-		handleDisconnect(alice);
-		const alice2 = makeSocket({ username: 'Alice' });
-		join(alice2, room.id, 'Alice');
-		const msg = alice2.lastMsg();
-		expect(msg.clock).toBeDefined();
-		expect(msg.clock.activeColor).toBe('white'); // bob just got a move
 	});
 
 	it('reconnecting player gets correct color', () => {
@@ -862,18 +864,20 @@ describe('reconnect — both players disconnected', () => {
 		expect(alice2.lastMsg()).toMatchObject({ type: 'opponent_joined', opponent: 'Bob' });
 	});
 
-	it('third party cannot join an in-memory abandoned room', () => {
+	it('third party sees read-only view of in-memory abandoned room', () => {
 		const { room } = setupBothDisconnected();
 		const charlie = makeSocket({ username: 'Charlie' });
 		join(charlie, room.id, 'Charlie');
-		expect(charlie.lastMsg()).toMatchObject({ type: 'error' });
+		const msg = charlie.lastMsg();
+		expect(msg).toMatchObject({ type: 'joined', status: 'abandoned', color: null });
 	});
 
-	it('anonymous player cannot rejoin an in-memory abandoned room', () => {
+	it('anonymous player sees read-only view of in-memory abandoned room', () => {
 		const { room } = setupBothDisconnected();
 		const anon = makeSocket(); // no authenticatedUsername
 		join(anon, room.id, 'Alice');
-		expect(anon.lastMsg()).toMatchObject({ type: 'error' });
+		const msg = anon.lastMsg();
+		expect(msg).toMatchObject({ type: 'joined', status: 'abandoned', color: null });
 	});
 });
 
@@ -894,7 +898,7 @@ describe('cold restart — basic game state', () => {
 		return { room, alice, bob };
 	}
 
-	it('first player back gets correct color and move history', () => {
+	it('first player back gets correct color and status', () => {
 		const { room } = setupGame();
 		crash(room.id);
 		const alice2 = makeSocket({ username: 'Alice' });
@@ -904,7 +908,6 @@ describe('cold restart — basic game state', () => {
 			color: 'black',
 			status: 'playing'
 		});
-		expect(alice2.lastMsg().moves).toHaveLength(2);
 	});
 
 	it('both players reconnect and game resumes', () => {
@@ -953,59 +956,22 @@ describe('cold restart — clock (timed games)', () => {
 		_removeRoom(roomId);
 	}
 
-	it('clock is included in joined response after cold restart', () => {
+	it('clock and corrState not in joined response after cold restart (HTTP provides those)', () => {
 		const TC = { type: 'byoyomi', initial: 300, periods: 5, periodTime: 30 };
 		const room = createRoom(19, TC, 'black');
 		const alice = makeSocket({ username: 'Alice' });
 		const bob = makeSocket({ username: 'Bob' });
 		join(alice, room.id, 'Alice');
 		join(bob, room.id, 'Bob');
-		send(alice, { type: 'move', x: 3, y: 3 }); // sets turnStartedAt
+		send(alice, { type: 'move', x: 3, y: 3 });
 		send(bob, { type: 'move', x: 4, y: 4 });
-		// Manually reduce alice's clock to simulate elapsed time
-		// (rooms.js deducts on each move; here we just verify the snapshot)
 		crash(room.id);
 		const alice2 = makeSocket({ username: 'Alice' });
 		join(alice2, room.id, 'Alice');
 		const msg = alice2.lastMsg();
-		// After cold restart, clock is re-initialised from timeControl (known limitation).
-		// At minimum, a clock snapshot must be present and have the right shape.
-		expect(msg.clock).toBeDefined();
-		expect(msg.clock.black).toBeDefined();
-		expect(msg.clock.white).toBeDefined();
-	});
-
-	it('clock activeColor reflects whose turn it is after replaying move history', () => {
-		const TC = { type: 'fischer', initial: 300, increment: 5 };
-		const room = createRoom(19, TC, 'black');
-		const alice = makeSocket({ username: 'Alice' });
-		const bob = makeSocket({ username: 'Bob' });
-		join(alice, room.id, 'Alice');
-		join(bob, room.id, 'Bob');
-		send(alice, { type: 'move', x: 3, y: 3 }); // white's turn after this
-		crash(room.id);
-		const alice2 = makeSocket({ username: 'Alice' });
-		join(alice2, room.id, 'Alice');
-		// After cold restart, clock should know it's white's turn
-		expect(alice2.lastMsg().clock.activeColor).toBe('white');
-	});
-
-	it('correspondence deadline is preserved across cold restart', () => {
-		const corrTC = { type: 'correspondence', days: 3 };
-		const room = createRoom(19, corrTC, 'black');
-		const alice = makeSocket({ username: 'Alice' });
-		const bob = makeSocket({ username: 'Bob' });
-		join(alice, room.id, 'Alice');
-		join(bob, room.id, 'Bob');
-		send(alice, { type: 'move', x: 3, y: 3 }); // sets corrState + deadline
-		const deadlineBefore = dbMock._store.games[room.id].corrTurnDeadline;
-		crash(room.id);
-		const alice2 = makeSocket({ username: 'Alice' });
-		join(alice2, room.id, 'Alice');
-		const bob2 = makeSocket({ username: 'Bob' });
-		join(bob2, room.id, 'Bob');
-		// corrState comes from DB; deadline must be preserved exactly
-		expect(alice2.lastMsg().corrState.turnDeadline).toBe(deadlineBefore);
+		expect(msg).toMatchObject({ type: 'joined', color: 'black', status: 'playing' });
+		expect(msg.clock).toBeUndefined();
+		expect(msg.moves).toBeUndefined();
 	});
 });
 
@@ -1074,9 +1040,8 @@ describe('cold restart — consecutive passes and scoring', () => {
 		// Capture alice2's joined message before bob2 joins (which would push opponent_joined)
 		const alice2Joined = alice2.lastMsg();
 		join(bob2, room.id, 'Bob');
-		// Scoring phase was active when the server crashed — it must be restored
+		// Scoring phase was active when the server crashed — status must reflect it
 		expect(alice2Joined).toMatchObject({ type: 'joined', status: 'scoring' });
-		expect(alice2Joined.deadStones).toEqual([[3, 3]]);
 	});
 });
 
@@ -1102,20 +1067,11 @@ describe('reconnect — cold (room evicted from memory)', () => {
 		expect(alice2.lastMsg()).toMatchObject({ type: 'joined', color: 'black' });
 	});
 
-	it('cold reconnect includes move history from DB', () => {
-		const { roomId } = setupColdReconnect();
-		const alice2 = makeSocket({ username: 'Alice' });
-		join(alice2, roomId, 'Alice');
-		const msg = alice2.lastMsg();
-		expect(msg.moves).toHaveLength(2);
-		expect(msg.moves[0]).toMatchObject({ type: 'move', x: 3, y: 3 });
-	});
-
 	it('cold reconnect: status is playing', () => {
 		const { roomId } = setupColdReconnect();
 		const alice2 = makeSocket({ username: 'Alice' });
 		join(alice2, roomId, 'Alice');
-		expect(alice2.lastMsg()).toMatchObject({ status: 'playing' });
+		expect(alice2.lastMsg()).toMatchObject({ type: 'joined', status: 'playing', color: 'black' });
 	});
 
 	it('cold reconnect: second player can join and both can play', () => {
@@ -1132,7 +1088,7 @@ describe('reconnect — cold (room evicted from memory)', () => {
 		expect(bob2.lastMsg()).toMatchObject({ type: 'move', x: 5, y: 5 });
 	});
 
-	it('cold reconnect to a finished game gives historical state', () => {
+	it('cold reconnect to a finished game gives slim joined', () => {
 		const room = createRoom(19, { type: 'none' }, 'black');
 		const alice = makeSocket({ username: 'Alice' });
 		const bob = makeSocket({ username: 'Bob' });
@@ -1146,8 +1102,7 @@ describe('reconnect — cold (room evicted from memory)', () => {
 		expect(alice2.lastMsg()).toMatchObject({
 			type: 'joined',
 			status: 'finished',
-			color: 'black',
-			winner: 'white'
+			color: 'black'
 		});
 	});
 });
@@ -1174,24 +1129,16 @@ describe('reconnect — scoring phase', () => {
 		expect(alice2.lastMsg()).toMatchObject({ type: 'joined', status: 'scoring' });
 	});
 
-	it('reconnecting player receives current dead stones', () => {
+	it('reconnecting player does not receive dead stones or approvals in WS (HTTP provides those)', () => {
 		const { room, alice } = setupScoring();
-		handleDisconnect(alice);
-		const alice2 = makeSocket({ username: 'Alice' });
-		join(alice2, room.id, 'Alice');
-		const msg = alice2.lastMsg();
-		expect(msg.deadStones).toEqual([[3, 3], [3, 4]]);
-	});
-
-	it('reconnecting player receives current approval state', () => {
-		const { room, alice } = setupScoring();
-		// Alice approves before disconnecting
 		send(alice, { type: 'approve_score', signMap: [[]] });
 		handleDisconnect(alice);
 		const alice2 = makeSocket({ username: 'Alice' });
 		join(alice2, room.id, 'Alice');
 		const msg = alice2.lastMsg();
-		expect(msg.scoringApprovals).toMatchObject({ blackApproved: true, whiteApproved: false });
+		expect(msg).toMatchObject({ type: 'joined', status: 'scoring' });
+		expect(msg.deadStones).toBeUndefined();
+		expect(msg.scoringApprovals).toBeUndefined();
 	});
 });
 
@@ -1200,7 +1147,7 @@ describe('cold restart — scoring approvals', () => {
 		_removeRoom(roomId);
 	}
 
-	it('one-sided approval is preserved after cold restart', () => {
+	it('scoring status is preserved after cold restart', () => {
 		const room = createRoom(19, { type: 'none' }, 'black');
 		const alice = makeSocket({ username: 'Alice' });
 		const bob = makeSocket({ username: 'Bob' });
@@ -1210,33 +1157,11 @@ describe('cold restart — scoring approvals', () => {
 		send(bob, { type: 'pass' });
 		send(alice, { type: 'score_phase' });
 		send(alice, { type: 'approve_score', signMap: [[]] });
-		// Alice (black) approved; crash before Bob approves
 		crash(room.id);
 		const alice2 = makeSocket({ username: 'Alice' });
 		join(alice2, room.id, 'Alice');
 		const msg = alice2.lastMsg();
 		expect(msg).toMatchObject({ type: 'joined', status: 'scoring' });
-		expect(msg.scoringApprovals).toMatchObject({ blackApproved: true, whiteApproved: false });
-	});
-
-	it('dead stones and partial approval are both preserved after cold restart', () => {
-		const room = createRoom(19, { type: 'none' }, 'black');
-		const alice = makeSocket({ username: 'Alice' });
-		const bob = makeSocket({ username: 'Bob' });
-		join(alice, room.id, 'Alice');
-		join(bob, room.id, 'Bob');
-		send(alice, { type: 'pass' });
-		send(bob, { type: 'pass' });
-		send(alice, { type: 'score_phase' });
-		send(alice, { type: 'mark_dead', stones: [[5, 5]] });
-		send(bob, { type: 'approve_score', signMap: [[]] });
-		// Bob (white) approved; crash
-		crash(room.id);
-		const bob2 = makeSocket({ username: 'Bob' });
-		join(bob2, room.id, 'Bob');
-		const msg = bob2.lastMsg();
-		expect(msg.deadStones).toEqual([[5, 5]]);
-		expect(msg.scoringApprovals).toMatchObject({ blackApproved: false, whiteApproved: true });
 	});
 });
 
@@ -1325,50 +1250,17 @@ describe('cold restart — clock time preservation', () => {
 		_removeRoom(roomId);
 	}
 
-	it('byo-yomi clock times reflect deductions after cold restart (not reset to initial)', () => {
+	it('clock data is preserved in DB after cold restart (verified via DB, not WS response)', () => {
 		const TC = { type: 'byoyomi', initial: 300, periods: 5, periodTime: 30 };
 		const room = createRoom(19, TC, 'black');
 		const alice = makeSocket({ username: 'Alice' });
 		const bob = makeSocket({ username: 'Bob' });
 		join(alice, room.id, 'Alice');
 		join(bob, room.id, 'Bob');
-		// First move sets turnStartedAt; simulate alice spending 60s
 		send(alice, { type: 'move', x: 3, y: 3 });
 		room.clock.turnStartedAt = Date.now() - 60000;
-		send(bob, { type: 'move', x: 4, y: 4 }); // deducts 60s from bob's clock via turnStartedAt
-		// After bob's move, alice's clock should have been deducted on her previous move
-		// and bob's clock should have been deducted 60s (300000 - 60000 = 240000)
-		crash(room.id);
-		const alice2 = makeSocket({ username: 'Alice' });
-		join(alice2, room.id, 'Alice');
-		const msg = alice2.lastMsg();
-		// Clock must not be reset to full 300s for both players
-		expect(msg.clock.white.mainMs).toBeLessThan(300000);
-	});
-
-	it('turnStartedAt is null or recent after cold restart (not a stale pre-crash timestamp)', () => {
-		const TC = { type: 'byoyomi', initial: 300, periods: 5, periodTime: 30 };
-		const room = createRoom(19, TC, 'black');
-		const alice = makeSocket({ username: 'Alice' });
-		const bob = makeSocket({ username: 'Bob' });
-		join(alice, room.id, 'Alice');
-		join(bob, room.id, 'Bob');
-		send(alice, { type: 'move', x: 3, y: 3 }); // sets turnStartedAt
-		// Simulate that the crash happens 2 minutes after this move
-		const preCrashTimestamp = Date.now() - 120000;
-		room.clock.turnStartedAt = preCrashTimestamp;
-		crash(room.id);
-		const reconnectTime = Date.now();
-		const alice2 = makeSocket({ username: 'Alice' });
-		join(alice2, room.id, 'Alice');
-		const msg = alice2.lastMsg();
-		// If turnStartedAt is the pre-crash stale value, the client would compute
-		// 2+ minutes of elapsed time and immediately flag the player as timed out.
-		// It must be null or a timestamp >= reconnectTime.
-		if (msg.clock.turnStartedAt !== null) {
-			expect(msg.clock.turnStartedAt).toBeGreaterThanOrEqual(reconnectTime);
-		} else {
-			expect(msg.clock.turnStartedAt).toBeNull();
-		}
+		send(bob, { type: 'move', x: 4, y: 4 });
+		// Clock deductions are persisted to DB
+		expect(dbMock._store.games[room.id].clockWhite.mainMs).toBeLessThan(300000);
 	});
 });

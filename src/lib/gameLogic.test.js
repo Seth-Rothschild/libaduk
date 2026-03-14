@@ -13,16 +13,9 @@ function joined(overrides = {}) {
 	return { type: 'joined', color: 'black', size: 19, status: 'waiting', ...overrides };
 }
 
-// ---- Tests: joined -----------------------------------------------------
+// ---- Tests: joined (slim WS response) ----------------------------------
 
 describe('joined', () => {
-	it('sets boardSize and timeControl', () => {
-		const gs = make();
-		gs.handleMessage(joined({ size: 13, timeControl: { type: 'fischer', initial: 300, increment: 5 } }));
-		expect(gs.boardSize).toBe(13);
-		expect(gs.timeControl).toEqual({ type: 'fischer', initial: 300, increment: 5 });
-	});
-
 	it('sets mySign from color field', () => {
 		const gs = make();
 		gs.handleMessage(joined({ color: 'black' }));
@@ -33,75 +26,26 @@ describe('joined', () => {
 		expect(gs2.mySign).toBe(-1);
 	});
 
-	it('sets status to waiting when no opponent yet', () => {
+	it('sets status from message', () => {
 		const gs = make();
 		gs.handleMessage(joined({ status: 'waiting' }));
 		expect(gs.status).toBe('waiting');
+
+		const gs2 = make();
+		gs2.handleMessage(joined({ status: 'playing' }));
+		expect(gs2.status).toBe('playing');
 	});
 
-	it('sets status to playing when opponent present', () => {
+	it('maps finished status to gameover', () => {
 		const gs = make();
-		gs.handleMessage(joined({ status: 'playing', opponent: 'Bob' }));
-		expect(gs.status).toBe('playing');
-	});
-
-	it('sets gameover for a finished game', () => {
-		const gs = make();
-		gs.handleMessage(
-			joined({ status: 'finished', winner: 'black', result: 'B+R' })
-		);
+		gs.handleMessage(joined({ status: 'finished' }));
 		expect(gs.status).toBe('gameover');
-		expect(gs.winner).toBe(1);
-		expect(gs.winnerResult).toBe('B+R');
-	});
-
-	it('finished with white winner sets winner to -1', () => {
-		const gs = make();
-		gs.handleMessage(joined({ status: 'finished', winner: 'white', result: 'W+R' }));
-		expect(gs.winner).toBe(-1);
-	});
-
-	it('resets board and currentSign for empty game', () => {
-		const gs = make();
-		gs.handleMessage(joined({ size: 9 }));
-		expect(gs.currentSign).toBe(1);
-		expect(gs.board.signMap[0][0]).toBe(0);
-	});
-
-	it('replays moves and sets currentSign from move count', () => {
-		const gs = make();
-		gs.handleMessage(
-			joined({
-				moves: [
-					{ type: 'move', x: 3, y: 3 },
-					{ type: 'move', x: 4, y: 4 }
-				]
-			})
-		);
-		expect(gs.currentSign).toBe(1); // 2 moves → back to black
-		expect(gs.board.signMap[3][3]).toBe(1);
-		expect(gs.board.signMap[4][4]).toBe(-1);
-	});
-
-	it('sets lastMove from last move entry', () => {
-		const gs = make();
-		gs.handleMessage(joined({ moves: [{ type: 'move', x: 5, y: 6 }] }));
-		expect(gs.lastMove).toEqual([5, 6]);
-	});
-
-	it('sets clockState and corrState from message', () => {
-		const clock = { activeColor: 'black', black: { mainMs: 60000 }, white: { mainMs: 60000 } };
-		const corrState = { activeColor: 'black', turnDeadline: 9999 };
-		const gs = make();
-		gs.handleMessage(joined({ clock, corrState }));
-		expect(gs.clockState).toEqual(clock);
-		expect(gs.corrState).toEqual(corrState);
 	});
 
 	it('does not override mySign in local mode', () => {
 		const gs = new GameState({ isLocal: true });
 		gs.handleMessage(joined({ color: 'white' }));
-		expect(gs.mySign).toBe(1); // local always plays as both, mySign fixed to 1
+		expect(gs.mySign).toBe(1);
 	});
 });
 
@@ -339,38 +283,244 @@ describe('aborted', () => {
 	});
 });
 
-// ---- Tests: reconnect via joined with scoring state --------------------
 
-describe('joined — scoring phase reconnect', () => {
-	it('restores scoring status', () => {
-		const gs = make({ mySign: 1 });
-		gs.handleMessage(joined({ status: 'scoring', deadStones: [] }));
-		expect(gs.status).toBe('scoring');
+// ---- Tests: initFromData (HTTP-first) ----------------------------------
+
+function gameData(overrides = {}) {
+	return {
+		id: 'test01',
+		size: 19,
+		status: 'playing',
+		blackName: 'Alice',
+		whiteName: 'Bob',
+		moves: [],
+		timeControl: { type: 'none' },
+		local: false,
+		winner: null,
+		result: null,
+		clockBlack: null,
+		clockWhite: null,
+		corrActiveColor: null,
+		corrTurnDeadline: null,
+		scoringActive: false,
+		scoringDeadStones: [],
+		scoringBlackApproved: false,
+		scoringWhiteApproved: false,
+		...overrides
+	};
+}
+
+describe('initFromData', () => {
+	it('sets boardSize and creates board', () => {
+		const gs = make();
+		gs.initFromData(gameData({ size: 9 }), 'black');
+		expect(gs.boardSize).toBe(9);
+		expect(gs.board.signMap).toHaveLength(9);
+		expect(gs.board.signMap[0]).toHaveLength(9);
 	});
 
-	it('restores dead stones', () => {
-		const gs = make({ mySign: 1 });
-		gs.handleMessage(joined({ status: 'scoring', deadStones: [[3, 3], [4, 4]] }));
-		expect(gs.deadStones).toEqual([[3, 3], [4, 4]]);
+	it('sets mySign from viewerColor', () => {
+		const gs = make();
+		gs.initFromData(gameData(), 'black');
+		expect(gs.mySign).toBe(1);
+
+		const gs2 = make();
+		gs2.initFromData(gameData(), 'white');
+		expect(gs2.mySign).toBe(-1);
 	});
 
-	it('restores approval state', () => {
-		const gs = make({ mySign: 1 });
-		gs.handleMessage(
-			joined({
-				status: 'scoring',
-				deadStones: [],
-				scoringApprovals: { blackApproved: true, whiteApproved: false }
-			})
+	it('sets mySign to null for spectators', () => {
+		const gs = make();
+		gs.initFromData(gameData(), null);
+		expect(gs.mySign).toBeNull();
+	});
+
+	it('replays moves and sets currentSign', () => {
+		const gs = make();
+		gs.initFromData(
+			gameData({
+				moves: [
+					{ type: 'move', x: 3, y: 3, color: 'black' },
+					{ type: 'move', x: 4, y: 4, color: 'white' }
+				]
+			}),
+			'black'
 		);
+		expect(gs.board.signMap[3][3]).toBe(1);
+		expect(gs.board.signMap[4][4]).toBe(-1);
+		expect(gs.currentSign).toBe(1);
+	});
+
+	it('sets lastMove from last move entry', () => {
+		const gs = make();
+		gs.initFromData(
+			gameData({
+				moves: [{ type: 'move', x: 5, y: 6, color: 'black' }]
+			}),
+			'black'
+		);
+		expect(gs.lastMove).toEqual([5, 6]);
+	});
+
+	it('sets status to playing', () => {
+		const gs = make();
+		gs.initFromData(gameData({ status: 'playing' }), 'black');
+		expect(gs.status).toBe('playing');
+	});
+
+	it('sets status to waiting', () => {
+		const gs = make();
+		gs.initFromData(gameData({ status: 'waiting', whiteName: null }), 'black');
+		expect(gs.status).toBe('waiting');
+	});
+
+	it('sets gameover for finished game with winner', () => {
+		const gs = make();
+		gs.initFromData(
+			gameData({ status: 'finished', winner: 'black', result: 'B+3.5' }),
+			'black'
+		);
+		expect(gs.status).toBe('gameover');
+		expect(gs.winner).toBe(1);
+		expect(gs.winnerResult).toBe('B+3.5');
+	});
+
+	it('sets abandoned status', () => {
+		const gs = make();
+		gs.initFromData(
+			gameData({
+				status: 'abandoned',
+				size: 9,
+				moves: [{ type: 'move', x: 3, y: 3, color: 'black' }]
+			}),
+			null
+		);
+		expect(gs.status).toBe('abandoned');
+		expect(gs.boardSize).toBe(9);
+		expect(gs.board.signMap[3][3]).toBe(1);
+	});
+
+	it('sets aborted status', () => {
+		const gs = make();
+		gs.initFromData(gameData({ status: 'aborted', size: 9 }), null);
+		expect(gs.status).toBe('aborted');
+		expect(gs.boardSize).toBe(9);
+	});
+
+	it('restores local game with moves and clock', () => {
+		const gs = new GameState({ isLocal: true });
+		gs.initFromData(
+			gameData({
+				size: 13,
+				local: true,
+				status: 'playing',
+				moves: [
+					{ type: 'move', x: 3, y: 3, color: 'black' },
+					{ type: 'move', x: 4, y: 4, color: 'white' },
+					{ type: 'move', x: 5, y: 5, color: 'black' }
+				],
+				timeControl: { type: 'byoyomi', initial: 60, periods: 3, periodTime: 30 },
+				clockBlack: { mainMs: 45000, byoPeriods: 3, byoMs: 30000, inByoYomi: false },
+				clockWhite: { mainMs: 55000, byoPeriods: 3, byoMs: 30000, inByoYomi: false }
+			}),
+			'black'
+		);
+		expect(gs.boardSize).toBe(13);
+		expect(gs.status).toBe('playing');
+		expect(gs.board.signMap[3][3]).toBe(1);
+		expect(gs.board.signMap[4][4]).toBe(-1);
+		expect(gs.board.signMap[5][5]).toBe(1);
+		expect(gs.currentSign).toBe(-1);
+		expect(gs.clockState.black.mainMs).toBe(45000);
+		expect(gs.clockState.white.mainMs).toBe(55000);
+		expect(gs.mySign).toBe(1);
+	});
+
+	it('restores scoring state', () => {
+		const gs = make();
+		gs.initFromData(
+			gameData({
+				status: 'playing',
+				scoringActive: true,
+				scoringDeadStones: [[3, 3]],
+				scoringBlackApproved: true,
+				scoringWhiteApproved: false
+			}),
+			'black'
+		);
+		expect(gs.status).toBe('scoring');
+		expect(gs.deadStones).toEqual([[3, 3]]);
 		expect(gs.blackApproved).toBe(true);
 		expect(gs.whiteApproved).toBe(false);
 	});
 
-	it('defaults missing scoringApprovals to false', () => {
-		const gs = make({ mySign: 1 });
-		gs.handleMessage(joined({ status: 'scoring', deadStones: [] }));
-		expect(gs.blackApproved).toBe(false);
-		expect(gs.whiteApproved).toBe(false);
+	it('sets timeControl', () => {
+		const gs = make();
+		gs.initFromData(
+			gameData({ timeControl: { type: 'fischer', initial: 300, increment: 5 } }),
+			'black'
+		);
+		expect(gs.timeControl).toEqual({ type: 'fischer', initial: 300, increment: 5 });
+	});
+
+	it('sets clock state from clockBlack and clockWhite', () => {
+		const gs = make();
+		gs.initFromData(
+			gameData({
+				timeControl: { type: 'byoyomi', initial: 60, periods: 3, periodTime: 30 },
+				clockBlack: { mainMs: 55000, byoPeriods: 3, byoMs: 30000, inByoYomi: false },
+				clockWhite: { mainMs: 60000, byoPeriods: 3, byoMs: 30000, inByoYomi: false }
+			}),
+			'black'
+		);
+		expect(gs.clockState).not.toBeNull();
+		expect(gs.clockState.black.mainMs).toBe(55000);
+		expect(gs.clockState.white.mainMs).toBe(60000);
+	});
+
+	it('sets correspondence state', () => {
+		const gs = make();
+		gs.initFromData(
+			gameData({
+				timeControl: { type: 'correspondence', days: 3 },
+				corrActiveColor: 'white',
+				corrTurnDeadline: 9999999
+			}),
+			'black'
+		);
+		expect(gs.corrState).toEqual({ activeColor: 'white', turnDeadline: 9999999 });
+	});
+
+	it('empty moves produces fresh board', () => {
+		const gs = make();
+		gs.initFromData(gameData({ size: 13, moves: [] }), 'black');
+		expect(gs.boardSize).toBe(13);
+		expect(gs.currentSign).toBe(1);
+		expect(gs.board.signMap[0][0]).toBe(0);
+	});
+
+	it('slim joined message does not clobber initFromData state', () => {
+		const gs = make();
+		gs.initFromData(
+			gameData({
+				size: 9,
+				timeControl: { type: 'fischer', initial: 300, increment: 5 },
+				moves: [
+					{ type: 'move', x: 2, y: 2, color: 'black' },
+					{ type: 'move', x: 3, y: 3, color: 'white' }
+				]
+			}),
+			'black'
+		);
+		expect(gs.boardSize).toBe(9);
+		expect(gs.timeControl.type).toBe('fischer');
+		expect(gs.board.signMap[2][2]).toBe(1);
+
+		gs.handleMessage({ type: 'joined', gameId: 'test01', color: 'black', status: 'playing', opponent: 'Bob' });
+
+		expect(gs.boardSize).toBe(9);
+		expect(gs.timeControl.type).toBe('fischer');
+		expect(gs.board.signMap[2][2]).toBe(1);
+		expect(gs.board.signMap.length).toBe(9);
 	});
 });
