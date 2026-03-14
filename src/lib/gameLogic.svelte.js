@@ -62,6 +62,59 @@ export class GameState {
 	isLocal = false;
 	onNavigate = null;
 
+	boardHistory = $state([]);
+	lastMoveHistory = $state([]);
+	shiftMapHistory = $state([]);
+	viewPly = $state(null);
+
+	get totalPly() {
+		return this.boardHistory.length - 1;
+	}
+
+	get currentViewPly() {
+		return this.viewPly ?? this.totalPly;
+	}
+
+	get isViewingHistory() {
+		return this.viewPly !== null && this.viewPly < this.totalPly;
+	}
+
+	get viewBoard() {
+		if (this.viewPly === null || this.viewPly >= this.totalPly) return this.board;
+		return this.boardHistory[this.viewPly] ?? this.board;
+	}
+
+	get viewLastMove() {
+		if (this.viewPly === null || this.viewPly >= this.totalPly) return this.lastMove;
+		return this.lastMoveHistory[this.viewPly] ?? null;
+	}
+
+	get viewShiftMap() {
+		if (this.viewPly === null || this.viewPly >= this.totalPly) return this.shiftMap;
+		return this.shiftMapHistory[this.viewPly] ?? emptyShiftMap(this.boardSize);
+	}
+
+	jumpTo(ply) {
+		const clamped = Math.max(0, Math.min(ply, this.totalPly));
+		this.viewPly = clamped >= this.totalPly ? null : clamped;
+	}
+
+	jumpFirst() {
+		this.jumpTo(0);
+	}
+
+	jumpPrev() {
+		this.jumpTo(this.currentViewPly - 1);
+	}
+
+	jumpNext() {
+		this.jumpTo(this.currentViewPly + 1);
+	}
+
+	jumpLast() {
+		this.viewPly = null;
+	}
+
 	constructor({ isLocal = false, onNavigate = null } = {}) {
 		this.isLocal = isLocal;
 		this.onNavigate = onNavigate;
@@ -78,13 +131,45 @@ export class GameState {
 		else this.mySign = null;
 
 		if (game.moves && game.moves.length > 0) {
-			this.board = replayMoves(game.moves, this.boardSize);
+			this.boardHistory = [GoBoardLib.fromDimensions(this.boardSize)];
+			this.lastMoveHistory = [null];
+			this.shiftMapHistory = [emptyShiftMap(this.boardSize)];
+			let replayBoard = GoBoardLib.fromDimensions(this.boardSize);
+			let replayShiftMap = emptyShiftMap(this.boardSize);
+			let sign = 1;
+			for (const move of game.moves) {
+				if (move.type === 'move') {
+					try {
+						replayBoard = replayBoard.makeMove(sign, [move.x, move.y], {
+							preventSuicide: true,
+							preventOverwrite: true,
+							preventKo: true
+						});
+						replayShiftMap = replayShiftMap.map((row) => [...row]);
+						replayShiftMap[move.y][move.x] = Math.ceil(Math.random() * 8);
+						readjustShifts(replayShiftMap, move.x, move.y);
+					} catch {}
+					this.boardHistory.push(replayBoard);
+					this.lastMoveHistory.push([move.x, move.y]);
+					this.shiftMapHistory.push(replayShiftMap);
+				} else {
+					this.boardHistory.push(replayBoard);
+					this.lastMoveHistory.push(null);
+					this.shiftMapHistory.push(replayShiftMap);
+				}
+				sign = sign === 1 ? -1 : 1;
+			}
+			this.board = replayBoard;
+			this.shiftMap = replayShiftMap;
 			this.consecutivePasses = 0;
 			this.currentSign = game.moves.length % 2 === 0 ? 1 : -1;
 			const lastMoveEntry = game.moves.at(-1);
 			if (lastMoveEntry?.type === 'move') this.lastMove = [lastMoveEntry.x, lastMoveEntry.y];
 		} else {
 			this.board = GoBoardLib.fromDimensions(this.boardSize);
+			this.boardHistory = [this.board];
+			this.lastMoveHistory = [null];
+			this.shiftMapHistory = [emptyShiftMap(this.boardSize)];
 		}
 
 		if (game.clockBlack && game.clockWhite) {
@@ -153,7 +238,17 @@ export class GameState {
 		this.lastMove = vertex;
 		this.consecutivePasses = 0;
 		this.currentSign = this.currentSign === 1 ? -1 : 1;
+		this.boardHistory.push(this.board);
+		this.lastMoveHistory.push(vertex);
+		this.shiftMapHistory.push(this.shiftMap.map((row) => [...row]));
+		if (this.isViewingHistory) this.viewPly = null;
 		return true;
+	}
+
+	recordPass() {
+		this.boardHistory.push(this.board);
+		this.lastMoveHistory.push(null);
+		this.shiftMapHistory.push(this.shiftMap.map((row) => [...row]));
 	}
 
 	handleMessage(msg) {
@@ -185,6 +280,7 @@ export class GameState {
 			this.lastMove = null;
 			this.animatedVertex = null;
 			this.currentSign = this.currentSign === 1 ? -1 : 1;
+			this.recordPass();
 			if (msg.clock) this.clockState = msg.clock;
 			if (msg.corrState) this.corrState = msg.corrState;
 		}

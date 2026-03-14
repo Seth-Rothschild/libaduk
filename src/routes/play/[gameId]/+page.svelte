@@ -1,5 +1,5 @@
 <script>
-	import { onMount, onDestroy } from 'svelte';
+	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import GoBoardLib from '@sabaki/go-board';
@@ -36,9 +36,10 @@
 		boardContainerWidth > 0 ? Math.floor(boardContainerWidth / (gs.boardSize + 0.8)) : 24
 	);
 
-	const signMap = $derived(gs.board.signMap);
-	const blackCaptures = $derived(gs.board.getCaptures(1));
-	const whiteCaptures = $derived(gs.board.getCaptures(-1));
+	const displayBoard = $derived(gs.viewBoard);
+	const signMap = $derived(displayBoard.signMap);
+	const blackCaptures = $derived(displayBoard.getCaptures(1));
+	const whiteCaptures = $derived(displayBoard.getCaptures(-1));
 
 	const isSpectator = $derived(!isLocal && data.viewerColor === null);
 	const mySign = $derived(isLocal ? 1 : (gs.mySign ?? -1));
@@ -92,7 +93,7 @@
 	);
 
 	const scoreBoard = $derived.by(() => {
-		if (gs.status !== 'scoring') return gs.board;
+		if (gs.status !== 'scoring') return displayBoard;
 		const clone = gs.board.clone();
 		for (const [x, y] of gs.deadStones) {
 			const sign = clone.get([x, y]);
@@ -160,6 +161,7 @@
 		gs.lastMove = null;
 		gs.animatedVertex = null;
 		gs.currentSign = gs.currentSign === 1 ? -1 : 1;
+		gs.recordPass();
 		gameSocket.send(isLocal ? { type: 'pass', color: movingColor } : { type: 'pass' });
 		if (gs.consecutivePasses >= 2) {
 			gs.status = 'scoring';
@@ -187,31 +189,54 @@
 		gameSocket.send({ type: 'approve_score', signMap: gs.board.signMap });
 	}
 
-	onMount(() => {
-		gs.initFromData(data.game, data.viewerColor);
-
-		const isLive = ['waiting', 'playing', 'scoring'].includes(data.game.status);
-		if (isLive) {
-			gameSocket.onMessage((msg) => {
-				gs.handleMessage(msg);
-				if (msg.type === 'chat') {
-					chatMessages.push({ user: msg.user, text: msg.text });
-				}
-			});
-			gameSocket.connect({ type: 'join', gameId, username: displayName });
+	function handleKeydown(e) {
+		if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+		if (e.key === 'ArrowLeft') {
+			e.preventDefault();
+			gs.jumpPrev();
+		} else if (e.key === 'ArrowRight') {
+			e.preventDefault();
+			gs.jumpNext();
+		} else if (e.key === 'Home') {
+			e.preventDefault();
+			gs.jumpFirst();
+		} else if (e.key === 'End') {
+			e.preventDefault();
+			gs.jumpLast();
 		}
+	}
 
-		const mainWrap = document.getElementById('main-wrap');
-		if (mainWrap) mainWrap.style.display = 'block';
+	$effect(() => {
+		const currentGameId = gameId;
+
+		untrack(() => {
+			gs.initFromData(data.game, data.viewerColor);
+			chatMessages = data.chat ?? [];
+
+			const isLive = ['waiting', 'playing', 'scoring'].includes(data.game.status);
+			if (isLive) {
+				gameSocket.onMessage((msg) => {
+					gs.handleMessage(msg);
+					if (msg.type === 'chat') {
+						chatMessages.push({ user: msg.user, text: msg.text });
+					}
+				});
+				gameSocket.connect({ type: 'join', gameId: currentGameId, username: displayName });
+			}
+
+			const mainWrap = document.getElementById('main-wrap');
+			if (mainWrap) mainWrap.style.display = 'block';
+
+			document.addEventListener('keydown', handleKeydown);
+		});
 
 		return () => {
+			const mainWrap = document.getElementById('main-wrap');
 			if (mainWrap) mainWrap.style.display = '';
+			document.removeEventListener('keydown', handleKeydown);
+			gameSocket.onMessage(null);
+			gameSocket.disconnect();
 		};
-	});
-
-	onDestroy(() => {
-		gameSocket.onMessage(null);
-		gameSocket.disconnect();
 	});
 </script>
 
@@ -228,14 +253,14 @@
 							? (data.game.blackName ?? 'Black')
 							: myColor === 'black'
 								? displayName
-								: (gameSocket.opponent ?? data.game.whiteName ?? '...')}
+								: (gameSocket.opponent ?? data.game.blackName ?? '...')}
 					</div>
 					<div class="player color-icon is white text">
 						{isLocal || isSpectator
 							? (data.game.whiteName ?? 'White')
 							: myColor === 'white'
 								? displayName
-								: (gameSocket.opponent ?? data.game.blackName ?? '...')}
+								: (gameSocket.opponent ?? data.game.whiteName ?? '...')}
 					</div>
 				</div>
 			</section>
@@ -271,16 +296,16 @@
 		<div class="round__app__board" bind:clientWidth={boardContainerWidth}>
 			<GoBoard
 				{signMap}
-				lastMove={gs.lastMove}
-				shiftMap={gs.shiftMap}
-				animatedVertex={gs.animatedVertex}
+				lastMove={gs.viewLastMove}
+				shiftMap={gs.viewShiftMap}
+				animatedVertex={gs.isViewingHistory ? null : gs.animatedVertex}
 				size={gs.boardSize}
 				{vertexSize}
 				{areaMap}
 				deadStones={gs.status === 'scoring' ? gs.deadStones : null}
 				showCoords={boardState.showCoords}
 				currentSign={gs.currentSign}
-				onVertexClick={gs.status === 'playing' || gs.status === 'scoring' ? onVertexClick : null}
+				onVertexClick={!gs.isViewingHistory && (gs.status === 'playing' || gs.status === 'scoring') ? onVertexClick : null}
 			/>
 		</div>
 
@@ -312,6 +337,11 @@
 			</div>
 
 			<div class="rmoves">
+				{#if gs.isViewingHistory}
+					<div class="history-indicator">
+						Move {gs.currentViewPly} of {gs.totalPly}
+					</div>
+				{/if}
 				{#if gs.status === 'waiting'}
 					<div class="message" data-icon={ICON_INFO}>
 						<div>
@@ -446,6 +476,35 @@
 				{/if}
 			</div>
 
+			{#if gs.totalPly > 0}
+				<div class="rbuttons">
+					<button
+						class="fbt"
+						data-icon="&#xe035;"
+						disabled={gs.currentViewPly <= 0}
+						onclick={() => gs.jumpFirst()}
+					></button>
+					<button
+						class="fbt"
+						data-icon="&#xe037;"
+						disabled={gs.currentViewPly <= 0}
+						onclick={() => gs.jumpPrev()}
+					></button>
+					<button
+						class="fbt"
+						data-icon="&#xe036;"
+						disabled={gs.currentViewPly >= gs.totalPly}
+						onclick={() => gs.jumpNext()}
+					></button>
+					<button
+						class="fbt"
+						data-icon="&#xe034;"
+						disabled={gs.currentViewPly >= gs.totalPly}
+						onclick={() => gs.jumpLast()}
+					></button>
+				</div>
+			{/if}
+
 			<div class="ruser ruser-bottom color-icon is {isSpectator ? 'white' : myColor}">
 				<i class="line"></i>
 				<name>{isLocal ? (data.game.blackName ?? 'You') : isSpectator ? (data.game.whiteName ?? 'White') : displayName}</name>
@@ -488,5 +547,15 @@
 	.approval.approved {
 		color: var(--c-good);
 		font-weight: bold;
+	}
+
+	.history-indicator {
+		text-align: center;
+		padding: 0.3em;
+		font-size: 0.85em;
+		color: var(--c-font-dim);
+		background: var(--c-bg-zebra);
+		border-radius: 3px;
+		margin-bottom: 0.5em;
 	}
 </style>

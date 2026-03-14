@@ -1,4 +1,5 @@
 <script>
+	import { onMount, onDestroy } from 'svelte';
 	import GoBoardLib from '@sabaki/go-board';
 	import influence from '@sabaki/influence';
 	import GoBoard from '$lib/GoBoard.svelte';
@@ -10,7 +11,6 @@
 	const SIZE = VALID_SIZES.includes(rawSize) ? rawSize : 19;
 	const KOMI = 6.5;
 
-	// licon-InfoCircle (e060)
 	const ICON_INFO = '\ue060';
 
 	function emptyShiftMap(size) {
@@ -51,9 +51,78 @@
 		boardContainerWidth > 0 ? Math.floor(boardContainerWidth / (SIZE + 0.8)) : 24
 	);
 
-	const signMap = $derived(board.signMap);
-	const blackCaptures = $derived(board.getCaptures(1));
-	const whiteCaptures = $derived(board.getCaptures(-1));
+	let boardHistory = $state([GoBoardLib.fromDimensions(SIZE)]);
+	let lastMoveHistory = $state([null]);
+	let shiftMapHistory = $state([emptyShiftMap(SIZE)]);
+	let viewPly = $state(null);
+
+	const totalPly = $derived(boardHistory.length - 1);
+	const currentViewPly = $derived(viewPly ?? totalPly);
+	const isViewingHistory = $derived(viewPly !== null && viewPly < totalPly);
+
+	const displayBoard = $derived(
+		viewPly === null || viewPly >= totalPly ? board : (boardHistory[viewPly] ?? board)
+	);
+	const displayLastMove = $derived(
+		viewPly === null || viewPly >= totalPly ? lastMove : (lastMoveHistory[viewPly] ?? null)
+	);
+	const displayShiftMap = $derived(
+		viewPly === null || viewPly >= totalPly
+			? shiftMap
+			: (shiftMapHistory[viewPly] ?? emptyShiftMap(SIZE))
+	);
+
+	function jumpTo(ply) {
+		const clamped = Math.max(0, Math.min(ply, totalPly));
+		viewPly = clamped >= totalPly ? null : clamped;
+	}
+	function jumpFirst() {
+		jumpTo(0);
+	}
+	function jumpPrev() {
+		jumpTo(currentViewPly - 1);
+	}
+	function jumpNext() {
+		jumpTo(currentViewPly + 1);
+	}
+	function jumpLast() {
+		viewPly = null;
+	}
+
+	function recordSnapshot() {
+		boardHistory.push(board);
+		lastMoveHistory.push(lastMove);
+		shiftMapHistory.push(shiftMap.map((row) => [...row]));
+		if (isViewingHistory) viewPly = null;
+	}
+
+	function handleKeydown(e) {
+		if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+		if (e.key === 'ArrowLeft') {
+			e.preventDefault();
+			jumpPrev();
+		} else if (e.key === 'ArrowRight') {
+			e.preventDefault();
+			jumpNext();
+		} else if (e.key === 'Home') {
+			e.preventDefault();
+			jumpFirst();
+		} else if (e.key === 'End') {
+			e.preventDefault();
+			jumpLast();
+		}
+	}
+
+	onMount(() => {
+		document.addEventListener('keydown', handleKeydown);
+	});
+	onDestroy(() => {
+		document.removeEventListener('keydown', handleKeydown);
+	});
+
+	const signMap = $derived(displayBoard.signMap);
+	const blackCaptures = $derived(displayBoard.getCaptures(1));
+	const whiteCaptures = $derived(displayBoard.getCaptures(-1));
 
 	const currentColor = $derived(currentSign === 1 ? 'black' : 'white');
 	const opponentColor = $derived(currentSign === 1 ? 'white' : 'black');
@@ -123,6 +192,7 @@
 		lastMove = vertex;
 		consecutivePasses = 0;
 		currentSign = currentSign === 1 ? -1 : 1;
+		recordSnapshot();
 	}
 
 	function toggleDeadGroup(x, y) {
@@ -152,6 +222,7 @@
 		lastMove = null;
 		animatedVertex = null;
 		currentSign = currentSign === 1 ? -1 : 1;
+		recordSnapshot();
 		if (consecutivePasses >= 2) {
 			status = 'scoring';
 			deadStones = [];
@@ -190,6 +261,10 @@
 		blackApproved = false;
 		whiteApproved = false;
 		finalScore = null;
+		boardHistory = [GoBoardLib.fromDimensions(SIZE)];
+		lastMoveHistory = [null];
+		shiftMapHistory = [emptyShiftMap(SIZE)];
+		viewPly = null;
 	}
 </script>
 
@@ -217,16 +292,16 @@
 		<div class="round__app__board" bind:clientWidth={boardContainerWidth}>
 			<GoBoard
 				{signMap}
-				{lastMove}
-				{shiftMap}
-				{animatedVertex}
+				lastMove={displayLastMove}
+				shiftMap={displayShiftMap}
+				animatedVertex={isViewingHistory ? null : animatedVertex}
 				size={SIZE}
 				{vertexSize}
 				{areaMap}
 				deadStones={status === 'scoring' ? deadStones : null}
 				showCoords={boardState.showCoords}
 				{currentSign}
-				onVertexClick={handleVertexClick}
+				onVertexClick={isViewingHistory ? null : handleVertexClick}
 			/>
 		</div>
 
@@ -240,6 +315,11 @@
 			</div>
 
 			<div class="rmoves">
+				{#if isViewingHistory}
+					<div class="history-indicator">
+						Move {currentViewPly} of {totalPly}
+					</div>
+				{/if}
 				{#if status === 'playing'}
 					<div class="message" data-icon={ICON_INFO}>
 						<div>
@@ -317,6 +397,35 @@
 				{/if}
 			</div>
 
+			{#if totalPly > 0}
+				<div class="rbuttons">
+					<button
+						class="fbt"
+						data-icon="&#xe035;"
+						disabled={currentViewPly <= 0}
+						onclick={jumpFirst}
+					></button>
+					<button
+						class="fbt"
+						data-icon="&#xe037;"
+						disabled={currentViewPly <= 0}
+						onclick={jumpPrev}
+					></button>
+					<button
+						class="fbt"
+						data-icon="&#xe036;"
+						disabled={currentViewPly >= totalPly}
+						onclick={jumpNext}
+					></button>
+					<button
+						class="fbt"
+						data-icon="&#xe034;"
+						disabled={currentViewPly >= totalPly}
+						onclick={jumpLast}
+					></button>
+				</div>
+			{/if}
+
 			<div class="ruser ruser-bottom color-icon is {currentColor} active">
 				<i class="line"></i>
 				<name>{currentColor === 'black' ? 'Black' : 'White'}</name>
@@ -331,5 +440,15 @@
 <style>
 	:global(#main-wrap) {
 		display: block;
+	}
+
+	.history-indicator {
+		text-align: center;
+		padding: 0.3em;
+		font-size: 0.85em;
+		color: var(--c-font-dim);
+		background: var(--c-bg-zebra);
+		border-radius: 3px;
+		margin-bottom: 0.5em;
 	}
 </style>

@@ -48,12 +48,13 @@
 			flex: 0 0 auto;
 			align-self: center;
 			display: grid;
-			grid-template-rows: auto auto auto auto auto auto;
+			grid-template-rows: auto auto auto auto auto auto auto;
 			grid-template-areas:
 				'clock-top'
 				'user-top'
 				'moves'
 				'controls'
+				'buttons'
 				'user-bot'
 				'clock-bot';
 			min-width: 180px;
@@ -143,6 +144,25 @@
 			font-size: 3em;
 			color: $c-font-dim;
 		}
+	}
+}
+
+// Move navigation buttons
+.rbuttons {
+	grid-area: buttons;
+	display: flex;
+	justify-content: stretch;
+	background: $c-bg-zebra;
+	height: 2.5rem;
+
+	.fbt {
+		flex: 1 1 25%;
+		text-align: center;
+		font-size: 0.9em;
+		cursor: pointer;
+		border: none;
+		background: none;
+		padding: 0;
 	}
 }
 
