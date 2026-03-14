@@ -1,0 +1,16 @@
+.mchat {
+  &__content.note textarea {
+    font-size: 0.9em;
+    flex-grow: 1;
+    border: 1px solid transparent;
+    background-color: transparent;
+    line-height: 1.7em;
+    outline: none;
+    resize: none;
+    padding: 0.5em;
+
+    &:focus {
+      border-color: $c-primary;
+    }
+  }
+}

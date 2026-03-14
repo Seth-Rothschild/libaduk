@@ -136,6 +136,33 @@ export function getUserGames(username) {
 		});
 }
 
+export function appendChat(gameId, entry) {
+	const game = db.games[gameId];
+	if (!game) return;
+	if (!game.chat) game.chat = [];
+	game.chat.push(entry);
+	schedulFlush();
+}
+
+export function getChat(gameId) {
+	const game = db.games[gameId];
+	return game?.chat ?? [];
+}
+
+export function setNote(gameId, username, text) {
+	const game = db.games[gameId];
+	if (!game) return;
+	if (!game.notes) game.notes = {};
+	game.notes[username.toLowerCase()] = text;
+	schedulFlush();
+}
+
+export function getNote(gameId, username) {
+	const game = db.games[gameId];
+	if (!game?.notes) return '';
+	return game.notes[username.toLowerCase()] ?? '';
+}
+
 export function getAllActiveGames() {
 	return Object.values(db.games).filter((g) => g.status === 'playing');
 }

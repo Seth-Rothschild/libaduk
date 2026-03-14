@@ -10,6 +10,7 @@
 	import { boardState } from '$lib/boardState.svelte.js';
 	import { getGuestId } from '$lib/guestId.js';
 	import { GameState } from '$lib/gameLogic.svelte.js';
+	import GameChat from '$lib/GameChat.svelte';
 
 	let { data } = $props();
 	const username = $derived(data.user?.username ?? '');
@@ -22,6 +23,12 @@
 	const isLocal = $derived(data.game.local === true);
 
 	let boardContainerWidth = $state(0);
+	let chatMessages = $state(data.chat ?? []);
+
+	function handleChatSend(text) {
+		gameSocket.send({ type: 'chat', text });
+		chatMessages.push({ user: displayName, text });
+	}
 
 	let gs = $state(new GameState({ isLocal, onNavigate: goto }));
 
@@ -185,7 +192,12 @@
 
 		const isLive = ['waiting', 'playing', 'scoring'].includes(data.game.status);
 		if (isLive) {
-			gameSocket.onMessage((msg) => gs.handleMessage(msg));
+			gameSocket.onMessage((msg) => {
+				gs.handleMessage(msg);
+				if (msg.type === 'chat') {
+					chatMessages.push({ user: msg.user, text: msg.text });
+				}
+			});
 			gameSocket.connect({ type: 'join', gameId, username: displayName });
 		}
 
@@ -245,6 +257,14 @@
 				<section class="status">Game aborted.</section>
 			{/if}
 		</div>
+		<GameChat
+			{username}
+			{gameId}
+			gameStatus={gs.status}
+			bind:messages={chatMessages}
+			initialNote={data.note ?? ''}
+			onSend={handleChatSend}
+		/>
 	</aside>
 
 	<div class="round__app">

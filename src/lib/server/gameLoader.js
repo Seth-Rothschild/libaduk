@@ -1,4 +1,4 @@
-import { getGame } from './db.js';
+import { getGame, getChat, getNote } from './db.js';
 
 export function loadGameData(gameId, username) {
 	const game = getGame(gameId);
@@ -11,5 +11,8 @@ export function loadGameData(gameId, username) {
 		viewerColor = 'white';
 	}
 
-	return { game, viewerColor };
+	const chat = getChat(gameId).map(({ user, text }) => ({ user, text }));
+	const note = username ? getNote(gameId, username) : '';
+
+	return { game, viewerColor, chat, note };
 }

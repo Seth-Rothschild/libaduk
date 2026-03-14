@@ -8,6 +8,8 @@ export function load({ locals, params }) {
 	return {
 		user: locals.user,
 		game: result.game,
-		viewerColor: result.viewerColor
+		viewerColor: result.viewerColor,
+		chat: result.chat,
+		note: result.note
 	};
 }

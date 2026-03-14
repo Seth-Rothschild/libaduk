@@ -615,6 +615,17 @@ function handleMessage(socket, raw) {
 		return;
 	}
 
+	if (msg.type === 'chat') {
+		const text = (msg.text ?? '').slice(0, 500);
+		if (!text) return;
+		const entry = { user: socket.username, text, t: Date.now() };
+		db.appendChat(socket.gameId, entry);
+		const chatMsg = { type: 'chat', user: socket.username, text };
+		const opp = opponent(room, socket);
+		if (opp && opp !== socket) send(opp, chatMsg);
+		return;
+	}
+
 	if (msg.type === 'approve_score') {
 		const approvingColor = room.local ? (msg.color ?? socket.color) : socket.color;
 		if (approvingColor === 'black') room.scoring.blackApproved = true;
