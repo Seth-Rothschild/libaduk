@@ -92,7 +92,9 @@
 </script>
 
 <!-- Mobile hamburger toggle (CSS-only) -->
+<a href="/">
 <input type="checkbox" id="topnav-toggle" class="topnav-toggle" />
+</a>
 
 <header>
 	<label class="hbg" for="topnav-toggle" aria-label="Menu">

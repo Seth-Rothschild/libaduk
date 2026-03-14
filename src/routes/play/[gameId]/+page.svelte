@@ -73,8 +73,11 @@
 		return `${minutes}m remaining`;
 	}
 
-	const myClockData = $derived(gs.clockState?.[myColor] ?? null);
-	const oppClockData = $derived(gs.clockState?.[oppColor] ?? null);
+	const previewClockData = $derived(
+		initialMs ? { mainMs: initialMs, byoMs: 0, byoPeriods: 0, inByoYomi: false } : null
+	);
+	const myClockData = $derived(gs.clockState?.[myColor] ?? previewClockData);
+	const oppClockData = $derived(gs.clockState?.[oppColor] ?? previewClockData);
 	const myClockRunning = $derived(
 		gs.status === 'playing' &&
 			!!gs.clockState?.turnStartedAt &&
@@ -293,6 +296,8 @@
 	</aside>
 
 	<div class="round__app">
+		<div class="round__app__table"></div>
+
 		<div class="round__app__board" bind:clientWidth={boardContainerWidth}>
 			<GoBoard
 				{signMap}
@@ -309,220 +314,220 @@
 			/>
 		</div>
 
-		<div class="round__app__table">
-			{#if !isCorrGame}
-				<Clock
-					clockData={oppClockData}
-					running={oppClockRunning}
-					position="top"
-					{initialMs}
-					turnStartedAt={gs.clockState?.turnStartedAt}
-					onTimeout={isLocal ? () => handleTimeout(oppColor) : null}
-				/>
-			{/if}
-			<div class="ruser ruser-top color-icon is {isSpectator ? 'black' : oppColor}">
-				<i class="line"></i>
-				<name
-					>{isLocal
-						? oppColor === 'white'
-							? (data.game.whiteName ?? 'Guest')
-							: (data.game.blackName ?? 'Guest')
-						: isSpectator
-							? (data.game.blackName ?? 'Black')
-							: (gameSocket.opponent ?? (gs.status === 'waiting' ? 'Waiting...' : oppColor))}</name
-				>
-				{#if opponentCaptures > 0}
-					<span class="material">+{opponentCaptures}</span>
-				{/if}
-			</div>
+		{#if !isCorrGame}
+			<Clock
+				clockData={oppClockData}
+				running={oppClockRunning}
+				position="top"
+				{initialMs}
+				turnStartedAt={gs.clockState?.turnStartedAt}
+				onTimeout={isLocal ? () => handleTimeout(oppColor) : null}
+			/>
+		{/if}
 
-			<div class="rmoves">
-				{#if gs.isViewingHistory}
-					<div class="history-indicator">
-						Move {gs.currentViewPly} of {gs.totalPly}
-					</div>
-				{/if}
-				{#if gs.status === 'waiting'}
-					<div class="message" data-icon={ICON_INFO}>
-						<div>
-							You are <strong>{myColor}</strong><br />
-							Share this link to invite a friend.
-						</div>
-					</div>
-				{:else if gs.status === 'playing'}
-					<div class="message" data-icon={ICON_INFO}>
-						<div>
-							{#if isMyTurn}
-								You play the {myColor} stones<br /><strong>It's your turn!</strong>
-								{#if isCorrGame && gs.corrState?.turnDeadline}
-									<br /><span class="corr-deadline"
-										>{formatCorrDeadline(gs.corrState.turnDeadline)}</span
-									>
-								{/if}
-							{:else}
-								Waiting for opponent...
-								{#if isCorrGame && gs.corrState?.turnDeadline}
-									<br /><span class="corr-deadline"
-										>{formatCorrDeadline(gs.corrState.turnDeadline)}</span
-									>
-								{/if}
-							{/if}
-						</div>
-					</div>
-				{:else if gs.status === 'scoring'}
-					<div class="message" data-icon={ICON_INFO}>
-						<div>
-							Counting territory<br />
-							<strong>Click stones to mark dead</strong>
-						</div>
-					</div>
-					{#if score}
-						<div class="score-breakdown">
-							<div class="score-row">
-								<span class="color-icon is black text">Black</span>
-								<span>{score.blackArea}</span>
-							</div>
-							<div class="score-row">
-								<span class="color-icon is white text">White</span>
-								<span>{score.whiteArea} + {KOMI} = {score.whiteScore.toFixed(1)}</span>
-							</div>
-							<div class="score-verdict">
-								{#if score.blackScore > score.whiteScore}
-									Black leads by {(score.blackScore - score.whiteScore).toFixed(1)}
-								{:else if score.whiteScore > score.blackScore}
-									White leads by {(score.whiteScore - score.blackScore).toFixed(1)}
-								{:else}
-									Tied (jigo)
-								{/if}
-							</div>
-						</div>
-					{/if}
-					<div class="score-approvals">
-						<span class="approval" class:approved={gs.blackApproved}
-							>Black {gs.blackApproved ? '&#x2713;' : '&hellip;'}</span
-						>
-						<span class="approval" class:approved={gs.whiteApproved}
-							>White {gs.whiteApproved ? '&#x2713;' : '&hellip;'}</span
-						>
-					</div>
-				{:else if gs.status === 'gameover'}
-					<div class="message" data-icon={ICON_INFO}>
-						<div>
-							{gs.winner === mySign ? 'You win' : 'You lose'}
-							{#if gs.winnerResult}
-								<br />{gs.winnerResult}
-							{:else if gs.finalScore}
-								<br />{gs.finalScore.blackScore.toFixed(1)} &ndash; {gs.finalScore.whiteScore.toFixed(1)}
-							{:else}
-								<br />by resignation
-							{/if}
-						</div>
-					</div>
-				{:else if gs.status === 'abandoned'}
-					<div class="message" data-icon={ICON_INFO}>
-						<div>Your opponent has left the game.</div>
-					</div>
-				{:else if gs.status === 'aborted'}
-					<div class="message" data-icon={ICON_INFO}>
-						<div>This game was aborted.</div>
-					</div>
-				{/if}
-			</div>
-
-			<div class="rcontrols">
-				{#if gs.status === 'waiting'}
-					<button class="button button-red" onclick={abort}>Abort</button>
-				{:else if gs.status === 'playing'}
-					<button class="button button-metal" onclick={pass} disabled={!isMyTurn}>Pass</button>
-					<button class="button button-red" onclick={resign}>Resign</button>
-				{:else if gs.status === 'scoring'}
-					{#if isLocal}
-						<button
-							class="button"
-							class:button-metal={!gs.blackApproved}
-							class:button-green={gs.blackApproved}
-							onclick={() => {
-								gs.blackApproved = true;
-								gameSocket.send({ type: 'approve_score', color: 'black', signMap: gs.board.signMap });
-							}}
-							disabled={gs.blackApproved}
-						>
-							{gs.blackApproved ? 'Black ✓' : 'Black accepts'}
-						</button>
-						<button
-							class="button"
-							class:button-metal={!gs.whiteApproved}
-							class:button-green={gs.whiteApproved}
-							onclick={() => {
-								gs.whiteApproved = true;
-								gameSocket.send({ type: 'approve_score', color: 'white', signMap: gs.board.signMap });
-							}}
-							disabled={gs.whiteApproved}
-						>
-							{gs.whiteApproved ? 'White ✓' : 'White accepts'}
-						</button>
-					{:else}
-						{@const myApproved = myColor === 'black' ? gs.blackApproved : gs.whiteApproved}
-						<button
-							class="button"
-							class:button-metal={!myApproved}
-							class:button-green={myApproved}
-							onclick={approveScore}
-							disabled={myApproved}
-						>
-							{myApproved ? 'Score accepted' : 'Accept score'}
-						</button>
-					{/if}
-				{/if}
-			</div>
-
-			{#if gs.totalPly > 0}
-				<div class="rbuttons">
-					<button
-						class="fbt"
-						data-icon="&#xe035;"
-						disabled={gs.currentViewPly <= 0}
-						onclick={() => gs.jumpFirst()}
-					></button>
-					<button
-						class="fbt"
-						data-icon="&#xe037;"
-						disabled={gs.currentViewPly <= 0}
-						onclick={() => gs.jumpPrev()}
-					></button>
-					<button
-						class="fbt"
-						data-icon="&#xe036;"
-						disabled={gs.currentViewPly >= gs.totalPly}
-						onclick={() => gs.jumpNext()}
-					></button>
-					<button
-						class="fbt"
-						data-icon="&#xe034;"
-						disabled={gs.currentViewPly >= gs.totalPly}
-						onclick={() => gs.jumpLast()}
-					></button>
-				</div>
-			{/if}
-
-			<div class="ruser ruser-bottom color-icon is {isSpectator ? 'white' : myColor}">
-				<i class="line"></i>
-				<name>{isLocal ? (data.game.blackName ?? 'You') : isSpectator ? (data.game.whiteName ?? 'White') : displayName}</name>
-				{#if myCaptures > 0}
-					<span class="material">+{myCaptures}</span>
-				{/if}
-			</div>
-			{#if !isCorrGame}
-				<Clock
-					clockData={myClockData}
-					running={myClockRunning}
-					position="bottom"
-					{initialMs}
-					turnStartedAt={gs.clockState?.turnStartedAt}
-					onTimeout={() => handleTimeout(myColor)}
-				/>
+		<div class="ruser ruser-top color-icon is {isSpectator ? 'black' : oppColor}">
+			<i class="line"></i>
+			<name
+				>{isLocal
+					? oppColor === 'white'
+						? (data.game.whiteName ?? 'Guest')
+						: (data.game.blackName ?? 'Guest')
+					: isSpectator
+						? (data.game.blackName ?? 'Black')
+						: (gameSocket.opponent ?? (gs.status === 'waiting' ? 'Waiting...' : oppColor))}</name
+			>
+			{#if opponentCaptures > 0}
+				<span class="material">+{opponentCaptures}</span>
 			{/if}
 		</div>
+
+		<div class="rmoves">
+			{#if gs.isViewingHistory}
+				<div class="history-indicator">
+					Move {gs.currentViewPly} of {gs.totalPly}
+				</div>
+			{/if}
+			{#if gs.status === 'waiting'}
+				<div class="message" data-icon={ICON_INFO}>
+					<div>
+						You are <strong>{myColor}</strong><br />
+						Share this link to invite a friend.
+					</div>
+				</div>
+			{:else if gs.status === 'playing'}
+				<div class="message" data-icon={ICON_INFO}>
+					<div>
+						{#if isMyTurn}
+							You play the {myColor} stones<br /><strong>It's your turn!</strong>
+							{#if isCorrGame && gs.corrState?.turnDeadline}
+								<br /><span class="corr-deadline"
+									>{formatCorrDeadline(gs.corrState.turnDeadline)}</span
+								>
+							{/if}
+						{:else}
+							Waiting for opponent...
+							{#if isCorrGame && gs.corrState?.turnDeadline}
+								<br /><span class="corr-deadline"
+									>{formatCorrDeadline(gs.corrState.turnDeadline)}</span
+								>
+							{/if}
+						{/if}
+					</div>
+				</div>
+			{:else if gs.status === 'scoring'}
+				<div class="message" data-icon={ICON_INFO}>
+					<div>
+						Counting territory<br />
+						<strong>Click stones to mark dead</strong>
+					</div>
+				</div>
+				{#if score}
+					<div class="score-breakdown">
+						<div class="score-row">
+							<span class="color-icon is black text">Black</span>
+							<span>{score.blackArea}</span>
+						</div>
+						<div class="score-row">
+							<span class="color-icon is white text">White</span>
+							<span>{score.whiteArea} + {KOMI} = {score.whiteScore.toFixed(1)}</span>
+						</div>
+						<div class="score-verdict">
+							{#if score.blackScore > score.whiteScore}
+								Black leads by {(score.blackScore - score.whiteScore).toFixed(1)}
+							{:else if score.whiteScore > score.blackScore}
+								White leads by {(score.whiteScore - score.blackScore).toFixed(1)}
+							{:else}
+								Tied (jigo)
+							{/if}
+						</div>
+					</div>
+				{/if}
+				<div class="score-approvals">
+					<span class="approval" class:approved={gs.blackApproved}
+						>Black {gs.blackApproved ? '&#x2713;' : '&hellip;'}</span
+					>
+					<span class="approval" class:approved={gs.whiteApproved}
+						>White {gs.whiteApproved ? '&#x2713;' : '&hellip;'}</span
+					>
+				</div>
+			{:else if gs.status === 'gameover'}
+				<div class="message" data-icon={ICON_INFO}>
+					<div>
+						{gs.winner === mySign ? 'You win' : 'You lose'}
+						{#if gs.winnerResult}
+							<br />{gs.winnerResult}
+						{:else if gs.finalScore}
+							<br />{gs.finalScore.blackScore.toFixed(1)} &ndash; {gs.finalScore.whiteScore.toFixed(1)}
+						{:else}
+							<br />by resignation
+						{/if}
+					</div>
+				</div>
+			{:else if gs.status === 'abandoned'}
+				<div class="message" data-icon={ICON_INFO}>
+					<div>Your opponent has left the game.</div>
+				</div>
+			{:else if gs.status === 'aborted'}
+				<div class="message" data-icon={ICON_INFO}>
+					<div>This game was aborted.</div>
+				</div>
+			{/if}
+		</div>
+
+		<div class="rcontrols">
+			{#if gs.status === 'waiting'}
+				<button class="button button-red" onclick={abort}>Abort</button>
+			{:else if gs.status === 'playing'}
+				<button class="button button-metal" onclick={pass} disabled={!isMyTurn}>Pass</button>
+				<button class="button button-red" onclick={resign}>Resign</button>
+			{:else if gs.status === 'scoring'}
+				{#if isLocal}
+					<button
+						class="button"
+						class:button-metal={!gs.blackApproved}
+						class:button-green={gs.blackApproved}
+						onclick={() => {
+							gs.blackApproved = true;
+							gameSocket.send({ type: 'approve_score', color: 'black', signMap: gs.board.signMap });
+						}}
+						disabled={gs.blackApproved}
+					>
+						{gs.blackApproved ? 'Black ✓' : 'Black accepts'}
+					</button>
+					<button
+						class="button"
+						class:button-metal={!gs.whiteApproved}
+						class:button-green={gs.whiteApproved}
+						onclick={() => {
+							gs.whiteApproved = true;
+							gameSocket.send({ type: 'approve_score', color: 'white', signMap: gs.board.signMap });
+						}}
+						disabled={gs.whiteApproved}
+					>
+						{gs.whiteApproved ? 'White ✓' : 'White accepts'}
+					</button>
+				{:else}
+					{@const myApproved = myColor === 'black' ? gs.blackApproved : gs.whiteApproved}
+					<button
+						class="button"
+						class:button-metal={!myApproved}
+						class:button-green={myApproved}
+						onclick={approveScore}
+						disabled={myApproved}
+					>
+						{myApproved ? 'Score accepted' : 'Accept score'}
+					</button>
+				{/if}
+			{/if}
+		</div>
+
+		{#if gs.totalPly > 0}
+			<div class="rbuttons">
+				<button
+					class="fbt"
+					data-icon="&#xe035;"
+					disabled={gs.currentViewPly <= 0}
+					onclick={() => gs.jumpFirst()}
+				></button>
+				<button
+					class="fbt"
+					data-icon="&#xe037;"
+					disabled={gs.currentViewPly <= 0}
+					onclick={() => gs.jumpPrev()}
+				></button>
+				<button
+					class="fbt"
+					data-icon="&#xe036;"
+					disabled={gs.currentViewPly >= gs.totalPly}
+					onclick={() => gs.jumpNext()}
+				></button>
+				<button
+					class="fbt"
+					data-icon="&#xe034;"
+					disabled={gs.currentViewPly >= gs.totalPly}
+					onclick={() => gs.jumpLast()}
+				></button>
+			</div>
+		{/if}
+
+		<div class="ruser ruser-bottom color-icon is {isSpectator ? 'white' : myColor}">
+			<i class="line"></i>
+			<name>{isLocal ? (data.game.blackName ?? 'You') : isSpectator ? (data.game.whiteName ?? 'White') : displayName}</name>
+			{#if myCaptures > 0}
+				<span class="material">+{myCaptures}</span>
+			{/if}
+		</div>
+
+		{#if !isCorrGame}
+			<Clock
+				clockData={myClockData}
+				running={myClockRunning}
+				position="bottom"
+				{initialMs}
+				turnStartedAt={gs.clockState?.turnStartedAt}
+				onTimeout={() => handleTimeout(myColor)}
+			/>
+		{/if}
 	</div>
 </div>
 
