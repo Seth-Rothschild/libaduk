@@ -66,16 +66,18 @@ export function createGame({
 	size,
 	blackName,
 	whiteName,
+	creatorColor = 'black',
 	timeControl = { type: 'none' },
 	komi = 6.5,
-	local = false
+	gameType = 'hook'
 }) {
 	const game = {
 		id,
 		size,
 		blackName,
 		whiteName,
-		local,
+		creatorColor,
+		gameType,
 		moves: [],
 		status: 'waiting',
 		timeControl,
@@ -108,7 +110,13 @@ export function appendMove(id, moveEntry) {
 
 export function getPendingGames() {
 	return Object.values(db.games)
-		.filter((g) => g.status === 'waiting' && (g.blackName || g.whiteName))
+		.filter(
+			(g) =>
+				g.status === 'waiting' &&
+				(g.blackName || g.whiteName) &&
+				g.gameType !== 'friend' &&
+				g.gameType !== 'local'
+		)
 		.map((g) => ({
 			id: g.id,
 			creator: g.blackName || g.whiteName,
@@ -164,7 +172,7 @@ export function getNote(gameId, username) {
 }
 
 export function getAllActiveGames() {
-	return Object.values(db.games).filter((g) => g.status === 'playing');
+	return Object.values(db.games).filter((g) => g.status === 'playing' && g.gameType !== 'friend');
 }
 
 export function getAllUserGames(username) {

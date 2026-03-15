@@ -9,13 +9,14 @@ vi.mock('./db.js', () => {
 	return {
 		_store: store,
 		getGame: (id) => store.games[id] ?? null,
-		createGame: ({ id, size, blackName, whiteName, timeControl, komi, local }) => {
+		createGame: ({ id, size, blackName, whiteName, creatorColor, timeControl, komi, gameType }) => {
 			const game = {
 				id,
 				size,
 				blackName: blackName ?? null,
 				whiteName: whiteName ?? null,
-				local: local ?? false,
+				creatorColor: creatorColor ?? 'black',
+				gameType: gameType ?? 'hook',
 				moves: [],
 				status: 'waiting',
 				timeControl: timeControl ?? { type: 'none' },
@@ -46,6 +47,9 @@ vi.mock('./db.js', () => {
 					timeControl: g.timeControl,
 					createdAt: g.createdAt
 				})),
+		appendChat: () => {},
+		getChat: () => [],
+		getNote: () => '',
 		getSession: (token) => store.sessions[token] ?? null,
 		getUserGames: () => [],
 		getAllActiveGames: () => Object.values(store.games).filter((g) => g.status === 'playing')
@@ -115,13 +119,13 @@ describe('join', () => {
 		expect(sock.lastMsg()).toMatchObject({ type: 'error', message: 'Game not found' });
 	});
 
-	it('errors on aborted game', () => {
+	it('returns slim joined for aborted game', () => {
 		const room = createRoom(19, { type: 'none' }, 'black');
 		dbMock._store.games[room.id].status = 'aborted';
 		room.status = 'aborted';
 		const sock = makeSocket();
 		join(sock, room.id, 'Alice');
-		expect(sock.lastMsg()).toMatchObject({ type: 'error', message: 'Game is over' });
+		expect(sock.lastMsg()).toMatchObject({ type: 'joined', status: 'aborted' });
 	});
 
 	it('sends slim joined for abandoned game (no moves — HTTP provides those)', () => {
@@ -177,13 +181,13 @@ describe('join', () => {
 		expect(carol.lastMsg()).toMatchObject({ type: 'error', message: 'Game is full' });
 	});
 
-	it('same socket cannot occupy both seats', () => {
+	it('same socket rejoining gets a joined response (reconnect)', () => {
 		const room = createRoom(19, { type: 'none' }, 'black');
 		const alice = makeSocket();
 		join(alice, room.id, 'Alice');
 		alice.sent.length = 0;
 		join(alice, room.id, 'Alice');
-		expect(alice.lastMsg()).toMatchObject({ type: 'error', message: 'You are already in this game' });
+		expect(alice.lastMsg()).toMatchObject({ type: 'joined', color: 'black' });
 	});
 
 	it('authenticated player can rejoin after disconnect', () => {
@@ -408,7 +412,7 @@ describe('resign', () => {
 	});
 
 	it('local game: white can resign by sending color field', () => {
-		const room = createRoom(19, { type: 'none' }, 'black', true);
+		const room = createRoom(19, { type: 'none' }, 'black', 'local');
 		const sock = makeSocket();
 		join(sock, room.id, 'Player');
 		sock.sent.length = 0;
@@ -477,16 +481,16 @@ describe('flag / timeout', () => {
 });
 
 describe('disconnect', () => {
-	it('anonymous player disconnecting while waiting aborts the game', () => {
+	it('anonymous player disconnecting while waiting preserves the room for reconnect', () => {
 		const room = createRoom(19, { type: 'none' }, 'black');
 		const alice = makeSocket(); // anonymous
 		join(alice, room.id, 'Guest1234');
 		handleDisconnect(alice);
-		expect(room.status).toBe('aborted');
-		expect(dbMock._store.games[room.id].status).toBe('aborted');
+		expect(room.status).toBe('waiting');
+		expect(dbMock._store.games[room.id].status).toBe('waiting');
 	});
 
-	it('anonymous player disconnecting while playing abandons the game and notifies opponent', () => {
+	it('anonymous player disconnecting while playing notifies opponent', () => {
 		const room = createRoom(19, { type: 'none' }, 'black');
 		const alice = makeSocket(); // anonymous
 		const bob = makeSocket();
@@ -494,8 +498,21 @@ describe('disconnect', () => {
 		join(bob, room.id, 'Bob');
 		bob.sent.length = 0;
 		handleDisconnect(alice);
-		expect(room.status).toBe('abandoned');
 		expect(bob.lastMsg()).toMatchObject({ type: 'opponent_left' });
+		// Room stays playing — anonymous guest can still reconnect with their guestId
+		expect(room.status).toBe('playing');
+	});
+
+	it('anonymous player can reconnect using the same guestId', () => {
+		const room = createRoom(19, { type: 'none' }, 'black');
+		const alice = makeSocket(); // anonymous
+		const bob = makeSocket();
+		join(alice, room.id, 'Guest1234');
+		join(bob, room.id, 'Bob');
+		handleDisconnect(alice);
+		const alice2 = makeSocket(); // new socket, same anonymous identity
+		join(alice2, room.id, 'Guest1234');
+		expect(alice2.lastMsg()).toMatchObject({ type: 'joined', color: 'black' });
 	});
 
 	it('authenticated player disconnecting notifies opponent but preserves room', () => {

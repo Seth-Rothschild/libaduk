@@ -156,18 +156,18 @@
 
 @keyframes go-place {
 	from {
-		transform: scale(0.1);
+		transform: translateY(.45em);
 		opacity: 0.2;
 	}
 
 	to {
-		transform: scale(1);
+		transform: translateY(0);
 		opacity: 1;
 	}
 }
 
 .go-vertex.go-animate .go-inner {
-	animation: go-place 0.12s ease-out forwards;
+	animation: go-place .12s ease-out forwards;
 }
 
 /* Side panel */

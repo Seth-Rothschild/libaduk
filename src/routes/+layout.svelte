@@ -13,7 +13,17 @@
 		themeState.init();
 		boardState.init();
 		pingState.start();
-		return () => pingState.stop();
+
+		const header = document.querySelector('body > header');
+		function onScroll() {
+			header?.classList.toggle('scrolled', window.scrollY > 0);
+		}
+		window.addEventListener('scroll', onScroll, { passive: true });
+
+		return () => {
+			pingState.stop();
+			window.removeEventListener('scroll', onScroll);
+		};
 	});
 
 	let { children, data } = $props();

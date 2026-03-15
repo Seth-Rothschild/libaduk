@@ -5,13 +5,13 @@ vi.mock('./db.js', () => {
 	return {
 		_store: store,
 		getGame: (id) => store.games[id] ?? null,
-		createGame: ({ id, size, blackName, whiteName, timeControl, komi, local }) => {
+		createGame: ({ id, size, blackName, whiteName, timeControl, komi, gameType }) => {
 			const game = {
 				id,
 				size,
 				blackName: blackName ?? null,
 				whiteName: whiteName ?? null,
-				local: local ?? false,
+				gameType: gameType ?? 'hook',
 				moves: [],
 				status: 'waiting',
 				timeControl: timeControl ?? { type: 'none' },
@@ -31,7 +31,9 @@ vi.mock('./db.js', () => {
 		},
 		appendMove: (id, entry) => {
 			if (store.games[id]) store.games[id].moves.push(entry);
-		}
+		},
+		getChat: () => [],
+		getNote: () => ''
 	};
 });
 
@@ -52,7 +54,7 @@ function makeGame(overrides = {}) {
 		status: 'playing',
 		moves: [],
 		timeControl: { type: 'none' },
-		local: false,
+		gameType: 'hook',
 		komi: 6.5,
 		createdAt: Date.now(),
 		endedAt: null,

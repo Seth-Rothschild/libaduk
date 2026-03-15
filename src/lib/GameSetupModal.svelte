@@ -78,19 +78,13 @@
 		loading = true;
 		try {
 			const timeControl = buildTimeControl();
-			const isLocal = gameType === 'local';
 			const res = await fetch('/api/game', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					size: boardSize,
-					timeControl,
-					color,
-					local: isLocal
-				})
+				body: JSON.stringify({ size: boardSize, timeControl, color, gameType })
 			});
 			const { gameId } = await res.json();
-			goto(isLocal ? `/play/${gameId}?local=true` : `/play/${gameId}`);
+			goto(gameType === 'local' ? `/play/${gameId}?local=true` : `/play/${gameId}`);
 		} catch {
 			loading = false;
 		}

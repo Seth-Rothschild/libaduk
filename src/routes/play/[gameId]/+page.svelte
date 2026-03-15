@@ -20,7 +20,7 @@
 	const ICON_INFO = '\ue060';
 
 	const gameId = $derived(page.params.gameId);
-	const isLocal = $derived(data.game.local === true);
+	const isLocal = $derived(data.game.gameType === 'local');
 
 	let boardContainerWidth = $state(0);
 	let chatMessages = $state(data.chat ?? []);
@@ -252,18 +252,22 @@
 				</div>
 				<div class="game__meta__players">
 					<div class="player color-icon is black text">
-						{isLocal || isSpectator
-							? (data.game.blackName ?? 'Black')
-							: myColor === 'black'
-								? displayName
-								: (gameSocket.opponent ?? data.game.blackName ?? '...')}
+						{isLocal
+							? 'Black'
+							: isSpectator
+								? (data.game.blackName ?? 'Black')
+								: myColor === 'black'
+									? displayName
+									: (gameSocket.opponent ?? data.game.blackName ?? '...')}
 					</div>
 					<div class="player color-icon is white text">
-						{isLocal || isSpectator
-							? (data.game.whiteName ?? 'White')
-							: myColor === 'white'
-								? displayName
-								: (gameSocket.opponent ?? data.game.whiteName ?? '...')}
+						{isLocal
+							? 'White'
+							: isSpectator
+								? (data.game.whiteName ?? 'White')
+								: myColor === 'white'
+									? displayName
+									: (gameSocket.opponent ?? data.game.whiteName ?? '...')}
 					</div>
 				</div>
 			</section>
@@ -330,8 +334,8 @@
 			<name
 				>{isLocal
 					? oppColor === 'white'
-						? (data.game.whiteName ?? 'Guest')
-						: (data.game.blackName ?? 'Guest')
+						? (data.game.whiteName ?? 'White')
+						: (data.game.blackName ?? 'Black')
 					: isSpectator
 						? (data.game.blackName ?? 'Black')
 						: (gameSocket.opponent ?? (gs.status === 'waiting' ? 'Waiting...' : oppColor))}</name
@@ -512,7 +516,7 @@
 
 		<div class="ruser ruser-bottom color-icon is {isSpectator ? 'white' : myColor}">
 			<i class="line"></i>
-			<name>{isLocal ? (data.game.blackName ?? 'You') : isSpectator ? (data.game.whiteName ?? 'White') : displayName}</name>
+			<name>{isLocal ? 'Black' : isSpectator ? (data.game.whiteName ?? 'White') : displayName}</name>
 			{#if myCaptures > 0}
 				<span class="material">+{myCaptures}</span>
 			{/if}

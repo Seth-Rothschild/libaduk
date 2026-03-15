@@ -27,7 +27,7 @@ function send(socket, msg) {
 
 function sendBoth(room, msg) {
 	send(room.black, msg);
-	send(room.white, msg);
+	if (room.white !== room.black) send(room.white, msg);
 }
 
 // --- Clock helpers ---
@@ -109,20 +109,77 @@ function clockSnapshot(clock) {
 	};
 }
 
+// --- Room helpers ---
+
+function reconstructRoom(game) {
+	const moves = game.moves ?? [];
+	let consecutivePasses = 0;
+	for (let i = moves.length - 1; i >= 0; i--) {
+		if (moves[i].type === 'pass') consecutivePasses++;
+		else break;
+	}
+	const activeColor = moves.length % 2 === 0 ? 'black' : 'white';
+	const clock = initClock(game.timeControl);
+	if (clock) {
+		if (game.clockBlack) clock.black = { ...game.clockBlack };
+		if (game.clockWhite) clock.white = { ...game.clockWhite };
+		clock.activeColor = activeColor;
+	}
+	const corrDeadlineMs =
+		game.timeControl?.type === 'correspondence' ? (game.timeControl.days ?? 3) * 86400000 : 0;
+	const isSentinel = (name) => name === 'black' || name === 'white';
+	const blackName = isSentinel(game.blackName) ? null : (game.blackName ?? null);
+	const whiteName = isSentinel(game.whiteName) ? null : (game.whiteName ?? null);
+	return {
+		id: game.id,
+		size: game.size,
+		black: null, blackName, blackClientId: blackName, blackIsAuth: !!blackName,
+		white: null, whiteName, whiteClientId: whiteName, whiteIsAuth: !!whiteName,
+		creatorColor: game.creatorColor ?? 'black',
+		status: game.status,
+		timeControl: game.timeControl,
+		local: game.gameType === 'local',
+		consecutivePasses,
+		activeColor,
+		scoring: {
+			active: game.scoringActive ?? false,
+			deadStones: game.scoringDeadStones ?? [],
+			blackApproved: game.scoringBlackApproved ?? false,
+			whiteApproved: game.scoringWhiteApproved ?? false,
+			signMap: null
+		},
+		clock,
+		corrState: game.corrActiveColor
+			? { activeColor: game.corrActiveColor, turnDeadline: game.corrTurnDeadline }
+			: null,
+		corrDeadlineMs
+	};
+}
+
+function clientMatchesSeat(room, color, socket, clientId) {
+	const seatClientId = color === 'black' ? room.blackClientId : room.whiteClientId;
+	const seatIsAuth = color === 'black' ? room.blackIsAuth : room.whiteIsAuth;
+	if (seatClientId !== clientId) return false;
+	if (seatIsAuth && !socket.authenticatedUsername) return false;
+	return true;
+}
+
 // --- Room management ---
 
-export function createRoom(size = 19, timeControl = { type: 'none' }, color, local = false) {
+export function createRoom(size = 19, timeControl = { type: 'none' }, color, gameType = 'hook', creatorName = null) {
+	const local = gameType === 'local';
 	const id = uniqueId();
-
+	const creatorColor = color === 'random' ? (Math.random() > 0.5 ? 'black' : 'white') : (color ?? 'black');
+	const blackName = !local && creatorColor === 'black' ? creatorName : null;
+	const whiteName = !local && creatorColor === 'white' ? creatorName : null;
 	const corrDeadlineMs =
 		timeControl.type === 'correspondence' ? (timeControl.days ?? 3) * 86400000 : 0;
 	const room = {
 		id,
 		size,
-		black: null,
-		blackName: null,
-		white: null,
-		whiteName: null,
+		black: null, blackName, blackClientId: blackName, blackIsAuth: !!blackName,
+		white: null, whiteName, whiteClientId: whiteName, whiteIsAuth: !!whiteName,
+		creatorColor,
 		status: 'waiting',
 		timeControl,
 		local,
@@ -139,29 +196,8 @@ export function createRoom(size = 19, timeControl = { type: 'none' }, color, loc
 		corrState: null,
 		corrDeadlineMs
 	};
-	if (color === 'black') {
-		room.blackName = 'black';
-	} else if (color === 'white') {
-		room.whiteName = 'white';
-	} else if (color === 'random') {
-		const randomColor = Math.random() > 0.5 ? 'black' : 'white';
-		if (randomColor === 'black') {
-			room.blackName = 'black';
-		} else {
-			room.whiteName = 'white';
-		}
-	}
 	rooms.set(id, room);
-	// Don't write sentinel values ('black'/'white') to the DB — they're internal seating
-	// markers and would show up as the creator name in the lobby hook table.
-	db.createGame({
-		id,
-		size,
-		blackName: room.blackName === 'black' ? null : room.blackName,
-		whiteName: room.whiteName === 'white' ? null : room.whiteName,
-		timeControl,
-		local
-	});
+	db.createGame({ id, size, blackName, whiteName, creatorColor, timeControl, local, gameType });
 	return room;
 }
 
@@ -219,8 +255,8 @@ function handleMessage(socket, raw) {
 
 	if (msg.type === 'join') {
 		const roomId = msg.gameId;
+		const clientId = socket.authenticatedUsername ?? msg.username ?? `anon_${Date.now()}`;
 
-		// Try in-memory room first, then reconstruct from DB on reconnect
 		let room = rooms.get(roomId);
 		if (!room) {
 			const game = db.getGame(roomId);
@@ -228,218 +264,112 @@ function handleMessage(socket, raw) {
 				send(socket, { type: 'error', message: 'Game not found' });
 				return;
 			}
-			const corrDeadlineMs =
-				game.timeControl?.type === 'correspondence' ? (game.timeControl.days ?? 3) * 86400000 : 0;
-			const moves = game.moves ?? [];
-			// Recompute consecutivePasses from the tail of the move history
-			let consecutivePasses = 0;
-			for (let i = moves.length - 1; i >= 0; i--) {
-				if (moves[i].type === 'pass') consecutivePasses++;
-				else break;
-			}
-			// Derive whose turn it is from move count
-			const activeColor = moves.length % 2 === 0 ? 'black' : 'white';
-			// Restore clock state from DB if available, otherwise re-initialise from timeControl.
-			// turnStartedAt is always reset to null so server downtime is not counted as think time.
-			const clock = initClock(game.timeControl);
-			if (clock) {
-				if (game.clockBlack) clock.black = { ...game.clockBlack };
-				if (game.clockWhite) clock.white = { ...game.clockWhite };
-				clock.activeColor = activeColor;
-			}
-			room = {
-				id: roomId,
-				size: game.size,
-				black: null,
-				blackName: game.blackName,
-				white: null,
-				whiteName: game.whiteName,
-				status: game.status,
-				timeControl: game.timeControl,
-				local: game.local ?? false,
-				consecutivePasses,
-				activeColor,
-				scoring: {
-					active: game.scoringActive ?? false,
-					deadStones: game.scoringDeadStones ?? [],
-					blackApproved: game.scoringBlackApproved ?? false,
-					whiteApproved: game.scoringWhiteApproved ?? false,
-					signMap: null
-				},
-				clock,
-				corrState: game.corrActiveColor
-					? { activeColor: game.corrActiveColor, turnDeadline: game.corrTurnDeadline }
-					: null,
-				corrDeadlineMs
-			};
+			room = reconstructRoom(game);
 			rooms.set(roomId, room);
 		}
 
-		if (room.status === 'aborted' && !room.local) {
-			send(socket, { type: 'error', message: 'Game is over' });
+		if ((room.status === 'finished' || room.status === 'aborted') && !room.local) {
+			const color = clientMatchesSeat(room, 'black', socket, clientId)
+				? 'black'
+				: clientMatchesSeat(room, 'white', socket, clientId)
+					? 'white'
+					: null;
+			send(socket, { type: 'joined', gameId: roomId, color, status: room.status });
 			return;
 		}
 
-		const username = socket.authenticatedUsername ?? msg.username ?? 'Anonymous';
-		const isAuthenticated = !!socket.authenticatedUsername;
-
-		// Abandoned rooms: only authenticated players who held a seat can return.
-		// Anyone else (third parties, anonymous users) gets a read-only slim response.
-		if (room.status === 'abandoned') {
-			const wasBlack = isAuthenticated && room.blackName === username;
-			const wasWhite = isAuthenticated && room.whiteName === username;
-			if (!wasBlack && !wasWhite) {
-				send(socket, {
-					type: 'joined',
-					gameId: roomId,
-					color: null,
-					status: 'abandoned'
-				});
-				return;
-			}
-			room.status = 'playing';
-		}
-
-		// Finished games: slim response, client has full state from HTTP.
-		if (room.status === 'finished') {
-			const color =
-				room.blackName === username ? 'black' : room.whiteName === username ? 'white' : null;
-			send(socket, {
-				type: 'joined',
-				gameId: roomId,
-				color,
-				status: 'finished'
-			});
-			return;
-		}
-
+		let color;
 		if (room.local) {
-			const isSentinel = room.blackName === 'black' || room.blackName === 'white';
-			if (isSentinel) {
-				const userIsBlack = room.blackName === 'black';
-				room.blackName = userIsBlack ? username : 'Guest';
-				room.whiteName = userIsBlack ? 'Guest' : username;
+			color = 'black';
+		} else if (clientMatchesSeat(room, 'black', socket, clientId)) {
+			color = 'black';
+		} else if (clientMatchesSeat(room, 'white', socket, clientId)) {
+			color = 'white';
+		} else if (room.status === 'abandoned') {
+			send(socket, { type: 'joined', gameId: roomId, color: null, status: 'abandoned' });
+			return;
+		} else if (!room.blackClientId && !room.whiteClientId) {
+			if (room.status !== 'waiting') {
+				send(socket, { type: 'error', message: 'Game not available' });
+				return;
 			}
-			socket.color = 'black';
-			room.black = socket;
-			room.white = socket;
-			room.status = 'playing';
-			db.updateGame(roomId, {
-				blackName: room.blackName,
-				whiteName: room.whiteName,
-				status: 'playing'
-			});
+			color = room.creatorColor;
+		} else if (!room.blackClientId) {
+			if (room.status !== 'waiting') {
+				send(socket, { type: 'error', message: 'Game not available' });
+				return;
+			}
+			color = 'black';
+		} else if (!room.whiteClientId) {
+			if (room.status !== 'waiting') {
+				send(socket, { type: 'error', message: 'Game not available' });
+				return;
+			}
+			color = 'white';
 		} else {
-			// Prevent a currently-connected player from joining their own game as the other color.
-			const occupiesBlack = room.blackName === username && room.black !== null;
-			const occupiesWhite = room.whiteName === username && room.white !== null;
-			if (occupiesBlack || occupiesWhite) {
-				send(socket, { type: 'error', message: 'You are already in this game' });
-				return;
-			}
-
-			if (isAuthenticated && room.blackName === username && !room.black) {
-				// Authenticated player reconnecting as black
-				socket.color = 'black';
-				room.black = socket;
-			} else if (isAuthenticated && room.whiteName === username && !room.white) {
-				// Authenticated player reconnecting as white
-				socket.color = 'white';
-				room.white = socket;
-			} else if (!room.black && !room.white) {
-				// Either the very first player joining a fresh game, or cold restart with both
-				// sockets gone but real player names already set in the DB.
-				if (room.blackName === 'black') {
-					// Reserved black slot (sentinel) — seat the joining player
-					socket.color = 'black';
-					room.black = socket;
-					room.blackName = username;
-					db.updateGame(roomId, { blackName: username });
-				} else if (room.whiteName === 'white') {
-					// Reserved white slot (sentinel) — seat the joining player
-					socket.color = 'white';
-					room.white = socket;
-					room.whiteName = username;
-					db.updateGame(roomId, { whiteName: username });
-				} else if (room.blackName && room.whiteName) {
-					// Both names are real player names (game was in progress, e.g. after cold restart).
-					// This player isn't either of them (caught above), so the game is full.
-					send(socket, { type: 'error', message: 'Game is full' });
-					return;
-				} else if (room.blackName && !room.whiteName) {
-					// Black seat taken by a real player, white is open (e.g. waiting game cold restart)
-					socket.color = 'white';
-					room.white = socket;
-					room.whiteName = username;
-					db.updateGame(roomId, { whiteName: username });
-				} else if (!room.blackName && room.whiteName) {
-					// White seat taken by a real player, black is open (e.g. waiting game cold restart)
-					socket.color = 'black';
-					room.black = socket;
-					room.blackName = username;
-					db.updateGame(roomId, { blackName: username });
-				} else {
-					send(socket, { type: 'error', message: 'Game not available' });
-					return;
-				}
-			} else if (!room.black && !room.blackName) {
-				// Open black slot — no one has ever been seated there
-				socket.color = 'black';
-				room.black = socket;
-				room.blackName = username;
-				db.updateGame(roomId, { blackName: username });
-			} else if (!room.white && !room.whiteName) {
-				// Open white slot — no one has ever been seated there
-				socket.color = 'white';
-				room.white = socket;
-				room.whiteName = username;
-				db.updateGame(roomId, { whiteName: username });
-			} else {
-				send(socket, { type: 'error', message: 'Game is full' });
-				return;
-			}
-
-			// Start the game when both seats are first filled.
-			// For cold-restarted waiting games the original creator may not be connected,
-			// so also check that both names are set (meaning both slots are claimed).
-			if (room.blackName && room.whiteName && room.status === 'waiting') {
-				room.status = 'playing';
-				db.updateGame(roomId, { status: 'playing' });
-			}
-
-			// Initialize correspondence state when game first goes live
-			if (
-				room.timeControl?.type === 'correspondence' &&
-				!room.corrState &&
-				room.black &&
-				room.white
-			) {
-				room.corrState = {
-					activeColor: 'black',
-					turnDeadline: Date.now() + room.corrDeadlineMs
-				};
-				db.updateGame(roomId, {
-					corrActiveColor: 'black',
-					corrTurnDeadline: room.corrState.turnDeadline
-				});
-			}
-
-			// Notify the already-connected player that their opponent arrived/reconnected
-			if (room.black && room.white) {
-				const otherSocket = socket.color === 'black' ? room.white : room.black;
-				send(otherSocket, {
-					type: 'opponent_joined',
-					opponent: username,
-					clock: clockSnapshot(room.clock),
-					corrState: room.corrState ? { ...room.corrState } : null
-				});
-			}
+			send(socket, { type: 'error', message: 'Game is full' });
+			return;
 		}
 
-		socket.gameId = roomId;
-		socket.username = username;
+		const isAuth = !!socket.authenticatedUsername;
+		if (color === 'black') {
+			room.black = socket;
+			room.blackClientId = clientId;
+			room.blackIsAuth = isAuth;
+			if (!room.local && !room.blackName) {
+				room.blackName = clientId;
+				db.updateGame(roomId, { blackName: clientId });
+			}
+		} else {
+			room.white = socket;
+			room.whiteClientId = clientId;
+			room.whiteIsAuth = isAuth;
+			if (!room.local && !room.whiteName) {
+				room.whiteName = clientId;
+				db.updateGame(roomId, { whiteName: clientId });
+			}
+		}
+		if (room.local) {
+			room.white = socket;
+			room.whiteClientId = clientId;
+			room.whiteIsAuth = isAuth;
+		}
 
-		// Check correspondence deadline on join
+		socket.color = color;
+		socket.gameId = roomId;
+		socket.username = clientId;
+
+		if (room.local && (room.status === 'waiting' || room.status === 'aborted')) {
+			room.status = 'playing';
+			db.updateGame(roomId, { status: 'playing', endedAt: null });
+		} else if (room.blackName && room.whiteName && room.status === 'waiting') {
+			room.status = 'playing';
+			db.updateGame(roomId, { status: 'playing' });
+		} else if (room.status === 'abandoned') {
+			room.status = 'playing';
+		}
+
+		if (room.timeControl?.type === 'correspondence' && !room.corrState && room.black && room.white) {
+			room.corrState = {
+				activeColor: 'black',
+				turnDeadline: Date.now() + room.corrDeadlineMs
+			};
+			db.updateGame(roomId, {
+				corrActiveColor: 'black',
+				corrTurnDeadline: room.corrState.turnDeadline
+			});
+		}
+
+		if (room.black && room.white && room.black !== room.white) {
+			const otherSocket = color === 'black' ? room.white : room.black;
+			send(otherSocket, {
+				type: 'opponent_joined',
+				opponent: clientId,
+				clock: clockSnapshot(room.clock),
+				corrState: room.corrState ? { ...room.corrState } : null
+			});
+		}
+
 		let corrTimeoutLoser = null;
 		if (
 			room.corrState?.turnDeadline &&
@@ -457,13 +387,12 @@ function handleMessage(socket, raw) {
 			room.status = 'finished';
 		}
 
-		const oppSocket = socket.color === 'black' ? room.white : room.black;
-		const inScoring = room.scoring.active;
+		const oppSocket = color === 'black' ? room.white : room.black;
 		send(socket, {
 			type: 'joined',
 			gameId: roomId,
-			color: socket.color,
-			status: inScoring ? 'scoring' : room.status,
+			color,
+			status: room.scoring.active ? 'scoring' : room.status,
 			opponent: room.local ? null : (oppSocket?.username ?? null)
 		});
 
@@ -559,9 +488,7 @@ function handleMessage(socket, raw) {
 		if (room.status !== 'waiting') return;
 		db.updateGame(socket.gameId, { status: 'aborted', endedAt: Date.now() });
 		room.status = 'aborted';
-		const opp = opponent(room, socket);
-		if (opp) send(opp, { type: 'aborted' });
-		send(socket, { type: 'aborted' });
+		sendBoth(room, { type: 'aborted' });
 		return;
 	}
 
@@ -714,41 +641,14 @@ function handleDisconnect(socket) {
 	if (room.local) {
 		room.black = null;
 		room.white = null;
-		if (room.status === 'playing' || room.status === 'waiting') {
-			room.status = 'aborted';
-			db.updateGame(socket.gameId, { status: 'aborted', endedAt: Date.now() });
-		}
-		return;
-	}
-
-	// Anonymous players have no persistent identity and can't meaningfully reconnect.
-	// Abort waiting games immediately; abandon playing games so the opponent is notified.
-	if (!socket.authenticatedUsername) {
-		const opp = opponent(room, socket);
-		if (socket.color === 'black') room.black = null;
-		else if (socket.color === 'white') room.white = null;
-		if (room.status === 'waiting') {
-			room.status = 'aborted';
-			db.updateGame(socket.gameId, { status: 'aborted', endedAt: Date.now() });
-			if (opp) send(opp, { type: 'aborted' });
-		} else if (room.status === 'playing') {
-			room.status = 'abandoned';
-			db.updateGame(socket.gameId, { status: 'abandoned', endedAt: Date.now() });
-			if (opp) send(opp, { type: 'opponent_left' });
-		}
 		return;
 	}
 
 	const opp = opponent(room, socket);
-	if (opp) send(opp, { type: 'opponent_left' });
-	// Null out the socket but keep the room/DB record for reconnection
 	if (socket.color === 'black') room.black = null;
 	else if (socket.color === 'white') room.white = null;
-	// If both players gone, mark abandoned in memory but NOT in DB.
-	// Authenticated players can cold-reconnect because the DB still says 'playing'.
-	if (!room.black && !room.white && room.status === 'playing') {
-		room.status = 'abandoned';
-	}
+	if (opp && room.status === 'playing') send(opp, { type: 'opponent_left' });
+	if (!room.black && !room.white && room.status === 'playing') room.status = 'abandoned';
 }
 
 export function attachWebSocketServer(httpServer) {

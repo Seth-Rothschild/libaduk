@@ -295,7 +295,7 @@ function gameData(overrides = {}) {
 		whiteName: 'Bob',
 		moves: [],
 		timeControl: { type: 'none' },
-		local: false,
+		gameType: 'hook',
 		winner: null,
 		result: null,
 		clockBlack: null,
@@ -412,7 +412,7 @@ describe('initFromData', () => {
 		gs.initFromData(
 			gameData({
 				size: 13,
-				local: true,
+				gameType: 'local',
 				status: 'playing',
 				moves: [
 					{ type: 'move', x: 3, y: 3, color: 'black' },
