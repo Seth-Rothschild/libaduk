@@ -252,11 +252,23 @@
 						</div>
 						<div class="versus">
 							<div class="player white">
-								<span>{game.whiteName ?? 'Anonymous'}</span>
+								<span>
+									{#if (game.gameType === 'local') || (game.gameType === 'friend')}
+										{game.whiteName ?? 'Guest'}
+									{:else}
+										{game.whiteName ?? 'Anonymous'}
+									{/if}
+								</span>
 							</div>
 							<div class="swords" data-icon="&#xe033;"></div>
 							<div class="player black">
-								<span>{game.blackName ?? 'Anonymous'}</span>
+								<span>
+									{#if (game.gameType === 'local') || (game.gameType === 'friend')}
+										{game.blackName ?? 'Guest'}
+									{:else}
+										{game.blackName ?? 'Anonymous'}
+									{/if}
+								</span>
 							</div>
 						</div>
 						<div class="result">

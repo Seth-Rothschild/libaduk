@@ -138,12 +138,18 @@
 				</div>
 			</section>
 			<section>
+				<a href="/analysis">Tools</a>
+				<div role="group">
+					<a href="/analysis">Analysis board</a>
+				</div>
+			</section>
+			<!-- <section>
 				<a href="/">Community</a>
 				<div role="group">
 					<a href="/">Players</a>
 					<a href="/">Teams</a>
 				</div>
-			</section>
+			</section> -->
 		</nav>
 	</div>
 

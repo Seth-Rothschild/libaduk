@@ -170,8 +170,8 @@ export function createRoom(size = 19, timeControl = { type: 'none' }, color, gam
 	const local = gameType === 'local';
 	const id = uniqueId();
 	const creatorColor = color === 'random' ? (Math.random() > 0.5 ? 'black' : 'white') : (color ?? 'black');
-	const blackName = !local && creatorColor === 'black' ? creatorName : null;
-	const whiteName = !local && creatorColor === 'white' ? creatorName : null;
+	const blackName = creatorColor === 'black' && creatorName ? creatorName : null;
+	const whiteName = creatorColor === 'white' && creatorName ? creatorName : null;
 	const corrDeadlineMs =
 		timeControl.type === 'correspondence' ? (timeControl.days ?? 3) * 86400000 : 0;
 	const room = {

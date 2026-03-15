@@ -354,27 +354,28 @@
 			{#if gs.status === 'waiting'}
 				<div class="message" data-icon={ICON_INFO}>
 					<div>
-						You are <strong>{myColor}</strong><br />
+						{#if isLocal}
+							<strong>{gs.currentSign === 1 ? 'Black' : 'White'}</strong> to move<br />
+						{:else}
+							You are <strong>{myColor}</strong><br />
+						{/if}
 						Share this link to invite a friend.
 					</div>
 				</div>
 			{:else if gs.status === 'playing'}
 				<div class="message" data-icon={ICON_INFO}>
 					<div>
-						{#if isMyTurn}
+						{#if isLocal}
+							<strong>{gs.currentSign === 1 ? 'Black' : 'White'}</strong>'s turn
+						{:else if isMyTurn}
 							You play the {myColor} stones<br /><strong>It's your turn!</strong>
-							{#if isCorrGame && gs.corrState?.turnDeadline}
-								<br /><span class="corr-deadline"
-									>{formatCorrDeadline(gs.corrState.turnDeadline)}</span
-								>
-							{/if}
 						{:else}
 							Waiting for opponent...
-							{#if isCorrGame && gs.corrState?.turnDeadline}
-								<br /><span class="corr-deadline"
-									>{formatCorrDeadline(gs.corrState.turnDeadline)}</span
-								>
-							{/if}
+						{/if}
+						{#if isCorrGame && gs.corrState?.turnDeadline}
+							<br /><span class="corr-deadline"
+								>{formatCorrDeadline(gs.corrState.turnDeadline)}</span
+							>
 						{/if}
 					</div>
 				</div>
@@ -417,7 +418,11 @@
 			{:else if gs.status === 'gameover'}
 				<div class="message" data-icon={ICON_INFO}>
 					<div>
-						{gs.winner === mySign ? 'You win' : 'You lose'}
+						{#if isLocal}
+							{gs.winner === 1 ? 'Black' : 'White'} wins
+						{:else}
+							{gs.winner === mySign ? 'You win' : 'You lose'}
+						{/if}
 						{#if gs.winnerResult}
 							<br />{gs.winnerResult}
 						{:else if gs.finalScore}
@@ -439,6 +444,13 @@
 		</div>
 
 		<div class="rcontrols">
+			{#if gs.status === 'gameover' || gs.status === 'abandoned' || gs.status === 'aborted'}
+				<a
+					class="button button-metal analyze-btn"
+					href="/analysis?game={gameId}"
+					data-icon="&#xe01f;"
+				>Analyze</a>
+			{/if}
 			{#if gs.status === 'waiting'}
 				<button class="button button-red" onclick={abort}>Abort</button>
 			{:else if gs.status === 'playing'}
@@ -556,6 +568,17 @@
 	.approval.approved {
 		color: var(--c-good);
 		font-weight: bold;
+	}
+
+	.analyze-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.5em;
+		text-decoration: none;
+	}
+
+	.analyze-btn::before {
+		font-size: 1.2em;
 	}
 
 	.history-indicator {
