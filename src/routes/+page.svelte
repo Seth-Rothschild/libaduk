@@ -12,7 +12,7 @@
 	const username = $derived(data.user?.username ?? '');
 
 	async function createGame(pool = null) {
-		const body = { size: 19, color: 'random' };
+		const body = { size: pool?.size ?? 19, color: 'random' };
 		if (pool) {
 			body.timeControl = pool.timeControl;
 		}
@@ -35,7 +35,7 @@
 	let liveGames = $state([]);
 
 	async function refreshPending() {
-		const res = await fetch('/api/games');
+		const res = await fetch('/api/games?type=live');
 		pendingGames = await res.json();
 	}
 
@@ -56,10 +56,21 @@
 		return () => clearInterval(id);
 	});
 
+	let corrGames = $state([]);
+
+	async function refreshCorrGames() {
+		const res = await fetch('/api/games?type=correspondence');
+		corrGames = await res.json();
+	}
+
 	$effect(() => {
 		if (activeTab === 'lobby') {
 			refreshPending();
 			const id = setInterval(refreshPending, 3000);
+			return () => clearInterval(id);
+		} else if (activeTab === 'correspondence') {
+			refreshCorrGames();
+			const id = setInterval(refreshCorrGames, 3000);
 			return () => clearInterval(id);
 		} else if (activeTab === 'now_playing') {
 			refreshMyGames();
@@ -75,59 +86,74 @@
 
 	const LIVE_POOLS = [
 		{
+			clock: '0+3×10s',
+			label: 'Bullet',
+			size: 9,
+			timeControl: { type: 'byoyomi', initial: 0, periods: 3, periodTime: 10 }
+		},
+		{
 			clock: '1+3×20s',
 			label: 'Bullet',
+			size: 19,
 			timeControl: { type: 'byoyomi', initial: 60, periods: 3, periodTime: 20 }
 		},
 		{
-			clock: '3+3×20s',
-			label: 'Bullet',
-			timeControl: { type: 'byoyomi', initial: 180, periods: 3, periodTime: 20 }
+			clock: '20+0',
+			label: 'Blitz',
+			size: 19,
+			timeControl: { type: 'fischer', initial: 20, increment: 0 }
 		},
 		{
-			clock: '5+3×20s',
+			clock: '0+3×20s',
 			label: 'Blitz',
-			timeControl: { type: 'byoyomi', initial: 300, periods: 3, periodTime: 20 }
+			size: 9,
+			timeControl: { type: 'byoyomi', initial: 0, periods: 3, periodTime: 20 }
+		},
+		{
+			clock: '5+0',
+			label: 'Rapid',
+			size: 9,
+			timeControl: { type: 'fischer', initial: 5, increment: 0 }
 		},
 		{
 			clock: '10+3×20s',
-			label: 'Blitz',
+			label: 'Rapid',
+			size: 19,
 			timeControl: { type: 'byoyomi', initial: 600, periods: 3, periodTime: 20 }
 		},
 		{
+			clock: '10+0',
+			label: 'Standard',
+			size: 9,
+			timeControl: { type: 'fischer', initial: 10, increment: 0 }
+		},
+		{
 			clock: '20+3×30s',
-			label: 'Rapid',
+			label: 'Standard',
+			size: 19,
 			timeControl: { type: 'byoyomi', initial: 1200, periods: 3, periodTime: 30 }
 		},
 		{
-			clock: '30+5×30s',
-			label: 'Rapid',
-			timeControl: { type: 'byoyomi', initial: 1800, periods: 5, periodTime: 30 }
-		},
-		{
-			clock: '40+0',
-			label: 'Standard',
-			timeControl: { type: 'fischer', initial: 40, increment: 0 }
-		},
-		{
-			clock: '60+5×60s',
+			clock: '45+3×30s',
 			label: 'Classical',
-			timeControl: { type: 'byoyomi', initial: 3600, periods: 5, periodTime: 60 }
+			size: 19,
+			timeControl: { type: 'byoyomi', initial: 2700, periods: 3, periodTime: 30 }
+		},
+		{
+			clock: '1 day',
+			label: 'Correspondence',
+			size: 19,
+			timeControl: { type: 'correspondence', days: 1 }
+		},
+		{
+			clock: '3 days',
+			label: 'Correspondence',
+			size: 19,
+			timeControl: { type: 'correspondence', days: 3 }
 		}
 	];
 
 	let setupModal = $state(null); // 'hook' | 'friend' | null
-
-	const CORR_POOLS = [
-		{ clock: '1 day', label: 'Correspondence', timeControl: { type: 'correspondence', days: 1 } },
-		{ clock: '3 days', label: 'Correspondence', timeControl: { type: 'correspondence', days: 3 } },
-		{ clock: '7 days', label: 'Correspondence', timeControl: { type: 'correspondence', days: 7 } },
-		{
-			clock: '14 days',
-			label: 'Correspondence',
-			timeControl: { type: 'correspondence', days: 14 }
-		}
-	];
 </script>
 
 <div class="lobby">
@@ -157,7 +183,7 @@
 			{:else if activeTab === 'lobby'}
 				<HookTable games={pendingGames} onJoin={(id) => goto(`/play/${id}`)} />
 			{:else if activeTab === 'correspondence'}
-				<PoolGrid pools={CORR_POOLS} onSelect={createGame} showCustom={false} />
+				<HookTable games={corrGames} onJoin={(id) => goto(`/play/${id}`)} />
 			{/if}
 		</div>
 	</div>
@@ -192,18 +218,25 @@
 <style>
 	.lobby__pools-wrap {
 		position: relative;
-		min-height: 538px;
+	}
+
+	@media (min-width: 800px) {
+		.lobby__pools-wrap {
+			min-height: 538px;
+		}
 	}
 
 	.lobby-bg-circle {
 		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
 		opacity: 0.1;
 		color: var(--c-font);
 		pointer-events: none;
 		z-index: 0;
+		width: 280px;
+		height: 280px;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
 	}
 
 	.lobby-bg-circle__ring {
@@ -211,6 +244,15 @@
 	}
 
 	@media (min-width: 800px) {
+		.lobby-bg-circle {
+			width: 100%;
+			height: 100%;
+			top: 0;
+			left: 0;
+			transform: none;
+			inset: 0;
+		}
+
 		.lobby-bg-circle__ring {
 			stroke-width: 5;
 		}

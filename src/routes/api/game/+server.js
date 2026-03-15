@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { createRoom } from '$lib/server/rooms.js';
+import { createRoom, findMatchingGame } from '$lib/server/rooms.js';
 
 export async function POST({ request, locals }) {
 	const body = await request.json().catch(() => ({}));
@@ -8,6 +8,14 @@ export async function POST({ request, locals }) {
 	const timeControl = body.timeControl ?? { type: 'none' };
 	const gameType = ['hook', 'friend', 'local'].includes(body.gameType) ? body.gameType : 'hook';
 	const creatorName = locals.user?.username ?? null;
+
+	if (gameType === 'hook' && timeControl.type !== 'none') {
+		const match = await findMatchingGame(size, timeControl, creatorName);
+		if (match) {
+			return json({ gameId: match.id });
+		}
+	}
+
 	const room = await createRoom(size, timeControl, color, gameType, creatorName);
 	return json({ gameId: room.id });
 }

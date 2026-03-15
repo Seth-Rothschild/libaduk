@@ -205,8 +205,12 @@ export function getRoom(id) {
 	return rooms.get(id);
 }
 
-export async function getPendingGames() {
-	return await db.getPendingGames();
+export async function getPendingGames(tcType = null) {
+	return await db.getPendingGames(tcType);
+}
+
+export async function findMatchingGame(size, timeControl, excludeUsername = null) {
+	return await db.findMatchingGame(size, timeControl, excludeUsername);
 }
 
 export async function getUserGames(username) {

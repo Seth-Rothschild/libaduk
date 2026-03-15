@@ -122,16 +122,46 @@ export async function appendMove(id, moveEntry) {
 	await d.collection('games').updateOne({ _id: id }, { $push: { moves: moveEntry } });
 }
 
-export async function getPendingGames() {
+export async function findMatchingGame(size, timeControl, excludeUsername = null) {
 	const d = await getDb();
-	const docs = await d
-		.collection('games')
-		.find({
-			status: 'waiting',
-			gameType: { $nin: ['friend', 'local'] },
-			$or: [{ blackName: { $ne: null } }, { whiteName: { $ne: null } }]
-		})
-		.toArray();
+	const query = {
+		status: 'waiting',
+		size,
+		gameType: 'hook',
+		'timeControl.type': timeControl.type
+	};
+	if (timeControl.type === 'byoyomi') {
+		query['timeControl.initial'] = timeControl.initial;
+		query['timeControl.periods'] = timeControl.periods;
+		query['timeControl.periodTime'] = timeControl.periodTime;
+	} else if (timeControl.type === 'fischer') {
+		query['timeControl.initial'] = timeControl.initial;
+		query['timeControl.increment'] = timeControl.increment;
+	} else if (timeControl.type === 'correspondence') {
+		query['timeControl.days'] = timeControl.days;
+	}
+	if (excludeUsername) {
+		query.blackName = { $ne: excludeUsername };
+		query.whiteName = { $ne: excludeUsername };
+	}
+	const doc = await d.collection('games').findOne(query, { sort: { createdAt: 1 } });
+	if (!doc) return null;
+	return { id: doc._id };
+}
+
+export async function getPendingGames(tcType = null) {
+	const d = await getDb();
+	const query = {
+		status: 'waiting',
+		gameType: { $nin: ['friend', 'local'] },
+		$or: [{ blackName: { $ne: null } }, { whiteName: { $ne: null } }]
+	};
+	if (tcType === 'correspondence') {
+		query['timeControl.type'] = 'correspondence';
+	} else if (tcType === 'live') {
+		query['timeControl.type'] = { $ne: 'correspondence' };
+	}
+	const docs = await d.collection('games').find(query).toArray();
 	return docs.map((g) => ({
 		id: g._id,
 		creator: g.blackName || g.whiteName,

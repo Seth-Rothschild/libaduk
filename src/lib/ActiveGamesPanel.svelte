@@ -27,6 +27,10 @@
 </div>
 
 <style>
+	.lobby__box {
+		padding-left: 0.8em;
+	}
+
 	.lobby__side-empty {
 		padding: 1em;
 		color: var(--c-font-dim);

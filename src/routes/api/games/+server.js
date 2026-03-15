@@ -6,5 +6,6 @@ export async function GET({ url }) {
 	if (username) {
 		return json(await getUserGames(username));
 	}
-	return json(await getPendingGames());
+	const tcType = url.searchParams.get('type');
+	return json(await getPendingGames(tcType));
 }
