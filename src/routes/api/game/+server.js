@@ -8,6 +8,6 @@ export async function POST({ request, locals }) {
 	const timeControl = body.timeControl ?? { type: 'none' };
 	const gameType = ['hook', 'friend', 'local'].includes(body.gameType) ? body.gameType : 'hook';
 	const creatorName = locals.user?.username ?? null;
-	const room = createRoom(size, timeControl, color, gameType, creatorName);
+	const room = await createRoom(size, timeControl, color, gameType, creatorName);
 	return json({ gameId: room.id });
 }

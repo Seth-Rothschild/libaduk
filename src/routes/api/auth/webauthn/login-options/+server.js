@@ -7,7 +7,7 @@ export async function POST({ request, cookies }) {
 	const body = await request.json().catch(() => ({}));
 	const username = (body.username ?? '').trim();
 
-	const user = getUser(username);
+	const user = await getUser(username);
 	if (!user) {
 		return json(
 			{ error: 'No account with that username. Try registering instead.' },
@@ -15,7 +15,7 @@ export async function POST({ request, cookies }) {
 		);
 	}
 
-	const credentials = getCredentials(username);
+	const credentials = await getCredentials(username);
 	if (credentials.length === 0) {
 		return json({ error: 'No passkey registered for this account.' }, { status: 400 });
 	}

@@ -16,7 +16,7 @@ export async function POST({ request, cookies }) {
 		);
 	}
 
-	if (getUser(username)) {
+	if (await getUser(username)) {
 		return json({ error: 'Username already taken' }, { status: 409 });
 	}
 

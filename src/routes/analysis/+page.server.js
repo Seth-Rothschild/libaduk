@@ -1,10 +1,10 @@
 import { getGame } from '$lib/server/db.js';
 
-export function load({ url }) {
+export async function load({ url }) {
 	const gameId = url.searchParams.get('game');
 	if (!gameId) return { game: null };
 
-	const game = getGame(gameId);
+	const game = await getGame(gameId);
 	if (!game) return { game: null };
 
 	return {

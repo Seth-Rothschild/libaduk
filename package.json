@@ -51,6 +51,7 @@
 		"@simplewebauthn/browser": "^13.3.0",
 		"@simplewebauthn/server": "^13.3.0",
 		"@sveltejs/adapter-node": "^5.5.4",
+		"mongodb": "^7.1.0",
 		"ws": "^8.19.0"
 	}
 }

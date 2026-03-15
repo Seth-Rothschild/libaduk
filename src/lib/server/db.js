@@ -1,67 +1,84 @@
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { MongoClient } from 'mongodb';
 
-const DATA_DIR = 'data';
-const DB_PATH = join(DATA_DIR, 'db.json');
+const MONGO_URL = process.env.MONGO_URL ?? 'mongodb://localhost:27017';
+const DB_NAME = process.env.MONGO_DB ?? 'libaduk';
 
-const EMPTY_DB = { users: {}, games: {}, sessions: {}, credentials: {} };
+let client = null;
+let db = null;
+let connectPromise = null;
 
-function loadFromDisk() {
-	try {
-		const saved = JSON.parse(readFileSync(DB_PATH, 'utf8'));
-		return { ...structuredClone(EMPTY_DB), ...saved };
-	} catch {
-		return structuredClone(EMPTY_DB);
+export async function connectDb() {
+	if (db) return db;
+	if (connectPromise) return connectPromise;
+	connectPromise = (async () => {
+		client = new MongoClient(MONGO_URL);
+		await client.connect();
+		db = client.db(DB_NAME);
+		await db.collection('games').createIndex({ status: 1 });
+		await db.collection('games').createIndex({ blackName: 1 });
+		await db.collection('games').createIndex({ whiteName: 1 });
+		await db.collection('credentials').createIndex({ username: 1 });
+		console.log(`Connected to MongoDB at ${MONGO_URL}/${DB_NAME}`);
+		return db;
+	})();
+	return connectPromise;
+}
+
+export async function closeDb() {
+	if (client) {
+		await client.close();
+		client = null;
+		db = null;
+		connectPromise = null;
 	}
 }
 
-// Survive HMR reloads — keep the in-memory DB across module re-evaluations
-if (!global.__db) {
-	mkdirSync(DATA_DIR, { recursive: true });
-	global.__db = loadFromDisk();
-}
-const db = global.__db;
-
-let flushPending = false;
-
-function schedulFlush() {
-	if (flushPending) return;
-	flushPending = true;
-	setImmediate(() => {
-		flushPending = false;
-		writeFileSync(DB_PATH, JSON.stringify(db, null, 2), 'utf8');
-	});
+async function getDb() {
+	if (db) return db;
+	return connectDb();
 }
 
 // --- Users ---
 
-export function getUser(username) {
-	return db.users[username.toLowerCase()] ?? null;
+export async function getUser(username) {
+	const d = await getDb();
+	const doc = await d.collection('users').findOne({ _id: username.toLowerCase() });
+	if (!doc) return null;
+	return { username: doc.username, createdAt: doc.createdAt };
 }
 
-export function searchUsers(query, limit = 10) {
+export async function searchUsers(query, limit = 10) {
 	const needle = query.toLowerCase();
-	return Object.values(db.users)
-		.filter((u) => u.username.toLowerCase().includes(needle))
-		.slice(0, limit);
+	const d = await getDb();
+	const docs = await d
+		.collection('users')
+		.find({ _id: { $regex: needle } })
+		.limit(limit)
+		.toArray();
+	return docs.map((d) => ({ username: d.username, createdAt: d.createdAt }));
 }
 
-export function createUser(username) {
+export async function createUser(username) {
 	const key = username.toLowerCase();
-	if (db.users[key]) throw new Error('Username already taken');
-	const user = { username, createdAt: Date.now() };
-	db.users[key] = user;
-	schedulFlush();
-	return user;
+	const d = await getDb();
+	const existing = await d.collection('users').findOne({ _id: key });
+	if (existing) throw new Error('Username already taken');
+	const user = { _id: key, username, createdAt: Date.now() };
+	await d.collection('users').insertOne(user);
+	return { username, createdAt: user.createdAt };
 }
 
 // --- Games ---
 
-export function getGame(id) {
-	return db.games[id] ?? null;
+export async function getGame(id) {
+	const d = await getDb();
+	const doc = await d.collection('games').findOne({ _id: id });
+	if (!doc) return null;
+	const { _id, ...rest } = doc;
+	return { id: _id, ...rest };
 }
 
-export function createGame({
+export async function createGame({
 	id,
 	size,
 	blackName,
@@ -72,7 +89,7 @@ export function createGame({
 	gameType = 'hook'
 }) {
 	const game = {
-		id,
+		_id: id,
 		size,
 		blackName,
 		whiteName,
@@ -89,142 +106,163 @@ export function createGame({
 		corrActiveColor: null,
 		corrTurnDeadline: null
 	};
-	db.games[id] = game;
-	schedulFlush();
-	return game;
+	const d = await getDb();
+	await d.collection('games').insertOne(game);
+	const { _id, ...rest } = game;
+	return { id: _id, ...rest };
 }
 
-export function updateGame(id, patch) {
-	const game = db.games[id];
-	if (!game) return;
-	Object.assign(game, patch);
-	schedulFlush();
+export async function updateGame(id, patch) {
+	const d = await getDb();
+	await d.collection('games').updateOne({ _id: id }, { $set: patch });
 }
 
-export function appendMove(id, moveEntry) {
-	const game = db.games[id];
-	if (!game) return;
-	game.moves.push(moveEntry);
-	schedulFlush();
+export async function appendMove(id, moveEntry) {
+	const d = await getDb();
+	await d.collection('games').updateOne({ _id: id }, { $push: { moves: moveEntry } });
 }
 
-export function getPendingGames() {
-	return Object.values(db.games)
-		.filter(
-			(g) =>
-				g.status === 'waiting' &&
-				(g.blackName || g.whiteName) &&
-				g.gameType !== 'friend' &&
-				g.gameType !== 'local'
-		)
-		.map((g) => ({
-			id: g.id,
-			creator: g.blackName || g.whiteName,
-			size: g.size,
+export async function getPendingGames() {
+	const d = await getDb();
+	const docs = await d
+		.collection('games')
+		.find({
+			status: 'waiting',
+			gameType: { $nin: ['friend', 'local'] },
+			$or: [{ blackName: { $ne: null } }, { whiteName: { $ne: null } }]
+		})
+		.toArray();
+	return docs.map((g) => ({
+		id: g._id,
+		creator: g.blackName || g.whiteName,
+		size: g.size,
+		timeControl: g.timeControl,
+		createdAt: g.createdAt
+	}));
+}
+
+export async function getUserGames(username) {
+	const d = await getDb();
+	const docs = await d
+		.collection('games')
+		.find({
+			$or: [{ blackName: username }, { whiteName: username }],
+			status: { $in: ['playing', 'waiting'] }
+		})
+		.toArray();
+	return docs.map((g) => {
+		const myColor = g.blackName === username ? 'black' : 'white';
+		const isCorr = g.timeControl?.type === 'correspondence';
+		return {
+			id: g._id,
+			status: g.status,
 			timeControl: g.timeControl,
-			createdAt: g.createdAt
-		}));
+			opponent: g.blackName === username ? g.whiteName : g.blackName,
+			isMyTurn: isCorr ? g.corrActiveColor === myColor : null,
+			corrTurnDeadline: isCorr ? g.corrTurnDeadline : null
+		};
+	});
 }
 
-export function getUserGames(username) {
-	return Object.values(db.games)
-		.filter((g) => g.blackName === username || g.whiteName === username)
-		.filter((g) => g.status === 'playing' || g.status === 'waiting')
-		.map((g) => {
-			const myColor = g.blackName === username ? 'black' : 'white';
-			const isCorr = g.timeControl?.type === 'correspondence';
-			return {
-				id: g.id,
-				status: g.status,
-				timeControl: g.timeControl,
-				opponent: g.blackName === username ? g.whiteName : g.blackName,
-				isMyTurn: isCorr ? g.corrActiveColor === myColor : null,
-				corrTurnDeadline: isCorr ? g.corrTurnDeadline : null
-			};
-		});
+export async function appendChat(gameId, entry) {
+	const d = await getDb();
+	await d.collection('games').updateOne({ _id: gameId }, { $push: { chat: entry } });
 }
 
-export function appendChat(gameId, entry) {
-	const game = db.games[gameId];
-	if (!game) return;
-	if (!game.chat) game.chat = [];
-	game.chat.push(entry);
-	schedulFlush();
+export async function getChat(gameId) {
+	const d = await getDb();
+	const doc = await d.collection('games').findOne({ _id: gameId }, { projection: { chat: 1 } });
+	return doc?.chat ?? [];
 }
 
-export function getChat(gameId) {
-	const game = db.games[gameId];
-	return game?.chat ?? [];
+export async function setNote(gameId, username, text) {
+	const key = `notes.${username.toLowerCase()}`;
+	const d = await getDb();
+	await d.collection('games').updateOne({ _id: gameId }, { $set: { [key]: text } });
 }
 
-export function setNote(gameId, username, text) {
-	const game = db.games[gameId];
-	if (!game) return;
-	if (!game.notes) game.notes = {};
-	game.notes[username.toLowerCase()] = text;
-	schedulFlush();
+export async function getNote(gameId, username) {
+	const d = await getDb();
+	const doc = await d.collection('games').findOne({ _id: gameId }, { projection: { notes: 1 } });
+	if (!doc?.notes) return '';
+	return doc.notes[username.toLowerCase()] ?? '';
 }
 
-export function getNote(gameId, username) {
-	const game = db.games[gameId];
-	if (!game?.notes) return '';
-	return game.notes[username.toLowerCase()] ?? '';
+export async function getAllActiveGames() {
+	const d = await getDb();
+	const docs = await d
+		.collection('games')
+		.find({ status: 'playing', gameType: { $ne: 'friend' } })
+		.toArray();
+	return docs.map((g) => {
+		const { _id, ...rest } = g;
+		return { id: _id, ...rest };
+	});
 }
 
-export function getAllActiveGames() {
-	return Object.values(db.games).filter((g) => g.status === 'playing' && g.gameType !== 'friend');
-}
-
-export function getAllUserGames(username) {
-	return Object.values(db.games)
-		.filter((g) => g.blackName === username || g.whiteName === username)
-		.filter((g) => g.status !== 'aborted')
-		.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+export async function getAllUserGames(username) {
+	const d = await getDb();
+	const docs = await d
+		.collection('games')
+		.find({
+			$or: [{ blackName: username }, { whiteName: username }],
+			status: { $ne: 'aborted' }
+		})
+		.sort({ createdAt: -1 })
+		.toArray();
+	return docs.map((g) => {
+		const { _id, ...rest } = g;
+		return { id: _id, ...rest };
+	});
 }
 
 // --- WebAuthn Credentials ---
 
-export function getCredentials(username) {
+export async function getCredentials(username) {
 	const key = username.toLowerCase();
-	const stored = db.credentials[key] ?? [];
-	return stored.map((c) => ({
-		...c,
-		publicKey: new Uint8Array(Buffer.from(c.publicKey, 'base64url'))
-	}));
+	const d = await getDb();
+	const docs = await d.collection('credentials').find({ username: key }).toArray();
+	return docs.map((c) => {
+		const { _id, username: _u, ...rest } = c;
+		return {
+			...rest,
+			publicKey: new Uint8Array(Buffer.from(rest.publicKey, 'base64url'))
+		};
+	});
 }
 
-export function addCredential(username, credential) {
+export async function addCredential(username, credential) {
 	const key = username.toLowerCase();
-	if (!db.credentials[key]) db.credentials[key] = [];
-	db.credentials[key].push({
+	const d = await getDb();
+	await d.collection('credentials').insertOne({
+		username: key,
 		...credential,
 		publicKey: Buffer.from(credential.publicKey).toString('base64url')
 	});
-	schedulFlush();
 }
 
-export function updateCredentialCounter(username, credentialId, newCounter) {
+export async function updateCredentialCounter(username, credentialId, newCounter) {
 	const key = username.toLowerCase();
-	const creds = db.credentials[key] ?? [];
-	const cred = creds.find((c) => c.id === credentialId);
-	if (cred) {
-		cred.counter = newCounter;
-		schedulFlush();
-	}
+	const d = await getDb();
+	await d.collection('credentials').updateOne({ username: key, id: credentialId }, { $set: { counter: newCounter } });
 }
 
 // --- Sessions ---
 
-export function createSession(token, username) {
-	db.sessions[token] = { username, createdAt: Date.now() };
-	schedulFlush();
+export async function createSession(token, username) {
+	const d = await getDb();
+	await d.collection('sessions').insertOne({ _id: token, username, createdAt: Date.now() });
 }
 
-export function getSession(token) {
-	return token ? (db.sessions[token] ?? null) : null;
+export async function getSession(token) {
+	if (!token) return null;
+	const d = await getDb();
+	const doc = await d.collection('sessions').findOne({ _id: token });
+	if (!doc) return null;
+	return { username: doc.username, createdAt: doc.createdAt };
 }
 
-export function deleteSession(token) {
-	delete db.sessions[token];
-	schedulFlush();
+export async function deleteSession(token) {
+	const d = await getDb();
+	await d.collection('sessions').deleteOne({ _id: token });
 }

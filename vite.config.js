@@ -12,6 +12,8 @@ const wsDevPlugin = {
 	name: 'websocket-dev',
 	configureServer(server) {
 		server.httpServer?.once('listening', async () => {
+			const { connectDb } = await import('./src/lib/server/db.js');
+			await connectDb();
 			const { attachWebSocketServer } = await import('./src/lib/server/rooms.js');
 			attachWebSocketServer(server.httpServer);
 		});

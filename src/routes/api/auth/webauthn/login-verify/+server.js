@@ -15,7 +15,7 @@ export async function POST({ request, cookies }) {
 
 	const { challenge, username } = entry;
 
-	const credentials = getCredentials(username);
+	const credentials = await getCredentials(username);
 	if (credentials.length === 0) {
 		return json({ error: 'No passkey registered for this account.' }, { status: 400 });
 	}
@@ -53,9 +53,9 @@ export async function POST({ request, cookies }) {
 	}
 
 	const { newCounter } = verification.authenticationInfo;
-	updateCredentialCounter(username, body.id, newCounter);
+	await updateCredentialCounter(username, body.id, newCounter);
 
-	const sessionToken = createSession(username);
+	const sessionToken = await createSession(username);
 	cookies.set('session', sessionToken, {
 		path: '/',
 		httpOnly: true,

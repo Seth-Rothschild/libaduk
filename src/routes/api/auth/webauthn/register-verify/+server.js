@@ -15,7 +15,7 @@ export async function POST({ request, cookies }) {
 
 	const { challenge, username } = entry;
 
-	if (getUser(username)) {
+	if (await getUser(username)) {
 		return json({ error: 'Username already taken' }, { status: 409 });
 	}
 
@@ -47,15 +47,15 @@ export async function POST({ request, cookies }) {
 
 	const { credential } = verification.registrationInfo;
 
-	createUser(username);
-	addCredential(username, {
+	await createUser(username);
+	await addCredential(username, {
 		id: credential.id,
 		publicKey: credential.publicKey,
 		counter: credential.counter,
 		transports: body.response.transports ?? []
 	});
 
-	const sessionToken = createSession(username);
+	const sessionToken = await createSession(username);
 	cookies.set('session', sessionToken, {
 		path: '/',
 		httpOnly: true,

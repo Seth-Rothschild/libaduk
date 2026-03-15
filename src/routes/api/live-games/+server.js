@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import { getAllActiveGames } from '$lib/server/db.js';
 
 export async function GET() {
-	const games = getAllActiveGames()
+	const games = (await getAllActiveGames())
 		.slice(0, 5)
 		.map((g) => ({
 			id: g.id,

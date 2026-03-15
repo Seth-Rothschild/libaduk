@@ -15,12 +15,12 @@ export async function POST({ request, cookies }) {
 		);
 	}
 
-	if (getUser(username)) {
+	if (await getUser(username)) {
 		return json({ error: 'Username already taken' }, { status: 409 });
 	}
 
-	createUser(username);
-	const token = createSession(username);
+	await createUser(username);
+	const token = await createSession(username);
 	cookies.set('session', token, {
 		path: '/',
 		httpOnly: true,

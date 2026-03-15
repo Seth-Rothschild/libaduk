@@ -1,16 +1,16 @@
 import { randomUUID } from 'crypto';
 import { createSession as dbCreate, getSession as dbGet, deleteSession as dbDelete } from './db.js';
 
-export function createSession(username) {
+export async function createSession(username) {
 	const token = randomUUID();
-	dbCreate(token, username);
+	await dbCreate(token, username);
 	return token;
 }
 
-export function getSession(token) {
-	return dbGet(token);
+export async function getSession(token) {
+	return await dbGet(token);
 }
 
-export function deleteSession(token) {
-	dbDelete(token);
+export async function deleteSession(token) {
+	await dbDelete(token);
 }

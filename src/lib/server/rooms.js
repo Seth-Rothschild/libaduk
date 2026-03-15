@@ -13,9 +13,9 @@ function generateId() {
 	return Math.random().toString(36).slice(2, 8);
 }
 
-function uniqueId() {
+async function uniqueId() {
 	let id = generateId();
-	while (rooms.has(id) || db.getGame(id)) id = generateId();
+	while (rooms.has(id) || (await db.getGame(id))) id = generateId();
 	return id;
 }
 
@@ -166,9 +166,9 @@ function clientMatchesSeat(room, color, socket, clientId) {
 
 // --- Room management ---
 
-export function createRoom(size = 19, timeControl = { type: 'none' }, color, gameType = 'hook', creatorName = null) {
+export async function createRoom(size = 19, timeControl = { type: 'none' }, color, gameType = 'hook', creatorName = null) {
 	const local = gameType === 'local';
-	const id = uniqueId();
+	const id = await uniqueId();
 	const creatorColor = color === 'random' ? (Math.random() > 0.5 ? 'black' : 'white') : (color ?? 'black');
 	const blackName = creatorColor === 'black' && creatorName ? creatorName : null;
 	const whiteName = creatorColor === 'white' && creatorName ? creatorName : null;
@@ -197,7 +197,7 @@ export function createRoom(size = 19, timeControl = { type: 'none' }, color, gam
 		corrDeadlineMs
 	};
 	rooms.set(id, room);
-	db.createGame({ id, size, blackName, whiteName, creatorColor, timeControl, local, gameType });
+	await db.createGame({ id, size, blackName, whiteName, creatorColor, timeControl, local, gameType });
 	return room;
 }
 
@@ -205,12 +205,12 @@ export function getRoom(id) {
 	return rooms.get(id);
 }
 
-export function getPendingGames() {
-	return db.getPendingGames();
+export async function getPendingGames() {
+	return await db.getPendingGames();
 }
 
-export function getUserGames(username) {
-	return db.getUserGames(username);
+export async function getUserGames(username) {
+	return await db.getUserGames(username);
 }
 
 export function getLobbyStats() {
@@ -228,9 +228,9 @@ function opponentColor(color) {
 	return color === 'black' ? 'white' : 'black';
 }
 
-function endGameTimeout(room, gameId, loserColor) {
+async function endGameTimeout(room, gameId, loserColor) {
 	const winner = opponentColor(loserColor);
-	db.updateGame(gameId, {
+	await db.updateGame(gameId, {
 		status: 'finished',
 		winner,
 		result: winner === 'black' ? 'B+T' : 'W+T',
@@ -240,7 +240,7 @@ function endGameTimeout(room, gameId, loserColor) {
 	sendBoth(room, { type: 'timeout', loser: loserColor });
 }
 
-function handleMessage(socket, raw) {
+async function handleMessage(socket, raw) {
 	let msg;
 	try {
 		msg = JSON.parse(raw);
@@ -259,7 +259,7 @@ function handleMessage(socket, raw) {
 
 		let room = rooms.get(roomId);
 		if (!room) {
-			const game = db.getGame(roomId);
+			const game = await db.getGame(roomId);
 			if (!game) {
 				send(socket, { type: 'error', message: 'Game not found' });
 				return;
@@ -318,7 +318,7 @@ function handleMessage(socket, raw) {
 			room.blackIsAuth = isAuth;
 			if (!room.local && !room.blackName) {
 				room.blackName = clientId;
-				db.updateGame(roomId, { blackName: clientId });
+				await db.updateGame(roomId, { blackName: clientId });
 			}
 		} else {
 			room.white = socket;
@@ -326,7 +326,7 @@ function handleMessage(socket, raw) {
 			room.whiteIsAuth = isAuth;
 			if (!room.local && !room.whiteName) {
 				room.whiteName = clientId;
-				db.updateGame(roomId, { whiteName: clientId });
+				await db.updateGame(roomId, { whiteName: clientId });
 			}
 		}
 		if (room.local) {
@@ -341,10 +341,10 @@ function handleMessage(socket, raw) {
 
 		if (room.local && (room.status === 'waiting' || room.status === 'aborted')) {
 			room.status = 'playing';
-			db.updateGame(roomId, { status: 'playing', endedAt: null });
+			await db.updateGame(roomId, { status: 'playing', endedAt: null });
 		} else if (room.blackName && room.whiteName && room.status === 'waiting') {
 			room.status = 'playing';
-			db.updateGame(roomId, { status: 'playing' });
+			await db.updateGame(roomId, { status: 'playing' });
 		} else if (room.status === 'abandoned') {
 			room.status = 'playing';
 		}
@@ -354,7 +354,7 @@ function handleMessage(socket, raw) {
 				activeColor: 'black',
 				turnDeadline: Date.now() + room.corrDeadlineMs
 			};
-			db.updateGame(roomId, {
+			await db.updateGame(roomId, {
 				corrActiveColor: 'black',
 				corrTurnDeadline: room.corrState.turnDeadline
 			});
@@ -378,7 +378,7 @@ function handleMessage(socket, raw) {
 		) {
 			corrTimeoutLoser = room.corrState.activeColor;
 			const winner = opponentColor(corrTimeoutLoser);
-			db.updateGame(roomId, {
+			await db.updateGame(roomId, {
 				status: 'finished',
 				winner,
 				result: winner === 'black' ? 'B+T' : 'W+T',
@@ -426,7 +426,7 @@ function handleMessage(socket, raw) {
 			msg.type === 'move'
 				? { type: 'move', x: msg.x, y: msg.y, color, t: Date.now() }
 				: { type: 'pass', color, t: Date.now() };
-		db.appendMove(socket.gameId, moveEntry);
+		await db.appendMove(socket.gameId, moveEntry);
 
 		// Handle clock or correspondence deadline
 		let clockData = null;
@@ -436,25 +436,25 @@ function handleMessage(socket, raw) {
 				const elapsed = Date.now() - room.clock.turnStartedAt;
 				const result = deductTime(room.clock, color, elapsed);
 				if (result === 'timeout') {
-					endGameTimeout(room, socket.gameId, color);
+					await endGameTimeout(room, socket.gameId, color);
 					return;
 				}
 			}
 			room.clock.activeColor = opponentColor(color);
 			room.clock.turnStartedAt = Date.now();
 			clockData = clockSnapshot(room.clock);
-			db.updateGame(socket.gameId, {
+			await db.updateGame(socket.gameId, {
 				clockBlack: { ...room.clock.black },
 				clockWhite: { ...room.clock.white }
 			});
 		} else if (room.corrState) {
 			if (room.corrState.turnDeadline && Date.now() > room.corrState.turnDeadline) {
-				endGameTimeout(room, socket.gameId, color);
+				await endGameTimeout(room, socket.gameId, color);
 				return;
 			}
 			room.corrState.activeColor = opponentColor(color);
 			room.corrState.turnDeadline = Date.now() + room.corrDeadlineMs;
-			db.updateGame(socket.gameId, {
+			await db.updateGame(socket.gameId, {
 				corrActiveColor: room.corrState.activeColor,
 				corrTurnDeadline: room.corrState.turnDeadline
 			});
@@ -473,7 +473,7 @@ function handleMessage(socket, raw) {
 		if (room.status !== 'playing') return;
 		const loser = room.local ? (msg.loser ?? socket.color) : socket.color;
 		const winner = opponentColor(loser);
-		db.updateGame(socket.gameId, {
+		await db.updateGame(socket.gameId, {
 			status: 'finished',
 			winner,
 			result: winner === 'black' ? 'B+T' : 'W+T',
@@ -486,7 +486,7 @@ function handleMessage(socket, raw) {
 
 	if (msg.type === 'abort') {
 		if (room.status !== 'waiting') return;
-		db.updateGame(socket.gameId, { status: 'aborted', endedAt: Date.now() });
+		await db.updateGame(socket.gameId, { status: 'aborted', endedAt: Date.now() });
 		room.status = 'aborted';
 		sendBoth(room, { type: 'aborted' });
 		return;
@@ -497,7 +497,7 @@ function handleMessage(socket, raw) {
 		const resigningColor = room.local ? (msg.color ?? socket.color) : socket.color;
 		const winner = opponentColor(resigningColor);
 		const result = winner === 'black' ? 'B+R' : 'W+R';
-		db.updateGame(socket.gameId, {
+		await db.updateGame(socket.gameId, {
 			status: 'finished',
 			winner,
 			result,
@@ -515,7 +515,7 @@ function handleMessage(socket, raw) {
 		room.scoring.deadStones = [];
 		room.scoring.blackApproved = false;
 		room.scoring.whiteApproved = false;
-		db.updateGame(socket.gameId, {
+		await db.updateGame(socket.gameId, {
 			scoringActive: true,
 			scoringDeadStones: [],
 			scoringBlackApproved: false,
@@ -529,7 +529,7 @@ function handleMessage(socket, raw) {
 		room.scoring.deadStones = msg.stones ?? [];
 		room.scoring.blackApproved = false;
 		room.scoring.whiteApproved = false;
-		db.updateGame(socket.gameId, {
+		await db.updateGame(socket.gameId, {
 			scoringDeadStones: room.scoring.deadStones,
 			scoringBlackApproved: false,
 			scoringWhiteApproved: false
@@ -546,7 +546,7 @@ function handleMessage(socket, raw) {
 		const text = (msg.text ?? '').slice(0, 500);
 		if (!text) return;
 		const entry = { user: socket.username, text, t: Date.now() };
-		db.appendChat(socket.gameId, entry);
+		await db.appendChat(socket.gameId, entry);
 		const chatMsg = { type: 'chat', user: socket.username, text };
 		const opp = opponent(room, socket);
 		if (opp && opp !== socket) send(opp, chatMsg);
@@ -557,7 +557,7 @@ function handleMessage(socket, raw) {
 		const approvingColor = room.local ? (msg.color ?? socket.color) : socket.color;
 		if (approvingColor === 'black') room.scoring.blackApproved = true;
 		else room.scoring.whiteApproved = true;
-		db.updateGame(socket.gameId, {
+		await db.updateGame(socket.gameId, {
 			scoringBlackApproved: room.scoring.blackApproved,
 			scoringWhiteApproved: room.scoring.whiteApproved
 		});
@@ -574,7 +574,7 @@ function handleMessage(socket, raw) {
 		});
 
 		if (room.scoring.blackApproved && room.scoring.whiteApproved) {
-			finalizeScore(room, socket.gameId);
+			await finalizeScore(room, socket.gameId);
 		}
 		return;
 	}
@@ -583,7 +583,7 @@ function handleMessage(socket, raw) {
 async function finalizeScore(room, gameId) {
 	try {
 		const { default: influence } = await import('@sabaki/influence');
-		const game = db.getGame(gameId);
+		const game = await db.getGame(gameId);
 		const komi = game?.komi ?? 6.5;
 		const signMap = room.scoring.signMap;
 		const deadStones = room.scoring.deadStones;
@@ -623,7 +623,7 @@ async function finalizeScore(room, gameId) {
 		const margin = Math.abs(blackScore - whiteScore).toFixed(1);
 		const result = winner === 'black' ? `B+${margin}` : `W+${margin}`;
 
-		db.updateGame(gameId, { status: 'finished', winner, result, endedAt: Date.now() });
+		await db.updateGame(gameId, { status: 'finished', winner, result, endedAt: Date.now() });
 		room.status = 'finished';
 
 		sendBoth(room, { type: 'score_result', winner, blackScore, whiteScore, result });
@@ -654,13 +654,12 @@ function handleDisconnect(socket) {
 export function attachWebSocketServer(httpServer) {
 	const wss = new WebSocketServer({ noServer: true });
 
-	httpServer.on('upgrade', (req, socket, head) => {
+	httpServer.on('upgrade', async (req, socket, head) => {
 		if (req.url === '/ws') {
-			wss.handleUpgrade(req, socket, head, (ws) => {
-				// Attach authenticated username from session cookie if present
+			wss.handleUpgrade(req, socket, head, async (ws) => {
 				const cookieStr = req.headers.cookie ?? '';
 				const sessionToken = parseCookieValue(cookieStr, 'session');
-				const session = db.getSession(sessionToken);
+				const session = await db.getSession(sessionToken);
 				ws.authenticatedUsername = session?.username ?? null;
 				wss.emit('connection', ws, req);
 			});
@@ -669,7 +668,11 @@ export function attachWebSocketServer(httpServer) {
 
 	wss.on('connection', (socket) => {
 		lobbyClients.add(socket);
-		socket.on('message', (raw) => handleMessage(socket, raw.toString()));
+		socket.on('message', (raw) => {
+			handleMessage(socket, raw.toString()).catch((err) => {
+				console.error('WebSocket message handler error:', err);
+			});
+		});
 		socket.on('close', () => handleDisconnect(socket));
 	});
 }
