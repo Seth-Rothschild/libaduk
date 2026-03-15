@@ -44,7 +44,13 @@
 		</thead>
 		<tbody>
 			{#each games as game}
-				<tr class="hook join" onclick={() => onJoin?.(game.id)}>
+				<tr
+					class="hook join"
+					tabindex="0"
+					role="button"
+					onclick={() => onJoin?.(game.id)}
+					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onJoin?.(game.id))}
+				>
 					<td>{game.creator}</td>
 					<td>{formatTime(game.createdAt)}</td>
 					<td>{formatClock(game.timeControl)}</td>

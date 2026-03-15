@@ -101,10 +101,8 @@
 		class:go-turn-white={currentSign === -1}
 		style="display: inline-grid; line-height: 1em;"
 		onclick={handleClick}
-		onkeydown={handleClick}
-		role="grid"
-		tabindex="0"
-		aria-label="Go board"
+		role="img"
+		aria-label="Go board, {size} by {size}"
 	>
 		<div class="go-content" style="position: relative; width: {size}em; height: {size}em;">
 			<svg

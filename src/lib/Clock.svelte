@@ -101,7 +101,7 @@
 </script>
 
 {#if clockData}
-	<div class="rclock rclock-{position}" class:running class:emerg={isEmerg} class:outoftime={isOut}>
+	<div class="rclock rclock-{position}" class:running class:emerg={isEmerg} class:outoftime={isOut} aria-label="Clock" role="timer">
 		<div class="time" class:hour={isHour}>
 			{formatTime(displayMs)}
 			{#if byoLabel}

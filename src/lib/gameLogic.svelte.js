@@ -1,8 +1,5 @@
 import GoBoardLib from '@sabaki/go-board';
-
-function emptyShiftMap(size) {
-	return Array.from({ length: size }, () => new Array(size).fill(0));
-}
+import { emptyShiftMap } from './gameUtils.js';
 
 function readjustShifts(shiftMap, x, y) {
 	const direction = shiftMap[y]?.[x];

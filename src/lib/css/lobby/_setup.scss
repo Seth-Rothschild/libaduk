@@ -5,6 +5,7 @@ $c-setup: $c-secondary;
 	max-width: 96vw;
 	padding: 0;
 	overflow: visible;
+	color: $c-font;
 
 	h2 {
 		margin: 2rem 1.5rem;
@@ -161,7 +162,7 @@ $c-setup: $c-secondary;
 
 					&.active {
 						background: $c-setup;
-						color: $c-over;
+						color: #000;
 					}
 				}
 			}

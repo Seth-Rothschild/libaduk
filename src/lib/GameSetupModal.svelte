@@ -156,8 +156,9 @@
 					<div class="time-panel">
 						<div class="sliders">
 							<div class="slider-row">
-								<span class="slider-label">Minutes per side</span>
+								<label class="slider-label" for="byo-min">Minutes per side</label>
 								<input
+									id="byo-min"
 									class="range"
 									type="range"
 									min="0"
@@ -168,8 +169,9 @@
 								<span class="val-box">{byoMin}</span>
 							</div>
 							<div class="slider-row">
-								<span class="slider-label">Byo-yomi periods</span>
+								<label class="slider-label" for="byo-periods">Byo-yomi periods</label>
 								<input
+									id="byo-periods"
 									class="range"
 									type="range"
 									min="1"
@@ -180,8 +182,9 @@
 								<span class="val-box">{byoPeriods}</span>
 							</div>
 							<div class="slider-row">
-								<span class="slider-label">Period time (seconds)</span>
+								<label class="slider-label" for="byo-sec">Period time (seconds)</label>
 								<input
+									id="byo-sec"
 									class="range"
 									type="range"
 									min="5"
@@ -214,10 +217,11 @@
 						<div class="sliders-grid">
 							<div class="slider-container">
 								<div class="label-row">
-									<label>Minutes per side</label>
+									<label for="fischer-min">Minutes per side</label>
 									<span class="val-box">{fischerMin}</span>
 								</div>
 								<input
+									id="fischer-min"
 									class="range"
 									type="range"
 									min="1"
@@ -230,9 +234,10 @@
 							<div class="slider-container">
 								<div class="label-row">
 									<span class="val-box">{fischerInc}s</span>
-									<label>Increment (seconds)</label>
+									<label for="fischer-inc">Increment (seconds)</label>
 								</div>
 								<input
+									id="fischer-inc"
 									class="range"
 									type="range"
 									min="0"
@@ -261,10 +266,11 @@
 					<div class="time-panel">
 						<div class="slider-container">
 							<div class="label-row">
-								<label>Days per turn</label>
+								<label for="corr-days">Days per turn</label>
 								<span class="val-box">{corrLabel(corrDays)}</span>
 							</div>
 							<input
+								id="corr-days"
 								class="range"
 								type="range"
 								min="1"

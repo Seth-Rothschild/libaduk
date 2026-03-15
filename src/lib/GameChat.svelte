@@ -108,7 +108,7 @@
 
 	{#if activeTab === 'discussion'}
 		<div class="mchat__content">
-			<ol class="mchat__messages" role="log" bind:this={messagesEl}>
+			<ol class="mchat__messages" role="log" aria-live="polite" bind:this={messagesEl}>
 				{#each messages as msg}
 					<li class:me={msg.user === username} class:system={msg.system}>
 						{#if msg.system}
@@ -123,16 +123,21 @@
 			<input
 				class="mchat__say"
 				placeholder="Talk in chat"
+				aria-label="Chat message"
 				bind:value={inputText}
 				onkeydown={handleKeydown}
 			/>
 			{#if presetsVisible}
-				<div class="mchat__presets">
+				<div class="mchat__presets" role="group" aria-label="Quick messages">
 					{#each activePresets as preset}
 						<span
 							class:disabled={usedPresets.has(preset.key)}
 							title={preset.text}
+							role="button"
+							tabindex={usedPresets.has(preset.key) ? -1 : 0}
+							aria-disabled={usedPresets.has(preset.key)}
 							onclick={() => sendPreset(preset)}
+							onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sendPreset(preset); } }}
 						>
 							{preset.key}
 						</span>

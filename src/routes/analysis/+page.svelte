@@ -3,19 +3,28 @@
 	import GoBoardLib from '@sabaki/go-board';
 	import influence from '@sabaki/influence';
 	import GoBoard from '$lib/GoBoard.svelte';
+	import PlayerStrip from '$lib/PlayerStrip.svelte';
+	import NavigationButtons from '$lib/NavigationButtons.svelte';
 	import { page } from '$app/state';
 	import { boardState } from '$lib/boardState.svelte.js';
+	import {
+		colorName,
+		computeScore,
+		scoreVerdictShort,
+		toggleDeadStones,
+		buildScoreBoard,
+		emptyMarkerMap,
+		computeVertexSize,
+		clampBoardSize,
+		formatVertex
+	} from '$lib/gameUtils.js';
 
 	let { data } = $props();
 
-	const VALID_SIZES = [9, 13, 19];
 	const gameData = data.game;
 	const defaultSize = gameData ? gameData.size : Number(page.url.searchParams.get('size') ?? 19);
-	const SIZE = VALID_SIZES.includes(defaultSize) ? defaultSize : 19;
-
-	function emptyMarkerMap(size) {
-		return Array.from({ length: size }, () => new Array(size).fill(null));
-	}
+	const SIZE = clampBoardSize(defaultSize);
+	const KOMI = 6.5;
 
 	function makeNode(board, lastMove, markerMap, signToPlay, parent) {
 		return { board, lastMove, markerMap, signToPlay, children: [], parent };
@@ -58,12 +67,7 @@
 	let tool = $state('stone');
 
 	const currentSign = $derived(currentNode.signToPlay);
-
-	const vertexSize = $derived(
-		boardContainerWidth > 0 ? Math.floor(boardContainerWidth / (SIZE + 0.8)) : 24
-	);
-
-	const KOMI = 6.5;
+	const vertexSize = $derived(computeVertexSize(boardContainerWidth, SIZE));
 
 	const signMap = $derived(currentNode.board.signMap);
 	const blackCaptures = $derived(currentNode.board.getCaptures(1));
@@ -86,27 +90,12 @@
 	let deadStones = $state([]);
 	let areaMap = $state(null);
 
-	const score = $derived.by(() => {
-		if (!areaMap) return null;
-		let blackArea = 0;
-		let whiteArea = 0;
-		for (let y = 0; y < SIZE; y++) {
-			for (let x = 0; x < SIZE; x++) {
-				const z = areaMap[y][x];
-				if (z > 0) blackArea++;
-				if (z < 0) whiteArea++;
-			}
-		}
-		const blackScore = blackArea;
-		const whiteScore = whiteArea + KOMI;
-		return { blackArea, whiteArea, blackScore, whiteScore };
-	});
+	const score = $derived(areaMap ? computeScore(areaMap, SIZE, KOMI) : null);
 
 	function startScoring() {
 		status = 'scoring';
 		deadStones = [];
-		const am = influence.areaMap(currentNode.board.signMap);
-		areaMap = am;
+		areaMap = influence.areaMap(currentNode.board.signMap);
 	}
 
 	function stopScoring() {
@@ -116,25 +105,9 @@
 	}
 
 	function toggleDeadGroup(x, y) {
-		const sign = currentNode.board.get([x, y]);
-		if (sign === 0) return;
-		const chain = currentNode.board.getChain([x, y]);
-		const chainKeys = new Set(chain.map(([cx, cy]) => `${cx},${cy}`));
-		const currentDeadKeys = new Set(deadStones.map(([cx, cy]) => `${cx},${cy}`));
-		const isCurrentlyDead = currentDeadKeys.has(`${x},${y}`);
-		if (isCurrentlyDead) {
-			deadStones = deadStones.filter(([cx, cy]) => !chainKeys.has(`${cx},${cy}`));
-		} else {
-			deadStones = [...deadStones, ...chain];
-		}
-		const clone = currentNode.board.clone();
-		for (const [dx, dy] of deadStones) {
-			const s = clone.get([dx, dy]);
-			if (s !== 0) {
-				clone.set([dx, dy], 0);
-			}
-		}
-		areaMap = influence.areaMap(clone.signMap);
+		deadStones = toggleDeadStones(currentNode.board, deadStones, x, y);
+		const scoreBoard = buildScoreBoard(currentNode.board, deadStones);
+		areaMap = influence.areaMap(scoreBoard.signMap);
 	}
 
 	const movePath = $derived.by(() => {
@@ -281,15 +254,6 @@
 	onDestroy(() => {
 		document.removeEventListener('keydown', handleKeydown);
 	});
-
-	const COL_LETTERS = 'ABCDEFGHJKLMNOPQRST';
-
-	function formatVertex(vertex) {
-		if (!vertex) return 'pass';
-		const col = COL_LETTERS[vertex[0]];
-		const row = SIZE - vertex[1];
-		return `${col}${row}`;
-	}
 </script>
 
 <div class="round">
@@ -373,10 +337,11 @@
 			/>
 		</div>
 
-		<div class="ruser ruser-top color-icon is {currentSign === 1 ? 'white' : 'black'}">
-			<i class="line"></i>
-			<name>{currentSign === 1 ? 'White' : 'Black'}</name>
-		</div>
+		<PlayerStrip
+			color={colorName(currentSign === 1 ? -1 : 1)}
+			name={currentSign === 1 ? 'White' : 'Black'}
+			position="top"
+		/>
 
 		<div class="rmoves">
 			<div class="analysis-moves">
@@ -390,7 +355,7 @@
 						}}
 					>
 						<span class="move-num">{i + 1}.</span>
-						<span class="move-coord">{formatVertex(node.lastMove)}</span>
+						<span class="move-coord">{formatVertex(node.lastMove, SIZE)}</span>
 						{#if node.children.length > 1}
 							<span class="move-branches" title="{node.children.length} variations">⑂</span>
 						{/if}
@@ -418,13 +383,7 @@
 					<div class="score-display">
 						<span class="color-icon is black text">{score.blackArea}</span>
 						<span class="color-icon is white text">{score.whiteArea} + {KOMI} = {score.whiteScore.toFixed(1)}</span>
-						<strong>
-							{#if score.blackScore > score.whiteScore}
-								B+{(score.blackScore - score.whiteScore).toFixed(1)}
-							{:else}
-								W+{(score.whiteScore - score.blackScore).toFixed(1)}
-							{/if}
-						</strong>
+						<strong>{scoreVerdictShort(score)}</strong>
 					</div>
 				{/if}
 			{:else}
@@ -433,37 +392,21 @@
 			{/if}
 		</div>
 
-		<div class="rbuttons">
-			<button
-				class="fbt"
-				data-icon="&#xe035;"
-				disabled={!currentNode.parent}
-				onclick={jumpFirst}
-			></button>
-			<button
-				class="fbt"
-				data-icon="&#xe037;"
-				disabled={!currentNode.parent}
-				onclick={jumpPrev}
-			></button>
-			<button
-				class="fbt"
-				data-icon="&#xe036;"
-				disabled={currentNode.children.length === 0}
-				onclick={jumpNext}
-			></button>
-			<button
-				class="fbt"
-				data-icon="&#xe034;"
-				disabled={currentNode.children.length === 0}
-				onclick={jumpLast}
-			></button>
-		</div>
+		<NavigationButtons
+			canPrev={!!currentNode.parent}
+			canNext={currentNode.children.length > 0}
+			onFirst={jumpFirst}
+			onPrev={jumpPrev}
+			onNext={jumpNext}
+			onLast={jumpLast}
+		/>
 
-		<div class="ruser ruser-bottom color-icon is {currentSign === 1 ? 'black' : 'white'} active">
-			<i class="line"></i>
-			<name>{currentSign === 1 ? 'Black' : 'White'}</name>
-		</div>
+		<PlayerStrip
+			color={colorName(currentSign)}
+			name={currentSign === 1 ? 'Black' : 'White'}
+			position="bottom"
+			active={true}
+		/>
 	</div>
 </div>
 
