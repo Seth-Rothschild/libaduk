@@ -15,7 +15,7 @@
 	let byoSec = $state(20);
 
 	// Fischer sliders
-	let fischerMin = $state(10);
+	let fischerMin = $state(20);
 	let fischerInc = $state(0);
 
 	// Correspondence preset
@@ -25,26 +25,70 @@
 		dialog?.showModal();
 	});
 
-	const BYOYOMI_PRESETS = [
-		{ label: '1+3×20s', min: 1, periods: 3, sec: 20 },
-		{ label: '3+3×20s', min: 3, periods: 3, sec: 20 },
-		{ label: '5+3×20s', min: 5, periods: 3, sec: 20 },
-		{ label: '10+3×20s', min: 10, periods: 3, sec: 20 },
-		{ label: '20+3×30s', min: 20, periods: 3, sec: 30 },
-		{ label: '30+5×30s', min: 30, periods: 5, sec: 30 },
-		{ label: '60+5×60s', min: 60, periods: 5, sec: 60 }
-	];
+	const BYOYOMI_BY_SIZE = {
+		9: [
+			{ label: '0+3×10s', min: 0, periods: 3, sec: 10 },
+			{ label: '0+3×20s', min: 0, periods: 3, sec: 20 },
+			{ label: '3+3×15s', min: 3, periods: 3, sec: 15 },
+			{ label: '5+3×20s', min: 5, periods: 3, sec: 20 },
+			{ label: '10+3×20s', min: 10, periods: 3, sec: 20 }
+		],
+		13: [
+			{ label: '0+3×15s', min: 0, periods: 3, sec: 15 },
+			{ label: '1+3×20s', min: 1, periods: 3, sec: 20 },
+			{ label: '5+3×20s', min: 5, periods: 3, sec: 20 },
+			{ label: '10+3×25s', min: 10, periods: 3, sec: 25 },
+			{ label: '20+3×30s', min: 20, periods: 3, sec: 30 }
+		],
+		19: [
+			{ label: '1+3×20s', min: 1, periods: 3, sec: 20 },
+			{ label: '5+3×20s', min: 5, periods: 3, sec: 20 },
+			{ label: '10+3×20s', min: 10, periods: 3, sec: 20 },
+			{ label: '20+3×30s', min: 20, periods: 3, sec: 30 },
+			{ label: '45+3×30s', min: 45, periods: 3, sec: 30 }
+		]
+	};
 
-	const FISCHER_PRESETS = [
-		{ label: '5+0', min: 5, inc: 0 },
-		{ label: '10+0', min: 10, inc: 0 },
-		{ label: '15+10', min: 15, inc: 10 },
-		{ label: '30+0', min: 30, inc: 0 },
-		{ label: '40+0', min: 40, inc: 0 }
-	];
+	const FISCHER_BY_SIZE = {
+		9: [
+			{ label: '2+0', min: 2, inc: 0 },
+			{ label: '5+0', min: 5, inc: 0 },
+			{ label: '10+0', min: 10, inc: 0 },
+			{ label: '15+0', min: 15, inc: 0 },
+			{ label: '20+0', min: 20, inc: 0 }
+		],
+		13: [
+			{ label: '3+0', min: 3, inc: 0 },
+			{ label: '10+0', min: 10, inc: 0 },
+			{ label: '15+0', min: 15, inc: 0 },
+			{ label: '25+0', min: 25, inc: 0 },
+			{ label: '35+0', min: 35, inc: 0 }
+		],
+		19: [
+			{ label: '5+0', min: 5, inc: 0 },
+			{ label: '10+0', min: 10, inc: 0 },
+			{ label: '20+0', min: 20, inc: 0 },
+			{ label: '30+0', min: 30, inc: 0 },
+			{ label: '45+0', min: 45, inc: 0 }
+		]
+	};
+
+	let byoyomiPresets = $derived(BYOYOMI_BY_SIZE[boardSize]);
+	let fischerPresets = $derived(FISCHER_BY_SIZE[boardSize]);
 
 	const CORR_PRESETS = [1, 3, 7, 14];
 	const SIZE_OPTIONS = [9, 13, 19];
+
+	const BYO_DEFAULTS = {
+		9: { min: 3, periods: 3, sec: 15 },
+		13: { min: 5, periods: 3, sec: 20 },
+		19: { min: 10, periods: 3, sec: 20 }
+	};
+	const FISCHER_DEFAULTS = {
+		9: { min: 5, inc: 0 },
+		13: { min: 10, inc: 0 },
+		19: { min: 20, inc: 0 }
+	};
 
 	const BUTTON_LABELS = {
 		hook: 'Create a game',
@@ -52,18 +96,30 @@
 		local: 'Play locally'
 	};
 
+	function applyByoDefaults() {
+		let d = BYO_DEFAULTS[boardSize];
+		byoMin = d.min;
+		byoPeriods = d.periods;
+		byoSec = d.sec;
+	}
+
+	function applyFischerDefaults() {
+		let d = FISCHER_DEFAULTS[boardSize];
+		fischerMin = d.min;
+		fischerInc = d.inc;
+	}
+
 	function switchTimeMode(mode) {
 		timeMode = mode;
-		if (mode === 'byoyomi') {
-			byoMin = 10;
-			byoPeriods = 3;
-			byoSec = 20;
-		} else if (mode === 'realtime') {
-			fischerMin = 10;
-			fischerInc = 0;
-		} else if (mode === 'correspondence') {
-			corrDays = 3;
-		}
+		if (mode === 'byoyomi') applyByoDefaults();
+		else if (mode === 'realtime') applyFischerDefaults();
+		else if (mode === 'correspondence') corrDays = 3;
+	}
+
+	function switchBoardSize(size) {
+		boardSize = size;
+		if (timeMode === 'byoyomi') applyByoDefaults();
+		else if (timeMode === 'realtime') applyFischerDefaults();
 	}
 
 	function buildTimeControl() {
@@ -121,7 +177,7 @@
 						<button
 							class="size-choice"
 							class:active={boardSize === size}
-							onclick={() => (boardSize = size)}
+							onclick={() => switchBoardSize(size)}
 						>
 							{size}×{size}
 						</button>
@@ -197,7 +253,7 @@
 							</div>
 						</div>
 						<div class="presets">
-							{#each BYOYOMI_PRESETS as p}
+							{#each byoyomiPresets as p}
 								<button
 									class="preset-btn"
 									class:active={byoMin === p.min && byoPeriods === p.periods && byoSec === p.sec}
@@ -248,7 +304,7 @@
 							</div>
 						</div>
 						<div class="presets">
-							{#each FISCHER_PRESETS as p}
+							{#each fischerPresets as p}
 								<button
 									class="preset-btn"
 									class:active={fischerMin === p.min && fischerInc === p.inc}
