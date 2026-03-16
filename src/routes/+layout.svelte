@@ -1,338 +1,338 @@
 <script>
-	import '../app.scss';
-	import { setUsername, clearUsername } from '$lib/user.svelte.js';
-	import { pingState } from '$lib/ping.svelte.js';
-	import { themeState } from '$lib/theme.svelte.js';
-	import { boardState } from '$lib/boardState.svelte.js';
-	import GameSetupModal from '$lib/GameSetupModal.svelte';
-	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
-	import { goto, invalidateAll } from '$app/navigation';
+  import '../app.scss';
+  import { setUsername, clearUsername } from '$lib/user.svelte.js';
+  import { pingState } from '$lib/ping.svelte.js';
+  import { themeState } from '$lib/theme.svelte.js';
+  import { boardState } from '$lib/boardState.svelte.js';
+  import GameSetupModal from '$lib/GameSetupModal.svelte';
+  import { onMount } from 'svelte';
+  import { page } from '$app/stores';
+  import { goto, invalidateAll } from '$app/navigation';
 
-	onMount(() => {
-		themeState.init();
-		boardState.init();
-		pingState.start();
+  onMount(() => {
+    themeState.init();
+    boardState.init();
+    pingState.start();
 
-		const header = document.querySelector('body > header');
-		function onScroll() {
-			header?.classList.toggle('scrolled', window.scrollY > 0);
-		}
-		window.addEventListener('scroll', onScroll, { passive: true });
+    const header = document.querySelector('body > header');
+    function onScroll() {
+      header?.classList.toggle('scrolled', window.scrollY > 0);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
 
-		return () => {
-			pingState.stop();
-			window.removeEventListener('scroll', onScroll);
-		};
-	});
+    return () => {
+      pingState.stop();
+      window.removeEventListener('scroll', onScroll);
+    };
+  });
 
-	let { children, data } = $props();
+  let { children, data } = $props();
 
-	// Server is authoritative; keep localStorage in sync for client-side reads
-	$effect(() => {
-		if (data.user) setUsername(data.user.username);
-		else clearUsername();
-	});
+  // Server is authoritative; keep localStorage in sync for client-side reads
+  $effect(() => {
+    if (data.user) setUsername(data.user.username);
+    else clearUsername();
+  });
 
-	const username = $derived(data.user?.username ?? '');
-	const signedIn = $derived(username.length > 0);
+  const username = $derived(data.user?.username ?? '');
+  const signedIn = $derived(username.length > 0);
 
-	async function signOut() {
-		await fetch('/api/auth/logout', { method: 'POST' });
-		clearUsername();
-		await invalidateAll();
-		goto('/');
-	}
+  async function signOut() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    clearUsername();
+    await invalidateAll();
+    goto('/');
+  }
 
-	let searchExpanded = $state(false);
-	let settingsOpen = $state(false);
-	let searchInput = $state(null);
-	let dasherPane = $state('main');
-	let setupModal = $state(null);
-	let searchQuery = $state('');
-	let searchResults = $state([]);
-	let searchDebounce = null;
+  let searchExpanded = $state(false);
+  let settingsOpen = $state(false);
+  let searchInput = $state(null);
+  let dasherPane = $state('main');
+  let setupModal = $state(null);
+  let searchQuery = $state('');
+  let searchResults = $state([]);
+  let searchDebounce = null;
 
-	$effect(() => {
-		document.body.classList.toggle('clinput', searchExpanded);
-	});
+  $effect(() => {
+    document.body.classList.toggle('clinput', searchExpanded);
+  });
 
-	function onSearchMouseEnter() {
-		searchExpanded = true;
-		searchInput?.focus();
-	}
+  function onSearchMouseEnter() {
+    searchExpanded = true;
+    searchInput?.focus();
+  }
 
-	function onSearchMouseLeave() {
-		if (searchQuery.length === 0) searchExpanded = false;
-		searchInput?.blur();
-	}
+  function onSearchMouseLeave() {
+    if (searchQuery.length === 0) searchExpanded = false;
+    searchInput?.blur();
+  }
 
-	function onSearchBlur() {
-		setTimeout(() => {
-			searchExpanded = false;
-			searchQuery = '';
-			searchResults = [];
-		}, 150);
-	}
+  function onSearchBlur() {
+    setTimeout(() => {
+      searchExpanded = false;
+      searchQuery = '';
+      searchResults = [];
+    }, 150);
+  }
 
-	function onSearchInput(e) {
-		searchQuery = e.target.value;
-		clearTimeout(searchDebounce);
-		if (searchQuery.length === 0) {
-			searchResults = [];
-			return;
-		}
-		searchDebounce = setTimeout(async () => {
-			const res = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`);
-			searchResults = await res.json();
-		}, 150);
-	}
+  function onSearchInput(e) {
+    searchQuery = e.target.value;
+    clearTimeout(searchDebounce);
+    if (searchQuery.length === 0) {
+      searchResults = [];
+      return;
+    }
+    searchDebounce = setTimeout(async () => {
+      const res = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`);
+      searchResults = await res.json();
+    }, 150);
+  }
 
-	function onSearchResultClick(username) {
-		searchQuery = '';
-		searchResults = [];
-		searchExpanded = false;
-		goto(`/profile/${username}`);
-	}
+  function onSearchResultClick(username) {
+    searchQuery = '';
+    searchResults = [];
+    searchExpanded = false;
+    goto(`/profile/${username}`);
+  }
 
-	function toggleSettings() {
-		settingsOpen = !settingsOpen;
-		if (!settingsOpen) dasherPane = 'main';
-	}
+  function toggleSettings() {
+    settingsOpen = !settingsOpen;
+    if (!settingsOpen) dasherPane = 'main';
+  }
 </script>
 
 <!-- Mobile hamburger toggle (CSS-only) -->
 <a href="/">
-	<input type="checkbox" id="topnav-toggle" class="topnav-toggle" />
+  <input type="checkbox" id="topnav-toggle" class="topnav-toggle" />
 </a>
 
 <header>
-	<label class="hbg" for="topnav-toggle" aria-label="Menu">
-		<span class="hbg__in"></span>
-	</label>
+  <label class="hbg" for="topnav-toggle" aria-label="Menu">
+    <span class="hbg__in"></span>
+  </label>
 
-	<div class="site-title-nav">
-		<a class="site-title" href="/">
-			<span class="site-icon" data-icon="&#xe029;"></span>
-			<span class="home">libaduk</span>
-		</a>
-		<nav id="topnav" class="hover">
-			<section>
-				<a href="/">
-					<span class="play">Play</span>
-					<span class="home">libaduk</span>
-				</a>
-				<div role="group">
-					<button
-						onclick={async () => {
-							await goto('/');
-							setupModal = 'hook';
-						}}>Create a game</button
-					>
-					<button
-						onclick={async () => {
-							await goto('/');
-							setupModal = 'friend';
-						}}>Challenge a friend</button
-					>
-				</div>
-			</section>
-			<section>
-				<a href="/analysis">Tools</a>
-				<div role="group">
-					<a href="/analysis">Analysis board</a>
-				</div>
-			</section>
-			<!-- <section>
+  <div class="site-title-nav">
+    <a class="site-title" href="/">
+      <span class="site-icon" data-icon="&#xe029;"></span>
+      <span class="home">libaduk</span>
+    </a>
+    <nav id="topnav" class="hover">
+      <section>
+        <a href="/">
+          <span class="play">Play</span>
+          <span class="home">libaduk</span>
+        </a>
+        <div role="group">
+          <button
+            onclick={async () => {
+              await goto('/');
+              setupModal = 'hook';
+            }}>Create a game</button
+          >
+          <button
+            onclick={async () => {
+              await goto('/');
+              setupModal = 'friend';
+            }}>Challenge a friend</button
+          >
+        </div>
+      </section>
+      <section>
+        <a href="/analysis">Tools</a>
+        <div role="group">
+          <a href="/analysis">Analysis board</a>
+        </div>
+      </section>
+      <!-- <section>
 				<a href="/">Community</a>
 				<div role="group">
 					<a href="/">Players</a>
 					<a href="/">Teams</a>
 				</div>
 			</section> -->
-		</nav>
-	</div>
+    </nav>
+  </div>
 
-	<div class="site-buttons">
-		<div id="clinput" onmouseenter={onSearchMouseEnter} onmouseleave={onSearchMouseLeave}>
-			<a data-icon="&#xe057;" aria-label="Search" class="link"></a>
-			<input
-				type="text"
-				spellcheck="false"
-				autocomplete="off"
-				aria-label="Search"
-				placeholder="Search players"
-				enterkeyhint="search"
-				bind:this={searchInput}
-				value={searchQuery}
-				oninput={onSearchInput}
-				onblur={onSearchBlur}
-			/>
-			{#if searchResults.length > 0}
-				<div class="search-results">
-					{#each searchResults as user}
-						<button class="search-result" onclick={() => onSearchResultClick(user.username)}>
-							{user.username}
-						</button>
-					{/each}
-				</div>
-			{/if}
-		</div>
+  <div class="site-buttons">
+    <div id="clinput" onmouseenter={onSearchMouseEnter} onmouseleave={onSearchMouseLeave}>
+      <a data-icon="&#xe057;" aria-label="Search" class="link"></a>
+      <input
+        type="text"
+        spellcheck="false"
+        autocomplete="off"
+        aria-label="Search"
+        placeholder="Search players"
+        enterkeyhint="search"
+        bind:this={searchInput}
+        value={searchQuery}
+        oninput={onSearchInput}
+        onblur={onSearchBlur}
+      />
+      {#if searchResults.length > 0}
+        <div class="search-results">
+          {#each searchResults as user}
+            <button class="search-result" onclick={() => onSearchResultClick(user.username)}>
+              {user.username}
+            </button>
+          {/each}
+        </div>
+      {/if}
+    </div>
 
-		{#snippet pingStatus()}
-			<a class="status" href="/lag">
-				<signal class="q{pingState.lagRating}">
-					{#each [1, 2, 3, 4] as bar}
-						<i class:off={bar > pingState.lagRating}></i>
-					{/each}
-				</signal>
-				<span class="ping"><em>PING</em><strong>{pingState.ping ?? '?'}</strong><em>ms</em></span>
-			</a>
-		{/snippet}
+    {#snippet pingStatus()}
+      <a class="status" href="/lag">
+        <signal class="q{pingState.lagRating}">
+          {#each [1, 2, 3, 4] as bar}
+            <i class:off={bar > pingState.lagRating}></i>
+          {/each}
+        </signal>
+        <span class="ping"><em>PING</em><strong>{pingState.ping ?? '?'}</strong><em>ms</em></span>
+      </a>
+    {/snippet}
 
-		{#snippet backgroundPane()}
-			<button class="sub-head text" data-icon="&#xe047;" onclick={() => (dasherPane = 'main')}>
-				Background
-			</button>
-			<div class="selector">
-				{#each [['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']] as [value, label]}
-					<button
-						class="text"
-						class:active={themeState.setting === value}
-						data-icon="&#xe023;"
-						onclick={() => themeState.set(value)}>{label}</button
-					>
-				{/each}
-			</div>
-		{/snippet}
+    {#snippet backgroundPane()}
+      <button class="sub-head text" data-icon="&#xe047;" onclick={() => (dasherPane = 'main')}>
+        Background
+      </button>
+      <div class="selector">
+        {#each [['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']] as [value, label]}
+          <button
+            class="text"
+            class:active={themeState.setting === value}
+            data-icon="&#xe023;"
+            onclick={() => themeState.set(value)}>{label}</button
+          >
+        {/each}
+      </div>
+    {/snippet}
 
-		{#snippet boardPane()}
-			<button class="sub-head text" data-icon="&#xe047;" onclick={() => (dasherPane = 'main')}>
-				Board
-			</button>
-			<div class="board-settings">
-				<label class="board-setting-toggle">
-					<input
-						type="checkbox"
-						checked={boardState.showCoords}
-						onchange={() => boardState.toggleCoords()}
-					/>
-					Coordinates
-				</label>
-			</div>
-		{/snippet}
+    {#snippet boardPane()}
+      <button class="sub-head text" data-icon="&#xe047;" onclick={() => (dasherPane = 'main')}>
+        Board
+      </button>
+      <div class="board-settings">
+        <label class="board-setting-toggle">
+          <input
+            type="checkbox"
+            checked={boardState.showCoords}
+            onchange={() => boardState.toggleCoords()}
+          />
+          Coordinates
+        </label>
+      </div>
+    {/snippet}
 
-		{#if signedIn}
-			<a id="user_tag" href="/profile/{username}" class="link">{username}</a>
-			<div class="dasher" class:shown={settingsOpen}>
-				<button
-					class="toggle link"
-					data-icon="&#xe005;"
-					aria-label="Settings"
-					onclick={toggleSettings}
-				></button>
-				<div class="dropdown">
-					{#if dasherPane === 'background'}
-						{@render backgroundPane()}
-					{:else if dasherPane === 'board'}
-						{@render boardPane()}
-					{:else}
-						<a class="text" data-icon="&#xe005;" href="/">Settings</a>
-						<button class="text" data-icon="&#xe028;" onclick={() => (dasherPane = 'board')}
-							>Board</button
-						>
-						<button class="text" data-icon="&#xe061;" onclick={() => (dasherPane = 'background')}
-							>Background</button
-						>
-						<button
-							class="text signout"
-							data-icon="&#xe055;"
-							onclick={() => {
-								signOut();
-								settingsOpen = false;
-								dasherPane = 'main';
-							}}>Sign out</button
-						>
-					{/if}
-					{@render pingStatus()}
-				</div>
-			</div>
-		{:else}
-			<div class="signin-or-signup">
-				<a href="/signup" class="button button-metal signup">Register</a>
-				<a href="/login" class="button button-metal">Sign in</a>
-			</div>
-			<div class="dasher" class:shown={settingsOpen}>
-				<button
-					class="toggle anon link"
-					data-icon="&#xe005;"
-					aria-label="Settings"
-					title="Settings"
-					onclick={toggleSettings}
-				></button>
-				<div class="dropdown">
-					{#if dasherPane === 'background'}
-						{@render backgroundPane()}
-					{:else if dasherPane === 'board'}
-						{@render boardPane()}
-					{:else}
-						<button onclick={() => (dasherPane = 'board')}>Board</button>
-						<button onclick={() => (dasherPane = 'background')}>Background</button>
-					{/if}
-					{@render pingStatus()}
-				</div>
-			</div>
-		{/if}
-	</div>
+    {#if signedIn}
+      <a id="user_tag" href="/profile/{username}" class="link">{username}</a>
+      <div class="dasher" class:shown={settingsOpen}>
+        <button
+          class="toggle link"
+          data-icon="&#xe005;"
+          aria-label="Settings"
+          onclick={toggleSettings}
+        ></button>
+        <div class="dropdown">
+          {#if dasherPane === 'background'}
+            {@render backgroundPane()}
+          {:else if dasherPane === 'board'}
+            {@render boardPane()}
+          {:else}
+            <a class="text" data-icon="&#xe005;" href="/">Settings</a>
+            <button class="text" data-icon="&#xe028;" onclick={() => (dasherPane = 'board')}
+              >Board</button
+            >
+            <button class="text" data-icon="&#xe061;" onclick={() => (dasherPane = 'background')}
+              >Background</button
+            >
+            <button
+              class="text signout"
+              data-icon="&#xe055;"
+              onclick={() => {
+                signOut();
+                settingsOpen = false;
+                dasherPane = 'main';
+              }}>Sign out</button
+            >
+          {/if}
+          {@render pingStatus()}
+        </div>
+      </div>
+    {:else}
+      <div class="signin-or-signup">
+        <a href="/signup" class="button button-metal signup">Register</a>
+        <a href="/login" class="button button-metal">Sign in</a>
+      </div>
+      <div class="dasher" class:shown={settingsOpen}>
+        <button
+          class="toggle anon link"
+          data-icon="&#xe005;"
+          aria-label="Settings"
+          title="Settings"
+          onclick={toggleSettings}
+        ></button>
+        <div class="dropdown">
+          {#if dasherPane === 'background'}
+            {@render backgroundPane()}
+          {:else if dasherPane === 'board'}
+            {@render boardPane()}
+          {:else}
+            <button onclick={() => (dasherPane = 'board')}>Board</button>
+            <button onclick={() => (dasherPane = 'background')}>Background</button>
+          {/if}
+          {@render pingStatus()}
+        </div>
+      </div>
+    {/if}
+  </div>
 </header>
 
 <div id="main-wrap">
-	<main>
-		{@render children()}
-	</main>
+  <main>
+    {@render children()}
+  </main>
 </div>
 
 {#if setupModal}
-	<GameSetupModal gameType={setupModal} onClose={() => (setupModal = null)} />
+  <GameSetupModal gameType={setupModal} onClose={() => (setupModal = null)} />
 {/if}
 
 <style>
-	:global(.site-buttons .dasher .dropdown .signout:hover) {
-		background: var(--c-bad) !important;
-		color: #fff !important;
-	}
+  :global(.site-buttons .dasher .dropdown .signout:hover) {
+    background: var(--c-bad) !important;
+    color: #fff !important;
+  }
 
-	#clinput {
-		position: relative;
-	}
+  #clinput {
+    position: relative;
+  }
 
-	.search-results {
-		position: absolute;
-		top: 100%;
-		right: 0;
-		min-width: 160px;
-		background: var(--c-bg-box);
-		border: 1px solid var(--c-border);
-		border-radius: 3px;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-		z-index: 100;
-		display: flex;
-		flex-direction: column;
-	}
+  .search-results {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 160px;
+    background: var(--c-bg-box);
+    border: 1px solid var(--c-border);
+    border-radius: 3px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
 
-	.search-result {
-		display: block;
-		width: 100%;
-		padding: 7px 12px;
-		text-align: left;
-		background: none;
-		border: none;
-		color: var(--c-font);
-		cursor: pointer;
-		font-size: 0.9em;
-	}
+  .search-result {
+    display: block;
+    width: 100%;
+    padding: 7px 12px;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--c-font);
+    cursor: pointer;
+    font-size: 0.9em;
+  }
 
-	.search-result:hover {
-		background: var(--c-bg-zebra);
-	}
+  .search-result:hover {
+    background: var(--c-bg-zebra);
+  }
 </style>
