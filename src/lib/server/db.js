@@ -18,6 +18,7 @@ export async function connectDb() {
 		await db.collection('games').createIndex({ blackName: 1 });
 		await db.collection('games').createIndex({ whiteName: 1 });
 		await db.collection('credentials').createIndex({ username: 1 });
+		await db.collection('credentials').createIndex({ id: 1 });
 		console.log(`Connected to MongoDB at ${MONGO_URL}/${DB_NAME}`);
 		return db;
 	})();
@@ -271,10 +272,23 @@ export async function addCredential(username, credential) {
 	});
 }
 
+export async function getCredentialById(credentialId) {
+	const d = await getDb();
+	const doc = await d.collection('credentials').findOne({ id: credentialId });
+	if (!doc) return null;
+	const { _id, ...rest } = doc;
+	return {
+		...rest,
+		publicKey: new Uint8Array(Buffer.from(rest.publicKey, 'base64url'))
+	};
+}
+
 export async function updateCredentialCounter(username, credentialId, newCounter) {
 	const key = username.toLowerCase();
 	const d = await getDb();
-	await d.collection('credentials').updateOne({ username: key, id: credentialId }, { $set: { counter: newCounter } });
+	await d
+		.collection('credentials')
+		.updateOne({ username: key, id: credentialId }, { $set: { counter: newCounter } });
 }
 
 // --- Sessions ---

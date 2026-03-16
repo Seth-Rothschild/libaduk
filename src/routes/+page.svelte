@@ -101,7 +101,7 @@
 			clock: '20+0',
 			label: 'Blitz',
 			size: 19,
-			timeControl: { type: 'fischer', initial: 20, increment: 0 }
+			timeControl: { type: 'fischer', initial: 1200, increment: 0 }
 		},
 		{
 			clock: '0+3×20s',
@@ -113,7 +113,7 @@
 			clock: '5+0',
 			label: 'Rapid',
 			size: 9,
-			timeControl: { type: 'fischer', initial: 5, increment: 0 }
+			timeControl: { type: 'fischer', initial: 300, increment: 0 }
 		},
 		{
 			clock: '10+3×20s',
@@ -125,7 +125,7 @@
 			clock: '10+0',
 			label: 'Standard',
 			size: 9,
-			timeControl: { type: 'fischer', initial: 10, increment: 0 }
+			timeControl: { type: 'fischer', initial: 600, increment: 0 }
 		},
 		{
 			clock: '20+3×30s',
@@ -218,6 +218,7 @@
 <style>
 	.lobby__pools-wrap {
 		position: relative;
+		min-height: 365px;
 	}
 
 	@media (min-width: 800px) {

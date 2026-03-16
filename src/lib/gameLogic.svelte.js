@@ -256,6 +256,8 @@ export class GameState {
 			if (msg.status) {
 				this.status = msg.status === 'finished' ? 'gameover' : msg.status;
 			}
+			if (msg.clock) this.clockState = msg.clock;
+			if (msg.corrState) this.corrState = msg.corrState;
 		}
 		if (msg.type === 'opponent_joined') {
 			this.status = 'playing';

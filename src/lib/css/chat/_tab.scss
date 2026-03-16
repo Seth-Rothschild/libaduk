@@ -1,35 +1,35 @@
 .mchat {
-  &__tabs {
-    flex: 0 0 auto;
-    display: flex;
-  }
+	&__tabs {
+		flex: 0 0 auto;
+		display: flex;
+	}
 
-  &__tab {
-    @extend %roboto, %nowrap-hidden, %box-radius-top;
+	&__tab {
+		@extend %roboto, %nowrap-hidden, %box-radius-top;
 
-    flex: 1 1 auto;
-    text-align: center;
-    padding: 0.4em 10px;
-    cursor: pointer;
-    color: $c-font-page;
+		flex: 1 1 auto;
+		text-align: center;
+		padding: 0.4em 10px;
+		cursor: pointer;
+		color: $c-font-page;
 
-    @include transition;
+		@include transition;
 
-    &:hover {
-      background: $m-accent_bg--mix-15;
-    }
+		&:hover {
+			background: $m-accent_bg--mix-15;
+		}
 
-    &-active {
-      color: $c-font;
-      background: $c-bg-box !important;
-    }
+		&-active {
+			color: $c-font;
+			background: $c-bg-box !important;
+		}
 
-    span {
-      @extend %nowrap-ellipsis;
-    }
+		span {
+			@extend %nowrap-ellipsis;
+		}
 
-    &:last-child {
-      border-inline-end: none;
-    }
-  }
+		&:last-child {
+			border-inline-end: none;
+		}
+	}
 }

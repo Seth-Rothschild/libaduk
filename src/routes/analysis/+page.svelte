@@ -54,11 +54,12 @@
 		return { root: treeRoot, lastNode: node };
 	}
 
-	const initialTree = gameData && gameData.moves.length > 0
-		? buildTreeFromMoves(gameData.moves, SIZE)
-		: null;
+	const initialTree =
+		gameData && gameData.moves.length > 0 ? buildTreeFromMoves(gameData.moves, SIZE) : null;
 
-	let root = initialTree ? initialTree.root : makeNode(GoBoardLib.fromDimensions(SIZE), null, emptyMarkerMap(SIZE), 1, null);
+	let root = initialTree
+		? initialTree.root
+		: makeNode(GoBoardLib.fromDimensions(SIZE), null, emptyMarkerMap(SIZE), 1, null);
 	let currentNode = $state.raw(initialTree ? initialTree.lastNode : root);
 	let version = $state(0);
 	let animatedVertex = $state(null);
@@ -72,7 +73,10 @@
 	const signMap = $derived(currentNode.board.signMap);
 	const blackCaptures = $derived(currentNode.board.getCaptures(1));
 	const whiteCaptures = $derived(currentNode.board.getCaptures(-1));
-	const markerMap = $derived.by(() => { version; return currentNode.markerMap; });
+	const markerMap = $derived.by(() => {
+		version;
+		return currentNode.markerMap;
+	});
 
 	const childrenMap = $derived.by(() => {
 		version;
@@ -371,7 +375,9 @@
 				<div class="variation-nav">
 					Variation {idx + 1} of {siblings.length}
 					<button class="var-nav-btn" onclick={prevVariation} disabled={idx <= 0}>◀</button>
-					<button class="var-nav-btn" onclick={nextVariation} disabled={idx >= siblings.length - 1}>▶</button>
+					<button class="var-nav-btn" onclick={nextVariation} disabled={idx >= siblings.length - 1}
+						>▶</button
+					>
 				</div>
 			{/if}
 		</div>
@@ -382,7 +388,9 @@
 				{#if score}
 					<div class="score-display">
 						<span class="color-icon is black text">{score.blackArea}</span>
-						<span class="color-icon is white text">{score.whiteArea} + {KOMI} = {score.whiteScore.toFixed(1)}</span>
+						<span class="color-icon is white text"
+							>{score.whiteArea} + {KOMI} = {score.whiteScore.toFixed(1)}</span
+						>
 						<strong>{scoreVerdictShort(score)}</strong>
 					</div>
 				{/if}

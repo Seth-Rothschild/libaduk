@@ -168,13 +168,19 @@ describe('loadGameData', () => {
 			id: 'g1',
 			status: 'playing',
 			scoringActive: true,
-			scoringDeadStones: [[3, 3], [4, 4]],
+			scoringDeadStones: [
+				[3, 3],
+				[4, 4]
+			],
 			scoringBlackApproved: true,
 			scoringWhiteApproved: false
 		});
 		const result = loadGameData('g1', 'Alice');
 		expect(result.game.scoringActive).toBe(true);
-		expect(result.game.scoringDeadStones).toEqual([[3, 3], [4, 4]]);
+		expect(result.game.scoringDeadStones).toEqual([
+			[3, 3],
+			[4, 4]
+		]);
 		expect(result.game.scoringBlackApproved).toBe(true);
 		expect(result.game.scoringWhiteApproved).toBe(false);
 	});

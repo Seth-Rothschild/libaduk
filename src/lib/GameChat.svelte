@@ -7,7 +7,7 @@
 		gameStatus = 'waiting',
 		messages = $bindable([]),
 		initialNote = '',
-		onSend = () => {},
+		onSend = () => {}
 	} = $props();
 
 	let activeTab = $state('discussion');
@@ -21,7 +21,7 @@
 		{ key: 'hi', text: 'Hello' },
 		{ key: 'gl', text: 'Good luck' },
 		{ key: 'hf', text: 'Have fun!' },
-		{ key: 'u2', text: 'You too!' },
+		{ key: 'u2', text: 'You too!' }
 	];
 
 	const END_PRESETS = [
@@ -29,7 +29,7 @@
 		{ key: 'wp', text: 'Well played' },
 		{ key: 'ty', text: 'Thank you' },
 		{ key: 'gtg', text: "I've got to go" },
-		{ key: 'bye', text: 'Bye!' },
+		{ key: 'bye', text: 'Bye!' }
 	];
 
 	const isGameOver = $derived(
@@ -67,7 +67,7 @@
 			fetch('/api/game/note', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ gameId, text: noteText }),
+				body: JSON.stringify({ gameId, text: noteText })
 			});
 		}, 500);
 	}
@@ -137,7 +137,12 @@
 							tabindex={usedPresets.has(preset.key) ? -1 : 0}
 							aria-disabled={usedPresets.has(preset.key)}
 							onclick={() => sendPreset(preset)}
-							onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sendPreset(preset); } }}
+							onkeydown={(e) => {
+								if (e.key === 'Enter' || e.key === ' ') {
+									e.preventDefault();
+									sendPreset(preset);
+								}
+							}}
 						>
 							{preset.key}
 						</span>

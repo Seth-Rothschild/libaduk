@@ -1,6 +1,11 @@
 <script>
-	let { playersOnline = 0, gamesInPlay = 0, onCreateGame, onChallengeFriend, onPlayLocally } =
-		$props();
+	let {
+		playersOnline = 0,
+		gamesInPlay = 0,
+		onCreateGame,
+		onChallengeFriend,
+		onPlayLocally
+	} = $props();
 </script>
 
 <div class="lobby__start">

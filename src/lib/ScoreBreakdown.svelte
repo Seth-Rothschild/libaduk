@@ -1,7 +1,13 @@
 <script>
 	import { scoreVerdict } from '$lib/gameUtils.js';
 
-	let { score, komi = 6.5, blackApproved = false, whiteApproved = false, showApprovals = false } = $props();
+	let {
+		score,
+		komi = 6.5,
+		blackApproved = false,
+		whiteApproved = false,
+		showApprovals = false
+	} = $props();
 </script>
 
 {#if score}
@@ -22,12 +28,8 @@
 
 {#if showApprovals}
 	<div class="score-approvals">
-		<span class="approval" class:approved={blackApproved}
-			>Black {blackApproved ? '✓' : '…'}</span
-		>
-		<span class="approval" class:approved={whiteApproved}
-			>White {whiteApproved ? '✓' : '…'}</span
-		>
+		<span class="approval" class:approved={blackApproved}>Black {blackApproved ? '✓' : '…'}</span>
+		<span class="approval" class:approved={whiteApproved}>White {whiteApproved ? '✓' : '…'}</span>
 	</div>
 {/if}
 

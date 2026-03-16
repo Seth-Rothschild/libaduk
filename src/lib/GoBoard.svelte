@@ -232,20 +232,43 @@
 											/>
 										</svg>
 									{/if}
-									</div>
+								</div>
 							{/if}
 							{#if marker === 'cross'}
 								<svg class="go-marker" viewBox="0 0 1 1">
-									<line x1="0.25" y1="0.25" x2="0.75" y2="0.75" class="go-marker-shape go-marker-on-{sign || 'empty'}" />
-									<line x1="0.75" y1="0.25" x2="0.25" y2="0.75" class="go-marker-shape go-marker-on-{sign || 'empty'}" />
+									<line
+										x1="0.25"
+										y1="0.25"
+										x2="0.75"
+										y2="0.75"
+										class="go-marker-shape go-marker-on-{sign || 'empty'}"
+									/>
+									<line
+										x1="0.75"
+										y1="0.25"
+										x2="0.25"
+										y2="0.75"
+										class="go-marker-shape go-marker-on-{sign || 'empty'}"
+									/>
 								</svg>
 							{:else if marker === 'circle'}
 								<svg class="go-marker" viewBox="0 0 1 1">
-									<circle cx="0.5" cy="0.5" r="0.22" class="go-marker-shape go-marker-on-{sign || 'empty'}" />
+									<circle
+										cx="0.5"
+										cy="0.5"
+										r="0.22"
+										class="go-marker-shape go-marker-on-{sign || 'empty'}"
+									/>
 								</svg>
 							{:else if marker === 'square'}
 								<svg class="go-marker" viewBox="0 0 1 1">
-									<rect x="0.25" y="0.25" width="0.5" height="0.5" class="go-marker-shape go-marker-on-{sign || 'empty'}" />
+									<rect
+										x="0.25"
+										y="0.25"
+										width="0.5"
+										height="0.5"
+										class="go-marker-shape go-marker-on-{sign || 'empty'}"
+									/>
 								</svg>
 							{/if}
 							{#if sign === 0 && childSign !== 0}
@@ -253,12 +276,12 @@
 							{/if}
 							{#if sign === 0}
 								{#if territory !== 0}
-								<div
-									class="go-territory"
-									class:go-territory-black={territory > 0}
-									class:go-territory-white={territory < 0}
-								></div>
-							{/if}
+									<div
+										class="go-territory"
+										class:go-territory-black={territory > 0}
+										class:go-territory-white={territory < 0}
+									></div>
+								{/if}
 							{/if}
 						</div>
 					{/each}

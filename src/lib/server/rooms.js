@@ -133,8 +133,14 @@ function reconstructRoom(game) {
 	return {
 		id: game.id,
 		size: game.size,
-		black: null, blackName, blackClientId: blackName, blackIsAuth: !!blackName,
-		white: null, whiteName, whiteClientId: whiteName, whiteIsAuth: !!whiteName,
+		black: null,
+		blackName,
+		blackClientId: blackName,
+		blackIsAuth: game.blackIsAuth ?? false,
+		white: null,
+		whiteName,
+		whiteClientId: whiteName,
+		whiteIsAuth: game.whiteIsAuth ?? false,
 		creatorColor: game.creatorColor ?? 'black',
 		status: game.status,
 		timeControl: game.timeControl,
@@ -166,10 +172,17 @@ function clientMatchesSeat(room, color, socket, clientId) {
 
 // --- Room management ---
 
-export async function createRoom(size = 19, timeControl = { type: 'none' }, color, gameType = 'hook', creatorName = null) {
+export async function createRoom(
+	size = 19,
+	timeControl = { type: 'none' },
+	color,
+	gameType = 'hook',
+	creatorName = null
+) {
 	const local = gameType === 'local';
 	const id = await uniqueId();
-	const creatorColor = color === 'random' ? (Math.random() > 0.5 ? 'black' : 'white') : (color ?? 'black');
+	const creatorColor =
+		color === 'random' ? (Math.random() > 0.5 ? 'black' : 'white') : (color ?? 'black');
 	const blackName = creatorColor === 'black' && creatorName ? creatorName : null;
 	const whiteName = creatorColor === 'white' && creatorName ? creatorName : null;
 	const corrDeadlineMs =
@@ -177,8 +190,14 @@ export async function createRoom(size = 19, timeControl = { type: 'none' }, colo
 	const room = {
 		id,
 		size,
-		black: null, blackName, blackClientId: blackName, blackIsAuth: !!blackName,
-		white: null, whiteName, whiteClientId: whiteName, whiteIsAuth: !!whiteName,
+		black: null,
+		blackName,
+		blackClientId: blackName,
+		blackIsAuth: !!blackName,
+		white: null,
+		whiteName,
+		whiteClientId: whiteName,
+		whiteIsAuth: !!whiteName,
 		creatorColor,
 		status: 'waiting',
 		timeControl,
@@ -197,7 +216,20 @@ export async function createRoom(size = 19, timeControl = { type: 'none' }, colo
 		corrDeadlineMs
 	};
 	rooms.set(id, room);
-	await db.createGame({ id, size, blackName, whiteName, creatorColor, timeControl, local, gameType });
+	const blackIsAuth = !!blackName;
+	const whiteIsAuth = !!whiteName;
+	await db.createGame({
+		id,
+		size,
+		blackName,
+		whiteName,
+		blackIsAuth,
+		whiteIsAuth,
+		creatorColor,
+		timeControl,
+		local,
+		gameType
+	});
 	return room;
 }
 
@@ -311,7 +343,9 @@ async function handleMessage(socket, raw) {
 			}
 			color = 'white';
 		} else {
-			send(socket, { type: 'error', message: 'Game is full' });
+			const bothConnected = !!room.black && !!room.white;
+			const spectatorStatus = bothConnected ? room.status : 'abandoned';
+			send(socket, { type: 'joined', gameId: roomId, color: null, status: spectatorStatus });
 			return;
 		}
 
@@ -322,7 +356,7 @@ async function handleMessage(socket, raw) {
 			room.blackIsAuth = isAuth;
 			if (!room.local && !room.blackName) {
 				room.blackName = clientId;
-				await db.updateGame(roomId, { blackName: clientId });
+				await db.updateGame(roomId, { blackName: clientId, blackIsAuth: isAuth });
 			}
 		} else {
 			room.white = socket;
@@ -330,7 +364,7 @@ async function handleMessage(socket, raw) {
 			room.whiteIsAuth = isAuth;
 			if (!room.local && !room.whiteName) {
 				room.whiteName = clientId;
-				await db.updateGame(roomId, { whiteName: clientId });
+				await db.updateGame(roomId, { whiteName: clientId, whiteIsAuth: isAuth });
 			}
 		}
 		if (room.local) {
@@ -353,7 +387,12 @@ async function handleMessage(socket, raw) {
 			room.status = 'playing';
 		}
 
-		if (room.timeControl?.type === 'correspondence' && !room.corrState && room.black && room.white) {
+		if (
+			room.timeControl?.type === 'correspondence' &&
+			!room.corrState &&
+			room.black &&
+			room.white
+		) {
 			room.corrState = {
 				activeColor: 'black',
 				turnDeadline: Date.now() + room.corrDeadlineMs
@@ -397,11 +436,20 @@ async function handleMessage(socket, raw) {
 			gameId: roomId,
 			color,
 			status: room.scoring.active ? 'scoring' : room.status,
-			opponent: room.local ? null : (oppSocket?.username ?? null)
+			opponent: room.local ? null : (oppSocket?.username ?? null),
+			clock: clockSnapshot(room.clock),
+			corrState: room.corrState ? { ...room.corrState } : null
 		});
 
 		if (corrTimeoutLoser !== null) {
 			sendBoth(room, { type: 'timeout', loser: corrTimeoutLoser });
+		}
+
+		if (!room.local && room.status === 'playing') {
+			const oppSocket = color === 'black' ? room.white : room.black;
+			if (!oppSocket) {
+				send(socket, { type: 'opponent_left' });
+			}
 		}
 		return;
 	}
@@ -627,7 +675,13 @@ async function finalizeScore(room, gameId) {
 		const margin = Math.abs(blackScore - whiteScore).toFixed(1);
 		const result = winner === 'black' ? `B+${margin}` : `W+${margin}`;
 
-		await db.updateGame(gameId, { status: 'finished', winner, result, endedAt: Date.now() });
+		await db.updateGame(gameId, {
+			status: 'finished',
+			winner,
+			result,
+			endedAt: Date.now(),
+			scoringActive: false
+		});
 		room.status = 'finished';
 
 		sendBoth(room, { type: 'score_result', winner, blackScore, whiteScore, result });

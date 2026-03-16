@@ -10,10 +10,7 @@
 
 <div class="tabs-horiz">
 	{#each TABS as tab}
-		<button
-			class:active={activeTab === tab.id}
-			onclick={() => onTabChange?.(tab.id)}
-		>
+		<button class:active={activeTab === tab.id} onclick={() => onTabChange?.(tab.id)}>
 			{tab.label}
 		</button>
 	{/each}

@@ -18,17 +18,11 @@
 		if (timeControl.type === 'correspondence') return 'Corr.';
 		if (timeControl.type === 'byoyomi')
 			return `${timeControl.initial / 60}+${timeControl.periods}×${timeControl.periodTime}s`;
-		if (timeControl.type === 'fischer') return `${timeControl.initial / 60}+${timeControl.increment}`;
+		if (timeControl.type === 'fischer')
+			return `${timeControl.initial / 60}+${timeControl.increment}`;
 		return '∞';
 	}
 </script>
-
-<style>
-	.lobby__tab-empty {
-		padding: 1em;
-		color: var(--c-font-dim);
-	}
-</style>
 
 {#if games.length === 0}
 	<p class="lobby__tab-empty">No open games.</p>
@@ -49,7 +43,8 @@
 					tabindex="0"
 					role="button"
 					onclick={() => onJoin?.(game.id)}
-					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onJoin?.(game.id))}
+					onkeydown={(e) =>
+						(e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onJoin?.(game.id))}
 				>
 					<td>{game.creator}</td>
 					<td>{formatTime(game.createdAt)}</td>
@@ -60,3 +55,10 @@
 		</tbody>
 	</table>
 {/if}
+
+<style>
+	.lobby__tab-empty {
+		padding: 1em;
+		color: var(--c-font-dim);
+	}
+</style>

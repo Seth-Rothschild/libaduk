@@ -203,8 +203,17 @@ describe('dead_stones_update', () => {
 	it('updates deadStones and resets approvals', () => {
 		const gs = make({ mySign: 1 });
 		gs.blackApproved = true;
-		gs.handleMessage({ type: 'dead_stones_update', deadStones: [[1, 2], [3, 4]] });
-		expect(gs.deadStones).toEqual([[1, 2], [3, 4]]);
+		gs.handleMessage({
+			type: 'dead_stones_update',
+			deadStones: [
+				[1, 2],
+				[3, 4]
+			]
+		});
+		expect(gs.deadStones).toEqual([
+			[1, 2],
+			[3, 4]
+		]);
 		expect(gs.blackApproved).toBe(false);
 	});
 });
@@ -282,7 +291,6 @@ describe('aborted', () => {
 		expect(() => gs.handleMessage({ type: 'aborted' })).not.toThrow();
 	});
 });
-
 
 // ---- Tests: initFromData (HTTP-first) ----------------------------------
 
@@ -376,10 +384,7 @@ describe('initFromData', () => {
 
 	it('sets gameover for finished game with winner', () => {
 		const gs = make();
-		gs.initFromData(
-			gameData({ status: 'finished', winner: 'black', result: 'B+3.5' }),
-			'black'
-		);
+		gs.initFromData(gameData({ status: 'finished', winner: 'black', result: 'B+3.5' }), 'black');
 		expect(gs.status).toBe('gameover');
 		expect(gs.winner).toBe(1);
 		expect(gs.winnerResult).toBe('B+3.5');
@@ -516,7 +521,13 @@ describe('initFromData', () => {
 		expect(gs.timeControl.type).toBe('fischer');
 		expect(gs.board.signMap[2][2]).toBe(1);
 
-		gs.handleMessage({ type: 'joined', gameId: 'test01', color: 'black', status: 'playing', opponent: 'Bob' });
+		gs.handleMessage({
+			type: 'joined',
+			gameId: 'test01',
+			color: 'black',
+			status: 'playing',
+			opponent: 'Bob'
+		});
 
 		expect(gs.boardSize).toBe(9);
 		expect(gs.timeControl.type).toBe('fischer');

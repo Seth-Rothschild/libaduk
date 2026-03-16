@@ -4,9 +4,9 @@
 @import 'note';
 
 .mchat {
-  @extend %box-neat-force, %flex-column;
+	@extend %box-neat-force, %flex-column;
 
-  grid-area: chat;
-  justify-content: stretch;
-  min-height: 15em;
+	grid-area: chat;
+	justify-content: stretch;
+	min-height: 15em;
 }

@@ -22,10 +22,7 @@
 
 <Story name="Custom" args={{ clock: 'Custom', custom: true }} />
 
-<Story
-	name="Correspondence"
-	args={{ clock: '7 days', label: 'Correspondence' }}
-/>
+<Story name="Correspondence" args={{ clock: '7 days', label: 'Correspondence' }} />
 
 <Story
 	name="Click fires callback"

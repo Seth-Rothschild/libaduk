@@ -156,7 +156,7 @@
 
 @keyframes go-place {
 	from {
-		transform: translateY(.45em);
+		transform: translateY(0.45em);
 		opacity: 0.2;
 	}
 
@@ -167,7 +167,7 @@
 }
 
 .go-vertex.go-animate .go-inner {
-	animation: go-place .12s ease-out forwards;
+	animation: go-place 0.12s ease-out forwards;
 }
 
 /* Side panel */

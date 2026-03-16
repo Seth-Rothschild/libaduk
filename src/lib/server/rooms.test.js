@@ -401,14 +401,22 @@ describe('resign', () => {
 		const { room, alice, bob } = setupGame();
 		send(alice, { type: 'resign' });
 		expect(bob.lastMsg()).toMatchObject({ type: 'resign', color: 'black' });
-		expect(dbMock._store.games[room.id]).toMatchObject({ status: 'finished', winner: 'white', result: 'W+R' });
+		expect(dbMock._store.games[room.id]).toMatchObject({
+			status: 'finished',
+			winner: 'white',
+			result: 'W+R'
+		});
 	});
 
 	it('white resigning makes black the winner', () => {
 		const { room, alice, bob } = setupGame();
 		send(bob, { type: 'resign' });
 		expect(alice.lastMsg()).toMatchObject({ type: 'resign', color: 'white' });
-		expect(dbMock._store.games[room.id]).toMatchObject({ status: 'finished', winner: 'black', result: 'B+R' });
+		expect(dbMock._store.games[room.id]).toMatchObject({
+			status: 'finished',
+			winner: 'black',
+			result: 'B+R'
+		});
 	});
 
 	it('local game: white can resign by sending color field', () => {
@@ -1134,7 +1142,13 @@ describe('reconnect — scoring phase', () => {
 		send(alice, { type: 'pass' });
 		send(bob, { type: 'pass' });
 		send(alice, { type: 'score_phase' });
-		send(alice, { type: 'mark_dead', stones: [[3, 3], [3, 4]] });
+		send(alice, {
+			type: 'mark_dead',
+			stones: [
+				[3, 3],
+				[3, 4]
+			]
+		});
 		return { room, alice, bob };
 	}
 

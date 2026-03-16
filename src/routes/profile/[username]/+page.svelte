@@ -229,9 +229,21 @@
 		</div>
 
 		<div class="number-menu number-menu--tabs" id="games">
-			<span class="nm-item" class:active={activeResult === 'all'} onclick={() => (activeResult = 'all')}>All</span>
-			<span class="nm-item" class:active={activeResult === 'wins'} onclick={() => (activeResult = 'wins')}><strong>{wins}</strong> Wins</span>
-			<span class="nm-item" class:active={activeResult === 'losses'} onclick={() => (activeResult = 'losses')}><strong>{losses}</strong> Losses</span>
+			<span
+				class="nm-item"
+				class:active={activeResult === 'all'}
+				onclick={() => (activeResult = 'all')}>All</span
+			>
+			<span
+				class="nm-item"
+				class:active={activeResult === 'wins'}
+				onclick={() => (activeResult = 'wins')}><strong>{wins}</strong> Wins</span
+			>
+			<span
+				class="nm-item"
+				class:active={activeResult === 'losses'}
+				onclick={() => (activeResult = 'losses')}><strong>{losses}</strong> Losses</span
+			>
 		</div>
 
 		<div class="games">
@@ -245,7 +257,8 @@
 					<div class="game-row__infos">
 						<div class="header" data-icon={gameIcon(game.timeControl)}>
 							<div class="header__text">
-								<strong >{formatClock(game.timeControl)} • {gameLabel(game.timeControl)} • {game.size} x {game.size}</strong
+								<strong
+									>{formatClock(game.timeControl)} • {gameLabel(game.timeControl)} • {game.size} x {game.size}</strong
 								>
 								<span>{formatDate(game.createdAt)}</span>
 							</div>

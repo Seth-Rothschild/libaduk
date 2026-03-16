@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { verifyAuthenticationResponse } from '@simplewebauthn/server';
-import { getCredentials, updateCredentialCounter } from '$lib/server/db.js';
+import { getCredentialById, getUser, updateCredentialCounter } from '$lib/server/db.js';
 import { createSession } from '$lib/server/sessions.js';
 import { consumeChallenge } from '$lib/server/challenges.js';
 
@@ -13,26 +13,27 @@ export async function POST({ request, cookies }) {
 		return json({ error: 'Login session expired. Please try again.' }, { status: 400 });
 	}
 
-	const { challenge, username } = entry;
-
-	const credentials = await getCredentials(username);
-	if (credentials.length === 0) {
-		return json({ error: 'No passkey registered for this account.' }, { status: 400 });
-	}
-
-	const url = new URL(request.url);
-	const rpID = url.hostname;
-	const origin = url.origin;
+	const { challenge } = entry;
 
 	const body = await request.json().catch(() => null);
 	if (!body) {
 		return json({ error: 'Invalid request body' }, { status: 400 });
 	}
 
-	const matchingCredential = credentials.find((c) => c.id === body.id);
+	const matchingCredential = await getCredentialById(body.id);
 	if (!matchingCredential) {
 		return json({ error: 'Passkey not recognized.' }, { status: 400 });
 	}
+
+	const user = await getUser(matchingCredential.username);
+	if (!user) {
+		return json({ error: 'Account not found.' }, { status: 400 });
+	}
+	const username = user.username;
+
+	const url = new URL(request.url);
+	const rpID = url.hostname;
+	const origin = url.origin;
 
 	let verification;
 	try {

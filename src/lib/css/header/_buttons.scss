@@ -120,12 +120,18 @@
 		@extend %flex-center;
 
 		gap: 1em;
+		flex-wrap: nowrap;
+		white-space: nowrap;
 
 		.signup {
 			background: none;
 			border: 2px solid $c-link;
 			color: $c-link;
 			order: -1;
+
+			@media (max-width: 600px) {
+				display: none;
+			}
 		}
 	}
 
