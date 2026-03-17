@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import influence from '@sabaki/influence';
+  import GoBoardLib from '@sabaki/go-board';
   import GoBoard from '$lib/GoBoard.svelte';
   import Clock from '$lib/Clock.svelte';
   import PlayerStrip from '$lib/PlayerStrip.svelte';
@@ -19,7 +20,10 @@
     buildScoreBoard,
     toggleDeadStones,
     formatCorrDeadline,
-    computeVertexSize
+    computeVertexSize,
+    formatVertex,
+    emptyMarkerMap,
+    scoreVerdictShort
   } from '$lib/gameUtils.js';
 
   let { data } = $props();
@@ -104,6 +108,267 @@
 
   const areaMap = $derived(gs.status === 'scoring' ? influence.areaMap(scoreBoard.signMap) : null);
   const score = $derived(areaMap ? computeScore(areaMap, gs.boardSize, KOMI) : null);
+
+  // --- Analysis mode ---
+
+  function makeTreeNode(board, lastMove, signToPlay, parent, size) {
+    return { board, lastMove, signToPlay, children: [], parent, markerMap: emptyMarkerMap(size) };
+  }
+
+  function buildGameTree(moves, size) {
+    const treeRoot = makeTreeNode(GoBoardLib.fromDimensions(size), null, 1, null, size);
+    let node = treeRoot;
+    for (const move of moves) {
+      if (move.type === 'move') {
+        let newBoard;
+        try {
+          newBoard = node.board.makeMove(node.signToPlay, [move.x, move.y], {
+            preventSuicide: true,
+            preventOverwrite: true,
+            preventKo: true
+          });
+        } catch {
+          continue;
+        }
+        const nextSign = node.signToPlay === 1 ? -1 : 1;
+        const child = makeTreeNode(newBoard, [move.x, move.y], nextSign, node, size);
+        node.children.push(child);
+        node = child;
+      } else if (move.type === 'pass') {
+        const nextSign = node.signToPlay === 1 ? -1 : 1;
+        const child = makeTreeNode(node.board, null, nextSign, node, size);
+        node.children.push(child);
+        node = child;
+      }
+    }
+    return { root: treeRoot, lastNode: node };
+  }
+
+  let analysisMode = $state(false);
+  let analysisNode = $state(null);
+  let analysisTool = $state('stone');
+  let analysisVersion = $state(0);
+
+  const analysisSignMap = $derived(analysisNode?.board.signMap ?? null);
+  const analysisChildrenMap = $derived.by(() => {
+    if (!analysisNode || analysisNode.children.length === 0) return null;
+    const size = gs.boardSize;
+    const map = Array.from({ length: size }, () => new Array(size).fill(0));
+    for (const child of analysisNode.children) {
+      if (!child.lastMove) continue;
+      const [cx, cy] = child.lastMove;
+      map[cy][cx] = analysisNode.signToPlay;
+    }
+    return map;
+  });
+
+  const analysisMarkerMap = $derived.by(() => {
+    analysisVersion;
+    return analysisNode?.markerMap ?? null;
+  });
+
+  const analysisMovePath = $derived.by(() => {
+    analysisVersion;
+    if (!analysisNode) return [];
+    const path = [];
+    let node = analysisNode;
+    while (node.parent) {
+      path.unshift(node);
+      node = node.parent;
+    }
+    return path;
+  });
+
+  const analysisMoveRows = $derived.by(() => {
+    const rows = [];
+    for (let i = 0; i < analysisMovePath.length; i += 2) {
+      const moveNum = Math.floor(i / 2) + 1;
+      const black = analysisMovePath[i];
+      const white = i + 1 < analysisMovePath.length ? analysisMovePath[i + 1] : null;
+      rows.push({ moveNum, black, white });
+    }
+    return rows;
+  });
+
+  let analysisStatus = $state('playing');
+  let analysisDeadStones = $state([]);
+  let analysisAreaMap = $state(null);
+  let analysisShowEstimate = $state(false);
+
+  const analysisScore = $derived(analysisAreaMap ? computeScore(analysisAreaMap, gs.boardSize, KOMI) : null);
+
+  const analysisEstimateAreaMap = $derived.by(() => {
+    if (!analysisShowEstimate || analysisStatus === 'scoring' || !analysisNode) return null;
+    return influence.map(analysisNode.board.signMap, { discrete: true });
+  });
+
+  const analysisEstimatedScore = $derived(
+    analysisEstimateAreaMap ? computeScore(analysisEstimateAreaMap, gs.boardSize, KOMI) : null
+  );
+
+  function analysisStartScoring() {
+    analysisStatus = 'scoring';
+    analysisDeadStones = [];
+    analysisAreaMap = influence.areaMap(analysisNode.board.signMap);
+  }
+
+  function analysisStopScoring() {
+    analysisStatus = 'playing';
+    analysisDeadStones = [];
+    analysisAreaMap = null;
+  }
+
+  function analysisToggleDeadGroup(x, y) {
+    analysisDeadStones = toggleDeadStones(analysisNode.board, analysisDeadStones, x, y);
+    const sb = buildScoreBoard(analysisNode.board, analysisDeadStones);
+    analysisAreaMap = influence.areaMap(sb.signMap);
+  }
+
+  function nextLabel(markerMap, size) {
+    const used = new Set();
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const m = markerMap[y][x];
+        if (m && m.type === 'label') used.add(m.label);
+      }
+    }
+    for (let i = 0; i < 26; i++) {
+      const ch = String.fromCharCode(65 + i);
+      if (!used.has(ch)) return ch;
+    }
+    return 'A';
+  }
+
+  function nextNumber(markerMap, size) {
+    let max = 0;
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const m = markerMap[y][x];
+        if (m && m.type === 'number') {
+          const n = parseInt(m.label);
+          if (n > max) max = n;
+        }
+      }
+    }
+    return String(max + 1);
+  }
+
+  function applyAnalysisMarker(x, y, tool) {
+    if (!analysisNode) return;
+    const current = analysisNode.markerMap[y][x];
+    const newMap = analysisNode.markerMap.map((row) => [...row]);
+    if (tool === 'label') {
+      if (current && current.type === 'label') {
+        newMap[y][x] = null;
+      } else {
+        const letter = nextLabel(analysisNode.markerMap, gs.boardSize);
+        newMap[y][x] = { type: 'label', label: letter };
+      }
+    } else if (tool === 'number') {
+      if (current && current.type === 'number') {
+        newMap[y][x] = null;
+      } else {
+        const num = nextNumber(analysisNode.markerMap, gs.boardSize);
+        newMap[y][x] = { type: 'number', label: num };
+      }
+    } else {
+      newMap[y][x] = current === tool ? null : tool;
+    }
+    analysisNode.markerMap = newMap;
+    analysisVersion++;
+  }
+
+  function applyAnalysisMove(x, y) {
+    if (!analysisNode) return;
+    const existing = analysisNode.children.find(
+      (c) => c.lastMove && c.lastMove[0] === x && c.lastMove[1] === y
+    );
+    if (existing) {
+      analysisNode = existing;
+      return;
+    }
+    const sign = analysisNode.signToPlay;
+    const analysis = analysisNode.board.analyzeMove(sign, [x, y]);
+    if (analysis.overwrite || analysis.suicide || analysis.ko) return;
+    let newBoard;
+    try {
+      newBoard = analysisNode.board.makeMove(sign, [x, y], {
+        preventSuicide: true,
+        preventOverwrite: true,
+        preventKo: true
+      });
+    } catch {
+      return;
+    }
+    const nextSign = sign === 1 ? -1 : 1;
+    const child = makeTreeNode(newBoard, [x, y], nextSign, analysisNode, gs.boardSize);
+    analysisNode.children.push(child);
+    analysisNode = child;
+  }
+
+  function applyAnalysisNav(action) {
+    if (!analysisNode) return;
+    if (action === 'prev' && analysisNode.parent) {
+      analysisNode = analysisNode.parent;
+    } else if (action === 'next' && analysisNode.children.length > 0) {
+      analysisNode = analysisNode.children[0];
+    } else if (action === 'first') {
+      let node = analysisNode;
+      while (node.parent) node = node.parent;
+      analysisNode = node;
+    } else if (action === 'last') {
+      let node = analysisNode;
+      while (node.children.length > 0) node = node.children[0];
+      analysisNode = node;
+    }
+  }
+
+  function enterAnalysis() {
+    const tree = buildGameTree(data.game.moves, gs.boardSize);
+    analysisNode = tree.lastNode;
+    analysisMode = true;
+    analysisTool = 'stone';
+    analysisStatus = 'playing';
+    analysisDeadStones = [];
+    analysisAreaMap = null;
+    analysisShowEstimate = false;
+    gameSocket.send({ type: 'analysis_start' });
+  }
+
+  function handleAnalysisStart() {
+    if (analysisMode) return;
+    const tree = buildGameTree(data.game.moves, gs.boardSize);
+    analysisNode = tree.lastNode;
+    analysisMode = true;
+    analysisTool = 'stone';
+    analysisStatus = 'playing';
+    analysisDeadStones = [];
+    analysisAreaMap = null;
+    analysisShowEstimate = false;
+  }
+
+  function onAnalysisVertexClick(x, y) {
+    if (analysisStatus === 'scoring') {
+      analysisToggleDeadGroup(x, y);
+      return;
+    }
+    if (analysisTool === 'stone') {
+      applyAnalysisMove(x, y);
+      gameSocket.send({ type: 'analysis_move', x, y });
+    } else {
+      applyAnalysisMarker(x, y, analysisTool);
+      gameSocket.send({ type: 'analysis_marker', x, y, tool: analysisTool });
+    }
+  }
+
+  function analysisNav(action) {
+    applyAnalysisNav(action);
+    gameSocket.send({ type: 'analysis_nav', action });
+  }
+
+  const isGameOver = $derived(
+    gs.status === 'gameover' || gs.status === 'abandoned' || gs.status === 'aborted'
+  );
 
   function onVertexClick(x, y) {
     if (isSpectator) return;
@@ -193,6 +458,22 @@
 
   function handleKeydown(e) {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (analysisMode) {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        analysisNav('prev');
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        analysisNav('next');
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        analysisNav('first');
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        analysisNav('last');
+      }
+      return;
+    }
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
       gs.jumpPrev();
@@ -218,13 +499,34 @@
         else if (data.game.whiteName === displayName) gs.mySign = -1;
       }
       chatMessages = data.chat ?? [];
+      analysisMode = false;
+      analysisNode = null;
 
       const isLive = ['waiting', 'playing', 'scoring'].includes(data.game.status);
-      if (isLive) {
+      const isFinished = ['finished', 'aborted', 'abandoned'].includes(data.game.status);
+
+      if (isLive || isFinished) {
         gameSocket.onMessage((msg) => {
-          gs.handleMessage(msg);
-          if (msg.type === 'chat') {
-            chatMessages.push({ user: msg.user, text: msg.text });
+          if (msg.type === 'analysis_start') {
+            handleAnalysisStart();
+          } else if (msg.type === 'analysis_move') {
+            applyAnalysisMove(msg.x, msg.y);
+          } else if (msg.type === 'analysis_nav') {
+            applyAnalysisNav(msg.action);
+          } else if (msg.type === 'analysis_marker') {
+            applyAnalysisMarker(msg.x, msg.y, msg.tool);
+          } else if (msg.type === 'joined' && msg.analysisActive) {
+            handleAnalysisStart();
+            for (const entry of msg.analysisLog) {
+              if (entry.type === 'analysis_move') applyAnalysisMove(entry.x, entry.y);
+              else if (entry.type === 'analysis_nav') applyAnalysisNav(entry.action);
+              else if (entry.type === 'analysis_marker') applyAnalysisMarker(entry.x, entry.y, entry.tool);
+            }
+          } else {
+            gs.handleMessage(msg);
+            if (msg.type === 'chat') {
+              chatMessages.push({ user: msg.user, text: msg.text });
+            }
           }
         });
         gameSocket.connect({ type: 'join', gameId: currentGameId, username: displayName });
@@ -295,22 +597,42 @@
   <div class="round__app">
     <div class="round__app__table"></div>
 
-    <div class="round__app__board" bind:clientWidth={boardContainerWidth}>
-      <GoBoard
-        {signMap}
-        lastMove={gs.viewLastMove}
-        shiftMap={gs.viewShiftMap}
-        animatedVertex={gs.isViewingHistory ? null : gs.animatedVertex}
-        size={gs.boardSize}
-        {vertexSize}
-        {areaMap}
-        deadStones={gs.status === 'scoring' ? gs.deadStones : null}
-        showCoords={boardState.showCoords}
-        currentSign={gs.currentSign}
-        onVertexClick={!gs.isViewingHistory && (gs.status === 'playing' || gs.status === 'scoring')
-          ? onVertexClick
-          : null}
-      />
+    {#if gameSocket.status === 'reconnecting'}
+      <div class="connection-lost">Reconnecting&hellip;</div>
+    {/if}
+
+    <div class="round__app__board" style="overflow: hidden;" bind:clientWidth={boardContainerWidth}>
+      {#if analysisMode}
+        <GoBoard
+          signMap={analysisSignMap}
+          lastMove={analysisNode?.lastMove}
+          size={gs.boardSize}
+          {vertexSize}
+          showCoords={boardState.showCoords}
+          currentSign={analysisNode?.signToPlay ?? 1}
+          childrenMap={analysisChildrenMap}
+          markerMap={analysisMarkerMap}
+          areaMap={analysisStatus === 'scoring' ? analysisAreaMap : analysisEstimateAreaMap}
+          deadStones={analysisStatus === 'scoring' ? analysisDeadStones : null}
+          onVertexClick={onAnalysisVertexClick}
+        />
+      {:else}
+        <GoBoard
+          {signMap}
+          lastMove={gs.viewLastMove}
+          shiftMap={gs.viewShiftMap}
+          animatedVertex={gs.isViewingHistory ? null : gs.animatedVertex}
+          size={gs.boardSize}
+          {vertexSize}
+          {areaMap}
+          deadStones={gs.status === 'scoring' ? gs.deadStones : null}
+          showCoords={boardState.showCoords}
+          currentSign={gs.currentSign}
+          onVertexClick={!gs.isViewingHistory && (gs.status === 'playing' || gs.status === 'scoring')
+            ? onVertexClick
+            : null}
+        />
+      {/if}
     </div>
 
     {#if !isCorrGame}
@@ -332,12 +654,66 @@
     />
 
     <div class="rmoves">
-      {#if gs.isViewingHistory}
+      {#if analysisMode}
+        <div class="analysis-moves">
+          {#if analysisMoveRows.length > 0}
+            <table class="moves-table">
+              <thead>
+                <tr>
+                  <th class="moves-col-num"></th>
+                  <th class="moves-col-black">Black</th>
+                  <th class="moves-col-white">White</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each analysisMoveRows as row}
+                  <tr>
+                    <td class="moves-col-num">{row.moveNum}.</td>
+                    <td class="moves-col-black">
+                      <button
+                        class="move-entry"
+                        class:active={row.black === analysisNode}
+                        onclick={() => {
+                          const path = [];
+                          let n = row.black;
+                          while (n.parent) { path.unshift(n); n = n.parent; }
+                          analysisNode = row.black;
+                        }}
+                      >
+                        {formatVertex(row.black.lastMove, gs.boardSize)}
+                        {#if row.black.children.length > 1}
+                          <span class="move-branches">⑂</span>
+                        {/if}
+                      </button>
+                    </td>
+                    <td class="moves-col-white">
+                      {#if row.white}
+                        <button
+                          class="move-entry"
+                          class:active={row.white === analysisNode}
+                          onclick={() => { analysisNode = row.white; }}
+                        >
+                          {formatVertex(row.white.lastMove, gs.boardSize)}
+                          {#if row.white.children.length > 1}
+                            <span class="move-branches">⑂</span>
+                          {/if}
+                        </button>
+                      {/if}
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          {:else}
+            <div class="analysis-empty">Click the board to start analyzing</div>
+          {/if}
+        </div>
+      {:else if gs.isViewingHistory}
         <div class="history-indicator">
           Move {gs.currentViewPly} of {gs.totalPly}
         </div>
       {/if}
-      {#if gs.status === 'waiting'}
+      {#if !analysisMode && gs.status === 'waiting'}
         <div class="message" data-icon={ICON_INFO}>
           <div>
             {#if isLocal}
@@ -350,7 +726,7 @@
             {/if}
           </div>
         </div>
-      {:else if gs.status === 'playing'}
+      {:else if !analysisMode && gs.status === 'playing'}
         <div class="message" data-icon={ICON_INFO}>
           <div>
             {#if isLocal}
@@ -369,7 +745,7 @@
             {/if}
           </div>
         </div>
-      {:else if gs.status === 'scoring'}
+      {:else if !analysisMode && gs.status === 'scoring'}
         <div class="message" data-icon={ICON_INFO}>
           <div>
             Counting territory<br />
@@ -383,7 +759,7 @@
           whiteApproved={gs.whiteApproved}
           showApprovals={true}
         />
-      {:else if gs.status === 'gameover'}
+      {:else if !analysisMode && gs.status === 'gameover'}
         <div class="message" data-icon={ICON_INFO}>
           <div>
             {#if isLocal || isSpectator}
@@ -402,13 +778,13 @@
             {/if}
           </div>
         </div>
-      {:else if gs.status === 'abandoned'}
+      {:else if !analysisMode && gs.status === 'abandoned'}
         <div class="message" data-icon={ICON_INFO}>
           <div>
             {isSpectator ? 'A player has left the game.' : 'Your opponent has left the game.'}
           </div>
         </div>
-      {:else if gs.status === 'aborted'}
+      {:else if !analysisMode && gs.status === 'aborted'}
         <div class="message" data-icon={ICON_INFO}>
           <div>This game was aborted.</div>
         </div>
@@ -416,11 +792,53 @@
     </div>
 
     <div class="rcontrols">
-      {#if gs.status === 'gameover' || gs.status === 'abandoned' || gs.status === 'aborted'}
-        <a
+      {#if analysisMode}
+        {#if analysisStatus === 'scoring'}
+          <button class="button button-green" onclick={analysisStopScoring}>Back to analysis</button>
+          {#if analysisScore}
+            <div class="score-display">
+              <span class="color-icon is black text">{analysisScore.blackArea}</span>
+              <span class="color-icon is white text"
+                >{analysisScore.whiteArea} + {KOMI} = {analysisScore.whiteScore.toFixed(1)}</span
+              >
+              <strong>{scoreVerdictShort(analysisScore)}</strong>
+            </div>
+          {/if}
+        {:else}
+          <div class="tool-buttons">
+            <button class="button" class:button-green={analysisTool === 'stone'} class:button-metal={analysisTool !== 'stone'} onclick={() => (analysisTool = 'stone')} title="Place stones">Stone</button>
+            <button class="button" class:button-green={analysisTool === 'cross'} class:button-metal={analysisTool !== 'cross'} onclick={() => (analysisTool = 'cross')} title="Mark X">✕</button>
+            <button class="button" class:button-green={analysisTool === 'circle'} class:button-metal={analysisTool !== 'circle'} onclick={() => (analysisTool = 'circle')} title="Mark circle">◯</button>
+            <button class="button" class:button-green={analysisTool === 'square'} class:button-metal={analysisTool !== 'square'} onclick={() => (analysisTool = 'square')} title="Mark square">⬜</button>
+            <button class="button" class:button-green={analysisTool === 'triangle'} class:button-metal={analysisTool !== 'triangle'} onclick={() => (analysisTool = 'triangle')} title="Mark triangle">△</button>
+            <button class="button" class:button-green={analysisTool === 'label'} class:button-metal={analysisTool !== 'label'} onclick={() => (analysisTool = 'label')} title="Label (A, B, C...)">A</button>
+            <button class="button" class:button-green={analysisTool === 'number'} class:button-metal={analysisTool !== 'number'} onclick={() => (analysisTool = 'number')} title="Number (1, 2, 3...)">1</button>
+          </div>
+          <button class="button button-metal" onclick={analysisStartScoring}>Score</button>
+          <button
+            class="button"
+            class:button-green={analysisShowEstimate}
+            class:button-metal={!analysisShowEstimate}
+            onclick={() => (analysisShowEstimate = !analysisShowEstimate)}>Estimate</button
+          >
+          {#if analysisEstimatedScore}
+            <div class="score-display">
+              <span class="color-icon is black text">{analysisEstimatedScore.blackArea}</span>
+              <span class="color-icon is white text"
+                >{analysisEstimatedScore.whiteArea} + {KOMI} = {analysisEstimatedScore.whiteScore.toFixed(1)}</span
+              >
+              <strong>{scoreVerdictShort(analysisEstimatedScore)}</strong>
+            </div>
+          {/if}
+        {/if}
+        <button class="button button-metal" onclick={() => { analysisMode = false; analysisNode = null; analysisStopScoring(); }}>
+          Back to game
+        </button>
+      {:else if gs.status === 'gameover'}
+        <button
           class="button button-metal analyze-btn"
-          href="/analysis?game={gameId}"
-          data-icon="&#xe01f;">Analyze</a
+          onclick={enterAnalysis}
+          data-icon="&#xe01f;">Analyze</button
         >
       {/if}
       {#if !isSpectator && gs.status === 'waiting'}
@@ -469,7 +887,16 @@
       {/if}
     </div>
 
-    {#if gs.totalPly > 0}
+    {#if analysisMode}
+      <NavigationButtons
+        canPrev={!!analysisNode?.parent}
+        canNext={analysisNode?.children.length > 0}
+        onFirst={() => analysisNav('first')}
+        onPrev={() => analysisNav('prev')}
+        onNext={() => analysisNav('next')}
+        onLast={() => analysisNav('last')}
+      />
+    {:else if gs.totalPly > 0}
       <NavigationButtons
         canPrev={gs.currentViewPly > 0}
         canNext={gs.currentViewPly < gs.totalPly}
@@ -525,5 +952,118 @@
     background: var(--c-bg-zebra);
     border-radius: 3px;
     margin-bottom: 0.5em;
+  }
+
+  .tool-buttons {
+    display: flex;
+    gap: 0.3em;
+    flex-wrap: wrap;
+  }
+
+  .tool-buttons .button {
+    flex: 1;
+    font-size: 0.8em;
+    padding: 0.3em 0.4em;
+    min-width: 0;
+  }
+
+  .analysis-moves {
+    padding: 0.5em;
+    overflow-y: auto;
+    flex: 1 1 0;
+  }
+
+  .analysis-empty {
+    color: var(--c-font-dim);
+    font-size: 0.85em;
+    padding: 0.5em;
+  }
+
+  .moves-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+  }
+
+  .moves-table thead th {
+    font-size: 0.85em;
+    color: var(--c-font-dim);
+    font-weight: normal;
+    text-align: left;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .moves-col-num {
+    width: 2.2em;
+    text-align: right;
+    padding-right: 6px;
+    color: var(--c-font-dim);
+    font-size: 0.9em;
+    vertical-align: middle;
+  }
+
+  .moves-col-black,
+  .moves-col-white {
+    width: 50%;
+    padding: 2px;
+  }
+
+  .moves-table tbody tr:nth-child(even) {
+    background: var(--c-bg-zebra);
+  }
+
+  .move-entry {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 6px;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    cursor: pointer;
+    color: var(--c-font);
+    width: 100%;
+    text-align: left;
+  }
+
+  .move-entry:hover {
+    background: var(--c-bg-zebra2, var(--c-bg-zebra));
+  }
+
+  .move-entry.active {
+    background: var(--c-accent);
+    color: #fff;
+    border-color: var(--c-accent);
+  }
+
+  .move-branches {
+    font-size: 0.9em;
+    opacity: 0.6;
+  }
+
+  .score-display {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+    font-size: 0.85em;
+    padding: 0.3em 0;
+  }
+
+  .connection-lost {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 0.4em;
+    background: #b33;
+    color: #fff;
+    font-size: 0.85em;
+    font-weight: bold;
+    border-radius: 3px;
+    animation: pulse-bg 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-bg {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
   }
 </style>

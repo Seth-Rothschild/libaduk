@@ -158,7 +158,10 @@ function reconstructRoom(game) {
     corrState: game.corrActiveColor
       ? { activeColor: game.corrActiveColor, turnDeadline: game.corrTurnDeadline }
       : null,
-    corrDeadlineMs
+    corrDeadlineMs,
+    analysisActive: false,
+    analysisLog: [],
+    analysisClients: new Set()
   };
 }
 
@@ -213,7 +216,10 @@ export async function createRoom(
     },
     clock: initClock(timeControl),
     corrState: null,
-    corrDeadlineMs
+    corrDeadlineMs,
+    analysisActive: false,
+    analysisLog: [],
+    analysisClients: new Set()
   };
   rooms.set(id, room);
   const blackIsAuth = !!blackName;
@@ -310,7 +316,16 @@ async function handleMessage(socket, raw) {
         : clientMatchesSeat(room, 'white', socket, clientId)
           ? 'white'
           : null;
-      send(socket, { type: 'joined', gameId: roomId, color, status: room.status });
+      socket.gameId = roomId;
+      socket.color = color;
+      socket.username = clientId;
+      room.analysisClients.add(socket);
+      const joinMsg = { type: 'joined', gameId: roomId, color, status: room.status };
+      if (room.analysisActive) {
+        joinMsg.analysisActive = true;
+        joinMsg.analysisLog = room.analysisLog;
+      }
+      send(socket, joinMsg);
       return;
     }
 
@@ -630,6 +645,43 @@ async function handleMessage(socket, raw) {
     }
     return;
   }
+
+  if (msg.type === 'analysis_start') {
+    if (room.status !== 'finished' && room.status !== 'aborted') return;
+    room.analysisActive = true;
+    room.analysisLog = [];
+    for (const client of room.analysisClients) {
+      if (client !== socket) send(client, { type: 'analysis_start' });
+    }
+    return;
+  }
+
+  if (msg.type === 'analysis_move') {
+    if (!room.analysisActive) return;
+    room.analysisLog.push({ type: 'analysis_move', x: msg.x, y: msg.y });
+    for (const client of room.analysisClients) {
+      if (client !== socket) send(client, { type: 'analysis_move', x: msg.x, y: msg.y });
+    }
+    return;
+  }
+
+  if (msg.type === 'analysis_nav') {
+    if (!room.analysisActive) return;
+    room.analysisLog.push({ type: 'analysis_nav', action: msg.action });
+    for (const client of room.analysisClients) {
+      if (client !== socket) send(client, { type: 'analysis_nav', action: msg.action });
+    }
+    return;
+  }
+
+  if (msg.type === 'analysis_marker') {
+    if (!room.analysisActive) return;
+    room.analysisLog.push({ type: 'analysis_marker', x: msg.x, y: msg.y, tool: msg.tool });
+    for (const client of room.analysisClients) {
+      if (client !== socket) send(client, { type: 'analysis_marker', x: msg.x, y: msg.y, tool: msg.tool });
+    }
+    return;
+  }
 }
 
 async function finalizeScore(room, gameId) {
@@ -695,6 +747,12 @@ function handleDisconnect(socket) {
   lobbyClients.delete(socket);
   const room = rooms.get(socket.gameId);
   if (!room) return;
+
+  room.analysisClients.delete(socket);
+  if (room.analysisActive && room.analysisClients.size === 0) {
+    room.analysisActive = false;
+    room.analysisLog = [];
+  }
 
   if (room.local) {
     room.black = null;

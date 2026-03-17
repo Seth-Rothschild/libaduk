@@ -108,6 +108,10 @@
     return preview;
   }
 
+  function isGuest(name) {
+    return name === 'Guest' || /^Guest\d{4}$/.test(name);
+  }
+
   function miniVertexSize(boardGridSize) {
     // Target 240px wide so all boards fill roughly the same space.
     // GoBoard formula: boardSize = (gridSize + 0.8) * vertexSize
@@ -265,7 +269,7 @@
             </div>
             <div class="versus">
               <div class="player white">
-                {#if game.whiteName && game.gameType !== 'local'}
+                {#if game.whiteName && game.gameType !== 'local' && !isGuest(game.whiteName)}
                   <a href="/profile/{game.whiteName}">{game.whiteName}</a>
                 {:else}
                   <span>{game.whiteName ?? 'Guest'}</span>
@@ -273,7 +277,7 @@
               </div>
               <div class="swords" data-icon="&#xe033;"></div>
               <div class="player black">
-                {#if game.blackName && game.gameType !== 'local'}
+                {#if game.blackName && game.gameType !== 'local' && !isGuest(game.blackName)}
                   <a href="/profile/{game.blackName}">{game.blackName}</a>
                 {:else}
                   <span>{game.blackName ?? 'Guest'}</span>
