@@ -1,0 +1,701 @@
+/* =============================================================
+   nav.css — all styles for the site header, nav, search,
+   dasher, and user buttons.
+
+   Replaces: src/lib/css/header/*
+   ============================================================= */
+
+
+/* -------------------------------------------------------------
+   Custom properties — header height (used throughout this file)
+   ------------------------------------------------------------- */
+
+body {
+  ---site-header-height: 40px;
+  ---site-header-sticky-padding: calc((100vw - 1780px) / 2);
+}
+
+@media (min-height: 599.3px) {
+  body {
+    ---site-header-height: 60px;
+    ---sticky-gap: 0.5vmin;
+  }
+}
+
+
+/* -------------------------------------------------------------
+   body > header
+   ------------------------------------------------------------- */
+
+body > header {
+  user-select: none;
+  height: var(---site-header-height);
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 106;
+  max-width: 1800px;
+  margin: 0 auto;
+}
+
+/* Sticky header — only when user hasn't requested reduced motion and screen is tall enough */
+@media (prefers-reduced-motion: no-preference) and (min-height: 600px) {
+  body > header {
+    transition: transform 150ms ease-in-out, border-color 150ms ease-in-out;
+    max-width: unset;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    padding: 0 var(---site-header-sticky-padding);
+    border-bottom: 1px solid transparent;
+  }
+
+  body > header .dropdown {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 150ms, visibility 0s linear 0s;
+  }
+
+  body > header.scrolled {
+    background-image: linear-gradient(
+      to bottom,
+      var(--c-body-gradient),
+      var(--m-body-gradient_bg-page--mix-50) 60px
+    );
+    border-color: black;
+  }
+
+  html.light body > header.scrolled {
+    border-color: hsl(0, 0%, 70%);
+  }
+
+  body > header.hide {
+    transform: translateY(-100%);
+  }
+
+  body > header.hide #topnav,
+  body > header.hide .dropdown {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 150ms, visibility 0s linear 150ms;
+  }
+}
+
+
+/* -------------------------------------------------------------
+   .site-title-nav
+   ------------------------------------------------------------- */
+
+.site-title-nav {
+  display: flex;
+  justify-content: flex-start;
+}
+
+
+/* -------------------------------------------------------------
+   .site-title (logo + name link)
+   ------------------------------------------------------------- */
+
+.site-title {
+  font-family: 'Noto Sans', sans-serif;
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  padding: 0 1rem;
+  margin-inline-start: 0.5rem;
+  gap: 0.75rem;
+  font-size: 25px;
+  transform: translateY(-3px);
+  color: var(--c-font);
+  text-decoration: none;
+}
+
+@media (max-width: 1019.3px) {
+  .site-title {
+    margin-inline-start: calc(0.5rem + var(---site-header-height));
+  }
+}
+
+@media (min-height: 599.3px) {
+  .site-title {
+    font-size: 30px;
+  }
+}
+
+.site-title:hover { color: var(--c-primary); }
+.site-title:hover span { color: var(--c-primary-dim); }
+.site-title:focus-visible { outline-offset: -2px; }
+.site-title span { color: var(--c-font-dim); }
+
+/* Icon hidden on mobile (hamburger takes that space), visible on desktop */
+.site-title .site-icon {
+  display: none;
+  font-size: 24px;
+}
+
+@media (min-height: 599.3px) {
+  .site-title .site-icon { font-size: 36px; }
+}
+
+@media (min-width: 1019.3px) {
+  .site-title .site-icon { display: block; }
+}
+
+
+/* -------------------------------------------------------------
+   Hamburger  (screen width < 1020px)
+   ------------------------------------------------------------- */
+
+@media (max-width: 1019.3px) {
+  .hbg {
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0;
+    width: var(---site-header-height);
+    height: var(---site-header-height);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    z-index: 111;
+  }
+
+  .hbg__in {
+    inset-inline-start: 8.5px;
+    transition: transform 0.22s cubic-bezier(0.55, 0.055, 0.675, 0.19);
+    top: 50%;
+  }
+
+  @media (min-height: 599.3px) {
+    .hbg__in { inset-inline-start: 13px; }
+  }
+
+  .hbg__in,
+  .hbg__in::before,
+  .hbg__in::after {
+    display: block;
+    margin-top: -1.5px;
+    position: absolute;
+    width: 23px;
+    height: 2px;
+    border-radius: 3px;
+    background-color: var(--c-font-dim);
+  }
+
+  @media (min-height: 599.3px) {
+    .hbg__in,
+    .hbg__in::before,
+    .hbg__in::after {
+      width: 34px;
+      height: 3px;
+    }
+  }
+
+  .hbg__in::before,
+  .hbg__in::after {
+    content: '';
+  }
+
+  .hbg__in::before {
+    top: -6px;
+    transition: top 0.1s 0.25s ease-in, opacity 0.1s ease-in;
+  }
+
+  @media (min-height: 599.3px) {
+    .hbg__in::before { top: -9px; }
+  }
+
+  .hbg__in::after {
+    bottom: -7px;
+    transition: bottom 0.1s 0.25s ease-in, transform 0.22s cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  }
+
+  @media (min-height: 599.3px) {
+    .hbg__in::after { bottom: -10px; }
+  }
+
+  /* Hamburger open state — X animation */
+  .hbg[aria-expanded="true"] {
+    background: var(--c-bg-high);
+  }
+
+  .hbg[aria-expanded="true"] .hbg__in {
+    transform: rotate(225deg);
+    transition-delay: 0.12s;
+    transition-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+
+  .hbg[aria-expanded="true"] .hbg__in::before {
+    top: 0;
+    opacity: 0;
+    transition: top 0.1s ease-out, opacity 0.1s 0.12s ease-out;
+  }
+
+  .hbg[aria-expanded="true"] .hbg__in::after {
+    bottom: 0;
+    transform: rotate(-90deg);
+    transition: bottom 0.1s ease-out, transform 0.22s 0.12s cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+}
+
+
+/* -------------------------------------------------------------
+   Desktop #topnav  (screen width ≥ 1020px)
+   ------------------------------------------------------------- */
+
+@media (min-width: 1019.3px) {
+  .hbg {
+    display: none !important;
+  }
+
+  #topnav {
+    ---nav-section: 35px;
+    display: flex;
+  }
+
+  @media (min-height: 599.3px) {
+    #topnav { ---nav-section: 53px; }
+  }
+
+  #topnav section {
+    position: relative;
+    height: var(---nav-section);
+  }
+
+  #topnav section > a {
+    color: var(--c-font-page);
+    display: block;
+    height: 100%;
+    line-height: var(---site-header-height);
+    padding: 0 0.7rem;
+    text-transform: uppercase;
+    border-inline-start: 2px solid transparent;
+    text-decoration: none;
+  }
+
+  html.light #topnav section > a {
+    text-shadow: 0 1px 0 var(--c-font-shadow);
+  }
+
+  #topnav section > a:focus-visible { outline-offset: -2px; }
+  #topnav section .home { display: none; }
+
+  /* Dropdown panel */
+  #topnav div {
+    visibility: hidden;
+    max-height: inherit;
+    position: absolute;
+    inset-inline-start: 0;
+    background: var(--c-bg-header-dropdown);
+    min-width: 10rem;
+    box-shadow: 2px 5px 6px rgba(0, 0, 0, 0.3);
+    border-radius: 0 3px 3px 3px;
+    border-inline-start: 2px solid var(--c-primary);
+  }
+
+  #topnav div a,
+  #topnav div button {
+    display: block;
+    width: 100%;
+    padding: 0.6rem 0.7rem;
+    color: var(--c-header-dropdown);
+    background: none;
+    border: none;
+    text-align: start;
+    font: inherit;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  #topnav div a:hover,
+  #topnav div button:hover {
+    background: var(--c-primary);
+    color: var(--c-over);
+  }
+
+  #topnav div a:first-child,
+  #topnav div button:first-child { border-radius: 0 3px 0 0; }
+
+  #topnav div a:last-child,
+  #topnav div button:last-child { border-radius: 0 0 3px 1px; }
+
+  #topnav div a:focus-visible,
+  #topnav div button:focus-visible { outline-offset: -2px; }
+
+  /* Hover / active section — show dropdown */
+  #topnav.hover section:hover > a,
+  #topnav section:active > a,
+  #topnav section.active > a {
+    background: var(--c-bg-header-dropdown);
+    color: var(--c-header-dropdown);
+    border-color: var(--c-primary);
+  }
+
+  #topnav.hover section:hover div,
+  #topnav section:active div,
+  #topnav section.active div {
+    visibility: visible;
+    max-height: none;
+  }
+}
+
+
+/* -------------------------------------------------------------
+   .site-buttons — right side of header
+   ------------------------------------------------------------- */
+
+.site-buttons {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  position: relative;
+}
+
+.site-buttons .link {
+  transition: color 150ms ease;
+  display: block;
+  height: var(---site-header-height);
+  line-height: var(---site-header-height);
+  color: var(--c-font);
+  font-size: 1.1rem;
+  padding: 0 20px;
+  text-decoration: none;
+}
+
+.site-buttons .link:hover { color: var(--c-font-clearer) !important; }
+.site-buttons .link::before,
+.site-buttons .link span::before { vertical-align: top; }
+.site-buttons .link:focus-visible { border-radius: 3px; }
+
+.site-buttons .toggle {
+  display: block;
+  height: var(---site-header-height);
+  line-height: var(---site-header-height);
+}
+
+.site-buttons .dropdown {
+  box-shadow: -1px 5px 6px rgba(0, 0, 0, 0.3);
+  display: none;
+  position: absolute;
+  min-width: 225px;
+  inset-inline-end: 0;
+  top: var(---site-header-height);
+  background: var(--c-bg-header-dropdown);
+  z-index: 109;
+  padding: 5px 0;
+}
+
+.site-buttons .dropdown a:not(.status),
+.site-buttons .dropdown button:not(.theme-btn) {
+  white-space: nowrap;
+  overflow: hidden;
+  display: block;
+  padding: 0.5rem 1rem;
+  width: 100%;
+  text-align: start;
+  color: var(--c-header-dropdown);
+  text-decoration: none;
+}
+
+.site-buttons .dropdown a:not(.status):hover,
+.site-buttons .dropdown button:not(.theme-btn):hover {
+  background: var(--c-dasher);
+  color: var(--c-over) !important;
+}
+
+.site-buttons .shown .toggle {
+  background: var(--c-bg-header-dropdown);
+  color: var(--c-header-dropdown);
+}
+
+.site-buttons .shown .dropdown { display: block; }
+
+.site-buttons .dropdown a.status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--c-border);
+  color: var(--c-font-dim);
+  font-size: 0.85em;
+  text-decoration: none;
+}
+
+.ping {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2em;
+}
+
+.site-buttons .dasher {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+}
+
+.site-buttons .signin-or-signup {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: 1em;
+  white-space: nowrap;
+}
+
+.site-buttons .signin-or-signup .signup {
+  background: none;
+  border: 2px solid var(--c-link);
+  color: var(--c-link);
+  order: -1;
+}
+
+@media (max-width: 600px) {
+  .site-buttons .signin-or-signup .signup { display: none; }
+}
+
+
+/* -------------------------------------------------------------
+   #user_tag
+   ------------------------------------------------------------- */
+
+#user_tag {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  white-space: nowrap;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+#user_tag::after {
+  font-size: 2rem;
+  font-family: lichess;
+  font-style: normal;
+  font-weight: normal;
+  text-transform: none;
+  speak: none;
+  content: '\e079'; /* AccountCircle */
+  opacity: 0.9;
+  unicode-bidi: isolate;
+  color: var(--m-font_dimmer--mix-85);
+  transition: color 150ms ease;
+  vertical-align: middle;
+}
+
+#user_tag:hover::after { color: var(--c-font-clearer); }
+
+
+/* -------------------------------------------------------------
+   #clinput (search bar)
+   ------------------------------------------------------------- */
+
+#clinput {
+  display: flex;
+  height: var(---site-header-height);
+  position: relative;
+}
+
+#clinput a {
+  display: block;
+  height: var(---site-header-height);
+  line-height: var(---site-header-height);
+  padding: 0 0.8em;
+  color: var(--c-font);
+  transition: color 150ms ease;
+  text-decoration: none;
+}
+
+#clinput a:hover { color: var(--c-font-clearer); }
+#clinput:has(input:focus) > a { color: var(--c-primary); }
+
+#clinput input {
+  color: var(--c-font-page);
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+  line-height: var(---site-header-height);
+  background: none;
+  padding: 0;
+  border: 0;
+  width: 0;
+  outline: none;
+  transition: width 150ms ease;
+}
+
+body.clinput #clinput input { width: 20ch; }
+
+/* Search results dropdown */
+.search-results {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 160px;
+  background: var(--c-bg-box);
+  border: 1px solid var(--c-border);
+  border-radius: 3px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-result {
+  display: block;
+  width: 100%;
+  padding: 7px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--c-font);
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.search-result:hover { background: var(--c-bg-zebra); }
+
+
+/* -------------------------------------------------------------
+   Dasher dropdown sub-panes (background + board settings)
+   ------------------------------------------------------------- */
+
+.site-buttons .dasher .dropdown .sub-head {
+  border-bottom: 1px solid var(--c-border);
+  font-weight: 600;
+}
+
+.site-buttons .dasher .dropdown .sub-head::before {
+  color: var(--c-dasher);
+}
+
+.site-buttons .dasher .dropdown .board-settings {
+  padding: 0.75rem 1rem;
+}
+
+.site-buttons .dasher .dropdown .board-setting-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.site-buttons .dasher .dropdown .selector { margin: 0.5rem 0; }
+
+.site-buttons .dasher .dropdown .selector button::before {
+  margin-inline-end: 8px;
+  opacity: 0;
+}
+
+.site-buttons .dasher .dropdown .selector button.active {
+  background: var(--c-dasher) !important;
+  color: var(--c-over) !important;
+}
+
+.site-buttons .dasher .dropdown .selector button.active::before {
+  opacity: 1;
+  color: var(--c-over) !important;
+}
+
+.site-buttons .dasher .dropdown .selector button.active:hover {
+  background: var(--c-dasher) !important;
+}
+
+.site-buttons .dasher .dropdown .signout:hover {
+  background: var(--c-bad) !important;
+  color: #fff !important;
+}
+
+
+/* -------------------------------------------------------------
+   Signal bars (ping status)
+   ------------------------------------------------------------- */
+
+signal {
+  display: inline-block;
+  height: 1em;
+  width: 1.5em;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+signal > i {
+  width: 20%;
+  margin-inline-start: 1px;
+  display: inline-block;
+  height: 40%;
+  background-color: var(--m-secondary_dimmer--mix-82);
+}
+
+signal > i:nth-child(2) { height: 60%; }
+signal > i:nth-child(3) { height: 80%; }
+signal > i:nth-child(4) { height: 100%; }
+
+signal.q1 > i { background-color: var(--c-bad); }
+signal.q2 > i { background-color: var(--c-warn); }
+signal > i.off { background-color: var(--c-shade); }
+
+
+/* -------------------------------------------------------------
+   [data-icon] — lichess icon font, used in nav buttons
+   ------------------------------------------------------------- */
+
+[data-icon]::before {
+  font-size: 1.2em;
+  vertical-align: middle;
+  font-family: lichess;
+  font-style: normal;
+  font-weight: normal;
+  text-transform: none;
+  speak: none;
+  content: attr(data-icon);
+  opacity: 0.9;
+  unicode-bidi: isolate;
+}
+
+.text[data-icon]::before { margin-inline: 0 0.4em; }
+
+
+/* -------------------------------------------------------------
+   .button / .button-metal — used in sign-in / sign-up area
+   ------------------------------------------------------------- */
+
+.button {
+  font-family: Roboto, sans-serif;
+  font-weight: 500;
+  box-shadow: 0 2px 5px 0 hsla(0, 0%, 0%, 0.225);
+  border-radius: 6px;
+  user-select: none;
+  transition: all 150ms ease;
+  background: var(--c-primary);
+  text-transform: uppercase;
+  padding: 0.8em 1em;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  display: inline-block;
+  color: var(--c-over);
+  text-decoration: none;
+}
+
+.button:visited,
+.button:focus { color: var(--c-over); }
+
+.button:not(.disabled):hover {
+  box-shadow: 0 4px 10px 0 hsla(0, 0%, 0%, 0.225);
+  color: var(--c-over);
+  background: var(--m-primary--lighten-7);
+}
+
+.button.button-metal {
+  background: linear-gradient(to bottom, var(--c-metal-top), var(--c-metal-bottom));
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+  color: var(--c-font-dim);
+}
+
+.button.button-metal,
+.button.button-metal:not(.disabled):hover { color: var(--c-font-dim); }
+
+.button.button-metal:not(.disabled):hover {
+  background: linear-gradient(to bottom, var(--c-metal-top-hover), var(--c-metal-bottom-hover));
+}

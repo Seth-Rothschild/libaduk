@@ -1,0 +1,116 @@
+/* =============================================================
+   base.css — global element resets and typography defaults.
+
+   Replaces: src/lib/css/base/elements + typography
+   ============================================================= */
+
+/* Box model + motion reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Root */
+html {
+  min-height: 100%;
+  color-scheme: light dark;
+  font-family: 'Noto Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* fluid font-size: 12px at 320px viewport → 14px at 1200px */
+  font-size: 12px;
+}
+
+@media (min-width: 320px) {
+  html { font-size: calc(12px + 2 * ((100vw - 320px) / 880)); }
+}
+
+@media (min-width: 1200px) {
+  html { font-size: 14px; }
+}
+
+/* Body */
+body {
+  background:
+    var(--c-bg-page)
+    linear-gradient(to bottom, var(--c-body-gradient), var(--c-bg-page) 116px)
+    no-repeat;
+  color: var(--c-font);
+  text-align: start;
+  overflow-x: hidden;
+}
+
+/* Links */
+a {
+  color: var(--c-link);
+  text-decoration: none;
+}
+
+a:hover,
+a:active,
+a:focus {
+  color: var(--c-link-hover);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--c-primary);
+  border-radius: 3px;
+}
+
+/* Buttons — reset browser defaults */
+button {
+  appearance: none;
+  background: none;
+  border: none;
+  color: var(--c-font);
+  text-align: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Headings */
+h1, h2, h3, h4 {
+  font-family: Roboto, sans-serif;
+  font-weight: 300;
+  font-size: 1em;
+}
+
+/* Inline elements */
+em, i { font-style: normal; }
+li    { list-style: none; }
+small { font-size: 0.9em; }
+
+p {
+  margin-bottom: 1em;
+  unicode-bidi: plaintext;
+}
+
+/* Tables */
+table  { border-collapse: collapse; border-spacing: 0; }
+table, tbody, tfoot, thead, tr, th, td {
+  border: 0;
+  font: inherit;
+  vertical-align: middle;
+  text-align: inherit;
+}
+
+/* Horizontal rule */
+hr {
+  margin: 1.5rem 0;
+  border: 0;
+  height: 1px;
+  background: var(--c-border);
+}

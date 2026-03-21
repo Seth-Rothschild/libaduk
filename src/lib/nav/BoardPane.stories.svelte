@@ -1,0 +1,44 @@
+<script module lang="ts">
+  import { defineMeta } from '@storybook/addon-svelte-csf';
+  import { expect, fn, userEvent } from 'storybook/test';
+  import { boardState } from '$lib/boardState.svelte.js';
+  import BoardPane from './BoardPane.svelte';
+
+  const { Story } = defineMeta({
+    component: BoardPane,
+    tags: ['autodocs'],
+    args: {
+      onBack: fn()
+    }
+  });
+</script>
+
+<Story
+  name="Default"
+  play={async ({ canvas }) => {
+    await expect(canvas.getByText('Coordinates')).toBeInTheDocument();
+    const checkbox = canvas.getByRole('checkbox');
+    await expect(checkbox).toBeInTheDocument();
+  }}
+/>
+
+<Story
+  name="Back button fires callback"
+  play={async ({ args, canvas }) => {
+    const backBtn = canvas.getByRole('button', { name: 'Board' });
+    await userEvent.click(backBtn);
+    await expect(args.onBack).toHaveBeenCalledOnce();
+  }}
+/>
+
+<Story
+  name="Toggling coordinates updates boardState"
+  play={async ({ canvas }) => {
+    boardState.showCoords = false;
+    const checkbox = canvas.getByRole('checkbox');
+    await expect(checkbox).not.toBeChecked();
+    await userEvent.click(checkbox);
+    await expect(boardState.showCoords).toBe(true);
+    await expect(checkbox).toBeChecked();
+  }}
+/>

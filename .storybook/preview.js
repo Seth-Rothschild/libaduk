@@ -1,4 +1,6 @@
-import '../src/app.scss';
+import '../src/lib/theme.css';
+import '../src/lib/base.css';
+import '../src/lib/nav/nav.css';
 
 /** @type { import('@storybook/sveltekit').Preview } */
 const preview = {
