@@ -6,7 +6,7 @@
   <section>
     <a href="/">
       <span class="play">Play</span>
-      <span class="home">libaduk</span>
+      <span class="home">libaduk.com</span>
     </a>
     <div role="group">
       <button onclick={onCreateGame}>Create a game</button>
