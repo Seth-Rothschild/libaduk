@@ -92,9 +92,11 @@ export function emptyShiftMap(size) {
   return Array.from({ length: size }, () => new Array(size).fill(0));
 }
 
-export function computeVertexSize(containerWidth, boardSize) {
+export function computeVertexSize(containerWidth, containerHeight, boardSize) {
   if (containerWidth <= 0) return 24;
-  return Math.floor(containerWidth / (boardSize + 0.8));
+  const available =
+    containerHeight > 0 ? Math.min(containerWidth, containerHeight) : containerWidth;
+  return Math.floor(available / (boardSize + 0.8));
 }
 
 export function clampBoardSize(size) {

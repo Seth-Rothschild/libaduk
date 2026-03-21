@@ -1,9 +1,11 @@
 <script>
-  import '../app.scss';
+  // import '../app.scss';
   import '$lib/theme.css';
   import '$lib/base.css';
   import '$lib/nav/nav.css';
   import '$lib/lobby/lobby.css';
+  import '$lib/game/game.css';
+  import './profile/profile.css';
   import { setUsername, clearUsername } from '$lib/user.svelte.js';
   import { pingState } from '$lib/ping.svelte.js';
   import { themeState } from '$lib/theme.svelte.js';
@@ -11,7 +13,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import SiteHeader from '$lib/nav/SiteHeader.svelte';
-  import GameSetupModal from '$lib/GameSetupModal.svelte';
+  import GameSetupModal from '$lib/lobby/GameSetupModal.svelte';
 
   let { children, data } = $props();
 

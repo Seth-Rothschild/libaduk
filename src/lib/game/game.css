@@ -1,0 +1,1099 @@
+/* =============================================================
+   game.css — all styles for the game / play page.
+
+   Replaces: src/lib/css/page/_round.scss
+             src/lib/css/page/_board.scss
+             src/lib/css/game/_clock.scss
+             src/lib/css/chat/_chat.scss (+ tab, discussion, preset, note)
+             src/lib/css/component/_color-icon.scss
+             inline <style> from src/routes/play/[gameId]/+page.svelte
+   ============================================================= */
+
+/* -------------------------------------------------------------
+   .round — outer page grid
+   col1 (default): stacked app then side
+   col3 (≥800px):  side left | app right
+   ------------------------------------------------------------- */
+
+.round {
+  grid-area: main;
+  display: grid;
+  gap: var(---block-gap, 10px);
+  grid-template-areas: 'app' 'side';
+}
+
+@media (min-width: 800px) {
+  .round {
+    grid-template-columns: minmax(250px, 350px) auto;
+    grid-template-areas: 'side app';
+  }
+}
+
+/* -------------------------------------------------------------
+   .round__side — left sidebar (game meta + chat)
+   ------------------------------------------------------------- */
+
+.round__side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  gap: var(---block-gap, 10px);
+}
+
+.round__side .mchat {
+  flex: 1 1 0;
+}
+
+/* -------------------------------------------------------------
+   .round__app — board area + right sidebar grid
+   col1 (default): vertical stack
+   col2 (≥500px):  board left | sidebar right, fixed height
+   ------------------------------------------------------------- */
+
+.round__app {
+  grid-area: app;
+  display: grid;
+}
+
+@media (max-width: 499px) {
+  .round__app {
+    grid-template-areas:
+      'user-top'
+      'board'
+      'user-bot'
+      'moves'
+      'controls'
+      'buttons';
+  }
+
+  .round__app .rclock-top {
+    grid-area: user-top;
+    justify-self: end;
+  }
+
+  .round__app .rclock-bottom {
+    grid-area: user-bot;
+    justify-self: end;
+  }
+}
+
+@media (min-width: 500px) {
+  .round__app {
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 240px);
+    grid-template-rows: auto auto 1fr auto auto auto auto;
+    grid-template-areas:
+      'board clock-top'
+      'board user-top'
+      'board moves'
+      'board controls'
+      'board buttons'
+      'board user-bot'
+      'board clock-bot';
+    column-gap: var(---block-gap, 15px);
+    height: calc(100vh - var(---site-header-height, 40px) - 3rem);
+  }
+
+  .round__app .rclock-top {
+    grid-area: clock-top;
+  }
+
+  .round__app .rclock-bottom {
+    grid-area: clock-bot;
+  }
+}
+
+/* -------------------------------------------------------------
+   .round__app__board — the board square
+   ------------------------------------------------------------- */
+
+.round__app__board {
+  grid-area: board;
+}
+
+@media (max-width: 499px) {
+  .round__app__board {
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    min-width: 0;
+  }
+}
+
+@media (min-width: 500px) {
+  .round__app__board {
+    height: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+}
+
+/* -------------------------------------------------------------
+   .round__app__table — background panel behind right sidebar
+   ------------------------------------------------------------- */
+
+.round__app__table {
+  display: none;
+}
+
+@media (min-width: 500px) {
+  .round__app__table {
+    display: block;
+    grid-column: 2;
+    grid-row: 1 / -1;
+    background: var(--c-bg-box);
+    pointer-events: none;
+    border-radius: 6px;
+  }
+}
+
+/* -------------------------------------------------------------
+   Grid area assignments
+   ------------------------------------------------------------- */
+
+.ruser-top {
+  grid-area: user-top;
+}
+.ruser-bottom {
+  grid-area: user-bot;
+}
+.rmoves {
+  grid-area: moves;
+}
+.rcontrols {
+  grid-area: controls;
+}
+.rclock-top {
+  grid-area: clock-top;
+  isolation: isolate;
+}
+.rclock-bottom {
+  grid-area: clock-bot;
+  isolation: isolate;
+}
+
+/* -------------------------------------------------------------
+   .ruser — player strips
+   ------------------------------------------------------------- */
+
+.ruser {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.5em 0.8em;
+  font-size: 1.1em;
+  user-select: none;
+}
+
+.ruser .line {
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: var(--c-good);
+  flex: 0 0 auto;
+}
+
+.ruser name {
+  flex: 1 1 auto;
+}
+
+.ruser .material {
+  color: var(--c-font-dim);
+  font-size: 0.9em;
+}
+
+.ruser.active {
+  background: var(--c-bg-zebra);
+}
+
+.ruser-top {
+  border-bottom: 1px solid var(--c-border);
+}
+.ruser-bottom {
+  border-top: 1px solid var(--c-border);
+}
+
+/* -------------------------------------------------------------
+   .rmoves — turn / message area
+   ------------------------------------------------------------- */
+
+.rmoves {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1em;
+}
+
+.rmoves .message {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+}
+
+.rmoves .message[data-icon]::before {
+  font-size: 3em;
+  color: var(--c-font-dim);
+}
+
+/* -------------------------------------------------------------
+   .rbuttons — move navigation (first / prev / next / last)
+   ------------------------------------------------------------- */
+
+.rbuttons {
+  grid-area: buttons;
+  display: flex;
+  justify-content: stretch;
+  background: var(--c-bg-zebra);
+  height: 2.5rem;
+}
+
+.rbuttons .fbt {
+  flex: 1 1 25%;
+  text-align: center;
+  font-size: 0.9em;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+/* -------------------------------------------------------------
+   .rcontrols — action buttons
+   ------------------------------------------------------------- */
+
+.rcontrols {
+  padding: 0.5em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  border-top: 1px solid var(--c-border);
+}
+
+.rcontrols .button {
+  width: 100%;
+}
+
+/* -------------------------------------------------------------
+   .game__meta — game info panel (left sidebar)
+   ------------------------------------------------------------- */
+
+.game__meta {
+  background: var(--c-bg-box);
+  padding: 1.5em;
+  border-radius: 6px;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.15),
+    0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.game__meta section:not(:last-child) {
+  border-bottom: 1px solid var(--c-border);
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.8rem;
+}
+
+.game__meta__infos {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  position: relative;
+}
+
+.game__meta__infos[data-icon]::before {
+  font-size: 2.5rem;
+  color: var(--c-font-dim);
+}
+
+.game__meta__infos .setup {
+  color: var(--c-font-dim);
+  font-size: 0.95em;
+}
+
+.game__meta__players {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 90%;
+}
+
+.game__meta .status {
+  text-align: center;
+  font-style: italic;
+  margin-top: 0.5em;
+}
+
+/* -------------------------------------------------------------
+   .color-icon — stone icon before player name text
+   Dark theme: outline = black stone, filled = white stone
+   Light theme: inverted (filled = black, outline = white)
+   ------------------------------------------------------------- */
+
+.player.color-icon {
+  display: flex;
+  align-items: center;
+}
+
+.color-icon::before {
+  font-family: lichess;
+  font-style: normal;
+  font-weight: normal;
+  text-transform: none;
+  unicode-bidi: isolate;
+  margin-inline-end: 0.3em;
+}
+
+.color-icon.black::before {
+  content: '\e029';
+}
+.color-icon.white::before {
+  content: '\e028';
+}
+
+html.light .color-icon.black::before {
+  content: '\e028';
+}
+html.light .color-icon.white::before {
+  content: '\e029';
+}
+
+/* -------------------------------------------------------------
+   .board-options — coordinates toggle etc.
+   ------------------------------------------------------------- */
+
+.board-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+
+.board-option-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 0.9em;
+  color: var(--c-font-dim);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* -------------------------------------------------------------
+   .score-breakdown — territory counting display
+   ------------------------------------------------------------- */
+
+.score-breakdown {
+  margin-top: 0.8em;
+  font-size: 0.9em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+
+.score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.score-verdict {
+  margin-top: 0.3em;
+  font-weight: bold;
+  border-top: 1px solid var(--c-border);
+  padding-top: 0.3em;
+}
+
+/* -------------------------------------------------------------
+   .rclock — clock component
+   ------------------------------------------------------------- */
+
+.rclock {
+  user-select: none;
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Mobile: clock overlaps player strip, floats to end */
+@media (max-width: 499px) {
+  .rclock {
+    justify-self: flex-end;
+    z-index: 1;
+  }
+}
+
+/* Tablet+: spans full width with turn label on one side */
+@media (min-width: 500px) {
+  .rclock {
+    justify-content: space-between;
+  }
+
+  .rclock-bottom {
+    z-index: 0;
+  }
+}
+
+.rclock .time {
+  font-family: Roboto, sans-serif;
+  font-weight: 300;
+  background: var(--c-bg-box);
+  min-width: 3em;
+  font-size: 2.8em;
+  line-height: 50px;
+  padding: 0 var(---block-gap, 10px);
+  white-space: nowrap;
+  will-change: transform;
+  z-index: -1;
+  display: flex;
+  direction: ltr;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.rclock .time.hour {
+  font-size: 2.3em;
+}
+
+@media (max-width: 499px) {
+  .rclock .time {
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
+  }
+}
+
+@media (min-width: 500px) {
+  .rclock .time {
+    align-items: flex-end;
+    line-height: 1.2em;
+  }
+
+  .rclock-top .time {
+    border-radius: 6px 6px 0 0;
+  }
+  .rclock-bottom .time {
+    border-radius: 0 0 6px 6px;
+  }
+}
+
+@media (min-width: 500px) and (min-height: 600px) {
+  .rclock .time {
+    font-size: 3.6em;
+    letter-spacing: 0.12em;
+  }
+
+  .rclock .time.hour {
+    font-size: 2.9em;
+    letter-spacing: 0.1em;
+  }
+}
+
+/* time progress bar */
+.rclock .bar {
+  display: none;
+}
+
+@media (min-width: 500px) {
+  .rclock .bar {
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 4px;
+    background: var(--c-good);
+    transform-origin: left;
+  }
+
+  .rclock-top .bar {
+    bottom: -4px;
+  }
+  .rclock-bottom .bar {
+    top: -4px;
+  }
+}
+
+/* Clock states */
+.rclock.running .time {
+  background: var(--m-secondary_bg--mix-30);
+  color: var(--c-font-clearer);
+}
+
+.rclock.emerg .time,
+.rclock.outoftime .time {
+  background-color: var(--m-bad_bg--mix-25);
+}
+
+.rclock.emerg.running .time {
+  background-color: var(--m-bad_bg--mix-50);
+  color: var(--c-font-clearer);
+}
+
+/* byo-yomi label inside Clock.svelte */
+.byo-label {
+  font-size: 0.45em;
+  align-self: flex-end;
+  margin-bottom: 0.2em;
+  margin-left: 0.4em;
+  opacity: 0.75;
+  letter-spacing: 0;
+}
+
+/* -------------------------------------------------------------
+   Go board — .go-goban and children
+   ------------------------------------------------------------- */
+
+.go-goban {
+  --go-board-border-width: 0.15em;
+  --go-board-border-color: #ca933a;
+  --go-board-background-color: #f1b458;
+  --go-board-foreground-color: #5e2e0c;
+  --go-black-foreground-color: #fff;
+  --go-white-foreground-color: rgba(0, 0, 0, 0.75);
+
+  position: relative;
+  border: var(--go-board-border-width) solid var(--go-board-border-color);
+  color: var(--go-board-foreground-color);
+  padding: 0.25em;
+}
+
+.go-goban.go-goban-image {
+  background: url('/images/go/board.png') var(--go-board-background-color);
+}
+
+.go-goban::after {
+  content: '';
+  position: absolute;
+  top: calc(-1 * var(--go-board-border-width));
+  left: calc(-1 * var(--go-board-border-width));
+  bottom: calc(-1 * var(--go-board-border-width));
+  right: calc(-1 * var(--go-board-border-width));
+  background:
+    linear-gradient(to bottom, rgba(234, 220, 192, 0.1), transparent),
+    linear-gradient(to bottom, transparent, rgba(23, 10, 2, 0.05));
+  pointer-events: none;
+  z-index: 3;
+}
+
+.go-gridline,
+.go-hoshi {
+  fill: var(--go-board-foreground-color);
+}
+
+/* -------------------------------------------------------------
+   Intersections (.go-vertex) and hover effects
+   ------------------------------------------------------------- */
+
+.go-vertex {
+  position: relative;
+  cursor: pointer;
+}
+
+.go-turn-black .go-vertex.go-empty:hover {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+}
+
+.go-turn-white .go-vertex.go-empty:hover {
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+}
+
+/* -------------------------------------------------------------
+   Stones
+   ------------------------------------------------------------- */
+
+.go-vertex .go-stone {
+  position: absolute;
+  top: 0.04em;
+  left: 0.04em;
+  width: calc(100% - 0.08em);
+  height: calc(100% - 0.08em);
+  z-index: 2;
+}
+
+.go-vertex .go-stone::before {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(23, 10, 2, 0.4);
+  box-shadow: 0 0.1em 0.2em rgba(23, 10, 2, 0.4);
+}
+
+.go-inner {
+  position: absolute;
+  text-indent: -9999rem;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+.go-inner.go-sign_1 {
+  background-image: url('/images/go/stone_1.svg');
+}
+.go-inner.go-sign_-1 {
+  background-image: url('/images/go/stone_-1.svg');
+}
+
+/* -------------------------------------------------------------
+   Last-move marker
+   ------------------------------------------------------------- */
+
+.go-last-marker {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.go-last-marker-dot {
+  stroke: none;
+}
+.go-last-marker-dot_1 {
+  fill: var(--go-black-foreground-color);
+}
+.go-last-marker-dot_-1 {
+  fill: var(--go-white-foreground-color);
+}
+
+/* -------------------------------------------------------------
+   Fuzzy placement — 8 shift directions
+   ------------------------------------------------------------- */
+
+.go-vertex:not(.go-empty).go-animate .go-stone {
+  transition: transform 0.2s;
+}
+
+.go-vertex:not(.go-empty).go-shift_1 .go-stone {
+  transform: translate(-0.07em, 0);
+}
+.go-vertex:not(.go-empty).go-shift_2 .go-stone {
+  transform: translate(0, -0.07em);
+}
+.go-vertex:not(.go-empty).go-shift_3 .go-stone {
+  transform: translate(0.07em, 0);
+}
+.go-vertex:not(.go-empty).go-shift_4 .go-stone {
+  transform: translate(0, 0.07em);
+}
+.go-vertex:not(.go-empty).go-shift_5 .go-stone {
+  transform: translate(-0.04em, -0.04em);
+}
+.go-vertex:not(.go-empty).go-shift_6 .go-stone {
+  transform: translate(0.04em, -0.04em);
+}
+.go-vertex:not(.go-empty).go-shift_7 .go-stone {
+  transform: translate(0.04em, 0.04em);
+}
+.go-vertex:not(.go-empty).go-shift_8 .go-stone {
+  transform: translate(-0.04em, 0.04em);
+}
+
+@keyframes go-place {
+  from {
+    transform: translateY(0.45em);
+    opacity: 0.2;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.go-vertex.go-animate .go-inner {
+  animation: go-place 0.12s ease-out forwards;
+}
+
+/* -------------------------------------------------------------
+   Dead stones
+   ------------------------------------------------------------- */
+
+.go-stone.go-dead .go-inner {
+  opacity: 0.35;
+}
+
+/* -------------------------------------------------------------
+   Territory display
+   ------------------------------------------------------------- */
+
+.go-territory {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.36em;
+  height: 0.36em;
+  border-radius: 1px;
+}
+
+.go-territory-black {
+  background: #111;
+}
+.go-territory-white {
+  background: #eee;
+  outline: 1px solid rgba(0, 0, 0, 0.3);
+}
+
+/* -------------------------------------------------------------
+   Analysis markers
+   ------------------------------------------------------------- */
+
+.go-marker {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* -------------------------------------------------------------
+   Ghost stones (variation preview in analysis)
+   ------------------------------------------------------------- */
+
+.go-ghost {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  opacity: 0.5;
+}
+
+.go-ghost-1 {
+  background: #111;
+  box-shadow: 0 0.05em 0.1em rgba(0, 0, 0, 0.4);
+}
+.go-ghost--1 {
+  background: #ddd;
+  box-shadow: 0 0.05em 0.1em rgba(0, 0, 0, 0.3);
+}
+
+/* -------------------------------------------------------------
+   Coordinate labels
+   ------------------------------------------------------------- */
+
+.go-coord-text {
+  fill: var(--go-board-foreground-color);
+}
+
+/* -------------------------------------------------------------
+   .mchat — in-game chat and notes
+   ------------------------------------------------------------- */
+
+.mchat {
+  grid-area: chat;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  min-height: 15em;
+  border-radius: 6px;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.15),
+    0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mchat__tabs {
+  flex: 0 0 auto;
+  display: flex;
+}
+
+.mchat__tab {
+  font-family: Roboto, sans-serif;
+  font-weight: 300;
+  white-space: nowrap;
+  overflow: hidden;
+  flex: 1 1 auto;
+  text-align: center;
+  padding: 0.4em 10px;
+  cursor: pointer;
+  color: var(--c-font-dim);
+  transition: background 0.15s ease;
+  border-radius: 6px 6px 0 0;
+}
+
+.mchat__tab:hover {
+  background: var(--m-accent_bg--mix-15);
+}
+
+.mchat__tab-active {
+  color: var(--c-font);
+  background: var(--c-bg-box) !important;
+}
+
+.mchat__content {
+  display: flex;
+  flex-direction: column;
+  background: var(--c-bg-box);
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.mchat__messages {
+  flex: 1 1 auto;
+  max-height: 50vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  cursor: initial;
+  font-size: 0.9em;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+@media (min-width: 800px) {
+  .mchat__messages {
+    max-height: none;
+  }
+}
+
+.mchat__messages li {
+  padding: 0.5em 5px 0.5em 10px;
+  position: relative;
+  line-height: 1.2em;
+  overflow-y: hidden;
+  user-select: text;
+  overflow-wrap: anywhere;
+}
+
+.mchat__messages li.me {
+  border-inline-start: 3px solid var(--c-secondary-dim);
+  padding-inline-start: 7px;
+}
+
+.mchat__messages li.system {
+  display: block;
+  opacity: 0.8;
+  font-style: italic;
+  font-size: 0.9em;
+  text-align: center;
+}
+
+.mchat__messages .color {
+  display: inline-block;
+  font-weight: bold;
+  color: var(--c-font-dim);
+  letter-spacing: -1px;
+  padding-inline-end: 0.4em;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+
+.mchat__say {
+  flex: 0 0 auto;
+  padding: 3px 20px 3px 4px;
+  border: 0;
+  border-top: 1px solid var(--c-border);
+  border-radius: 0;
+  background: var(--c-bg-box);
+  color: var(--c-font);
+  font: inherit;
+  width: 100%;
+}
+
+.mchat__say:focus {
+  outline: 1px solid var(--c-primary);
+}
+
+.mchat__presets {
+  user-select: none;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  flex-flow: row nowrap;
+  line-height: 1.4em;
+}
+
+.mchat__presets span {
+  flex: 1 1 auto;
+  text-align: center;
+  display: block;
+  opacity: 0.8;
+  border: 1px solid var(--c-border);
+  border-width: 1px 1px 0 0;
+  font-size: 0.9em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.mchat__presets span.disabled {
+  background: var(--m-accent_bg--mix-15);
+  color: transparent;
+  cursor: default;
+}
+
+.mchat__presets span:not(.disabled):hover {
+  background: var(--c-accent);
+  color: #fff;
+  opacity: 1;
+}
+
+.mchat__content.note textarea {
+  font-size: 0.9em;
+  flex-grow: 1;
+  border: 1px solid transparent;
+  background-color: transparent;
+  color: var(--c-font);
+  line-height: 1.7em;
+  outline: none;
+  resize: none;
+  padding: 0.5em;
+  font: inherit;
+}
+
+.mchat__content.note textarea:focus {
+  border-color: var(--c-primary);
+}
+
+/* -------------------------------------------------------------
+   Connection lost banner
+   ------------------------------------------------------------- */
+
+.connection-lost {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 0.4em;
+  background: #b33;
+  color: #fff;
+  font-size: 0.85em;
+  font-weight: bold;
+  border-radius: 3px;
+  animation: pulse-bg 2s ease-in-out infinite;
+}
+
+@keyframes pulse-bg {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* -------------------------------------------------------------
+   History and analysis UI (from +page.svelte <style> block)
+   ------------------------------------------------------------- */
+
+.history-indicator {
+  text-align: center;
+  padding: 0.3em;
+  font-size: 0.85em;
+  color: var(--c-font-dim);
+  background: var(--c-bg-zebra);
+  border-radius: 3px;
+  margin-bottom: 0.5em;
+}
+
+.corr-deadline {
+  font-size: 0.85em;
+  color: var(--c-font-dim);
+}
+
+.analyze-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  text-decoration: none;
+}
+
+.analyze-btn::before {
+  font-size: 1.2em;
+}
+
+.tool-buttons {
+  display: flex;
+  gap: 0.3em;
+  flex-wrap: wrap;
+}
+
+.tool-buttons .button {
+  flex: 1;
+  font-size: 0.8em;
+  padding: 0.3em 0.4em;
+  min-width: 0;
+}
+
+.analysis-moves {
+  padding: 0.5em;
+  overflow-y: auto;
+  flex: 1 1 0;
+}
+
+.analysis-empty {
+  color: var(--c-font-dim);
+  font-size: 0.85em;
+  padding: 0.5em;
+}
+
+.moves-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.moves-table thead th {
+  font-size: 0.85em;
+  color: var(--c-font-dim);
+  font-weight: normal;
+  text-align: left;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.moves-col-num {
+  width: 2.2em;
+  text-align: right;
+  padding-right: 6px;
+  color: var(--c-font-dim);
+  font-size: 0.9em;
+  vertical-align: middle;
+}
+
+.moves-col-black,
+.moves-col-white {
+  width: 50%;
+  padding: 2px;
+}
+
+.moves-table tbody tr:nth-child(even) {
+  background: var(--c-bg-zebra);
+}
+
+.move-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--c-font);
+  width: 100%;
+  text-align: left;
+}
+
+.move-entry:hover {
+  background: var(--c-bg-zebra);
+}
+
+.move-entry.active {
+  background: var(--c-accent);
+  color: #fff;
+  border-color: var(--c-accent);
+}
+
+.move-branches {
+  font-size: 0.9em;
+  opacity: 0.6;
+}
+
+.score-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  font-size: 0.85em;
+  padding: 0.3em 0;
+}

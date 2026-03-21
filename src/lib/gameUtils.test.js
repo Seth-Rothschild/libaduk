@@ -253,21 +253,31 @@ describe('emptyShiftMap', () => {
 
 describe('computeVertexSize', () => {
   it('returns 24 when container width is 0', () => {
-    expect(computeVertexSize(0, 19)).toBe(24);
+    expect(computeVertexSize(0, 0, 19)).toBe(24);
   });
 
   it('returns 24 when container width is negative', () => {
-    expect(computeVertexSize(-100, 19)).toBe(24);
+    expect(computeVertexSize(-100, 0, 19)).toBe(24);
   });
 
-  it('divides width by board size plus margin', () => {
-    const result = computeVertexSize(500, 19);
+  it('divides width by board size plus margin when no height', () => {
+    const result = computeVertexSize(500, 0, 19);
     expect(result).toBe(Math.floor(500 / 19.8));
   });
 
+  it('uses height when smaller than width', () => {
+    const result = computeVertexSize(500, 300, 19);
+    expect(result).toBe(Math.floor(300 / 19.8));
+  });
+
+  it('uses width when smaller than height', () => {
+    const result = computeVertexSize(300, 500, 19);
+    expect(result).toBe(Math.floor(300 / 19.8));
+  });
+
   it('scales with board size', () => {
-    const small = computeVertexSize(500, 9);
-    const large = computeVertexSize(500, 19);
+    const small = computeVertexSize(500, 0, 9);
+    const large = computeVertexSize(500, 0, 19);
     expect(small).toBeGreaterThan(large);
   });
 });

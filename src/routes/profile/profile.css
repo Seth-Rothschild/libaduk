@@ -1,0 +1,425 @@
+/* =============================================================
+   profile.css — all styles for the user profile page.
+
+   Replaces: src/lib/css/layout/_page-menu.scss
+             src/lib/css/page/_sub-rating.scss
+             src/lib/css/page/_user-show.scss
+             src/lib/css/component/_number-menu.scss
+             src/lib/css/game/_row.scss (profile context)
+   ============================================================= */
+
+/* -------------------------------------------------------------
+   .page-menu — two-column grid: sidebar + content
+   col1 (default): stacked
+   col2 (≥800px):  sidebar left, content right
+   ------------------------------------------------------------- */
+
+.page-menu {
+  display: grid;
+  grid-template-areas: 'menu' 'content';
+}
+
+@media (min-width: 799.3px) {
+  .page-menu {
+    grid-template-columns: max-content auto;
+    grid-template-rows: min-content;
+    grid-template-areas: 'menu content';
+  }
+}
+
+.page-menu__menu {
+  grid-area: menu;
+}
+
+.page-menu__content {
+  grid-area: content;
+  height: 100%;
+}
+
+.page-menu__content.box {
+  min-height: 100%;
+}
+
+/* -------------------------------------------------------------
+   .sub-ratings — category sidebar (Bullet / Blitz / Rapid…)
+   ------------------------------------------------------------- */
+
+.sub-ratings a {
+  border-radius: 6px 0 0 6px;
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  color: var(--c-font-page);
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+  padding: 0.7em var(---block-gap, 10px) 0.7em 0.4em;
+  transition: background 150ms ease;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.sub-ratings a.empty {
+  opacity: 0.5;
+}
+
+.sub-ratings a::before {
+  font-size: 3em;
+  opacity: 0.5;
+  margin-inline-end: 0.2em;
+  transition:
+    opacity 150ms ease,
+    color 150ms ease;
+}
+
+.sub-ratings a[href]:hover {
+  background: var(--m-bg-page_bg--mix-50);
+}
+
+.sub-ratings a[href]:hover::before {
+  color: var(--c-link);
+  opacity: 0.7;
+}
+
+.sub-ratings a.active {
+  box-shadow:
+    0 2px 2px 0 rgba(0, 0, 0, 0.14),
+    0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+  background: var(--c-bg-box);
+}
+
+.sub-ratings a.active::before {
+  color: var(--c-accent);
+  opacity: 0.7;
+}
+
+.sub-ratings a > span {
+  flex: 1 1 100%;
+  display: flex;
+  flex-flow: column;
+  margin-inline-end: 0.5em;
+}
+
+.sub-ratings hr {
+  margin: var(---block-gap, 10px) auto;
+  width: 80%;
+}
+
+.sub-ratings h3 {
+  font-family: Roboto, sans-serif;
+  font-weight: 300;
+  font-size: 1.1em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+  display: inline-block;
+}
+
+.sub-ratings strong {
+  color: var(--c-font-dim);
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
+/* Narrow nav (< 1020px): collapse to icon-only */
+@media (max-width: 1019.29px) {
+  .sub-ratings a {
+    padding: 0.3em;
+  }
+
+  .sub-ratings a > i,
+  .sub-ratings h3,
+  .sub-ratings hr {
+    display: none;
+  }
+}
+
+/* Mobile (< 800px): horizontal grid across top */
+@media (max-width: 799.29px) {
+  .sub-ratings {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9ch, 1fr));
+  }
+
+  .sub-ratings hr {
+    display: none;
+  }
+
+  .sub-ratings a {
+    display: flex;
+    justify-content: center;
+  }
+
+  .sub-ratings a::before {
+    opacity: 0.8;
+    font-size: 1.5em;
+  }
+
+  .sub-ratings a > span {
+    flex: 0 0 auto;
+    margin-inline-end: 0;
+  }
+
+  .sub-ratings a strong {
+    font-weight: normal;
+  }
+}
+
+/* -------------------------------------------------------------
+   .user-show — profile box
+   ------------------------------------------------------------- */
+
+.user-show {
+  overflow: hidden;
+}
+
+.user-show__header {
+  background: var(--c-bg-zebra);
+  padding: 2em 1.5em;
+  display: flex;
+  align-items: center;
+}
+
+.user-show__header h1 {
+  flex: 0 0 auto;
+  font-size: 2em;
+  margin: 0;
+}
+
+.user-show__header .connected {
+  color: var(--c-good);
+}
+
+.user-show .number-menu .to-games.active,
+.user-show #games.number-menu {
+  background: var(--c-bg-low) !important;
+}
+
+.user-show .angles {
+  background: linear-gradient(to bottom, var(--c-metal-top), var(--c-metal-bottom));
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+  font-size: 1.2em;
+  height: 4rem;
+  border-top: 1px solid var(--c-border);
+}
+
+.user-show .angles .nm-item {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: center;
+}
+
+/* -------------------------------------------------------------
+   .number-menu — horizontal stat bar / tab row
+   ------------------------------------------------------------- */
+
+.number-menu {
+  user-select: none;
+  display: flex;
+}
+
+.number-menu .nm-item {
+  font-family: Roboto, sans-serif;
+  font-weight: 300;
+  flex: 1 1 auto;
+  color: var(--c-font);
+  text-align: center;
+  line-height: 1.4em;
+  padding: 0.5em 5px;
+  text-transform: capitalize;
+  white-space: normal;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.number-menu .nm-item:hover {
+  color: var(--c-link);
+}
+
+.number-menu--tabs .nm-item {
+  border-radius: 6px 6px 0 0;
+  margin-top: 0.7em;
+  padding-bottom: 0.8em;
+  transition: background 150ms ease;
+  border: 1px solid transparent;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.number-menu--tabs .nm-item:first-child {
+  border-top-left-radius: 0;
+  border-inline-start: 0 !important;
+}
+
+.number-menu--tabs .nm-item:last-child {
+  border-top-right-radius: 0;
+  border-inline-end: 0 !important;
+}
+
+.number-menu--tabs .nm-item:hover {
+  background: var(--m-primary_bg--mix-10);
+  color: var(--c-font-clear);
+}
+
+.number-menu--tabs .nm-item.active {
+  color: var(--c-font-clear);
+  border: 1px solid var(--c-border);
+  border-bottom-color: transparent;
+  background: var(--c-bg-box);
+}
+
+.number-menu strong {
+  font-weight: normal;
+  font-size: 1.1em;
+}
+
+/* -------------------------------------------------------------
+   .game-row — single game entry in the history list
+   ------------------------------------------------------------- */
+
+.game-row {
+  display: flex;
+  align-items: stretch;
+  min-height: 17rem;
+  padding: 0.5em 1em;
+  border-bottom: 1px solid var(--c-border);
+  position: relative;
+  transition: background 150ms ease;
+}
+
+.game-row:nth-child(odd) {
+  background: var(--c-bg-zebra);
+}
+
+.game-row:hover {
+  background: var(--m-primary_bg--mix-20);
+}
+
+.game-row__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.game-row__board {
+  flex: 0 0 16rem;
+  margin-inline-end: 0;
+}
+
+@media (max-width: 799.29px) {
+  .game-row__board {
+    display: none;
+  }
+}
+
+.game-row__infos {
+  flex: 1 1 100%;
+  display: flex;
+  flex-flow: column;
+  justify-content: space-between;
+  margin: 0.5em 0;
+  overflow: hidden;
+}
+
+.game-row .header {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+}
+
+.game-row .header::before {
+  font-size: 1.5em;
+  opacity: 0.7;
+  margin-inline-end: 0.7rem;
+}
+
+@media (min-width: 799.3px) {
+  .game-row .header::before {
+    font-size: 3em;
+  }
+}
+
+.game-row .header__text strong {
+  font-family: Roboto, sans-serif;
+  font-weight: normal;
+  font-size: 1.4em;
+  text-transform: uppercase;
+  display: block;
+}
+
+.game-row .versus {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  column-gap: 1.5em;
+}
+
+.game-row .versus .swords {
+  text-align: center;
+  font-size: 2em;
+  opacity: 0.7;
+}
+
+.game-row .versus .player {
+  width: 100%;
+  font-size: 1.3em;
+  text-align: right;
+}
+
+.game-row .versus .player.black {
+  text-align: left;
+}
+
+.game-row .versus a {
+  font-weight: bold;
+  position: relative;
+  z-index: 3;
+}
+
+.game-row .result {
+  display: block;
+  text-align: center;
+}
+
+.game-row .win {
+  color: var(--c-good);
+}
+
+.game-row .loss {
+  color: var(--c-bad);
+}
+
+@media (max-width: 399.29px) {
+  .game-row .versus {
+    column-gap: 1em;
+  }
+
+  .game-row .versus .swords {
+    font-size: 1.5em;
+  }
+}
+
+/* -------------------------------------------------------------
+   Profile page utilities
+   ------------------------------------------------------------- */
+
+.no-games {
+  padding: 2em;
+  text-align: center;
+  color: var(--c-font-dim);
+}
+
+.mini-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.mini-board > div {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}

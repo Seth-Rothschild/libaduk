@@ -58,6 +58,18 @@ html {
   --m-bg--fade-50: hsla(37, 7%, 14%, 0.5);
   --m-secondary--fade-60: hsla(88, 62%, 37%, 0.4);
 
+  /* — game + chat — */
+  --c-secondary: hsl(88, 62%, 43%);
+  --c-secondary-dim: rgb(91.34576, 142.1064, 33.3336);
+  --c-bg-low: hsl(37, 7%, 22%);
+  --c-bg-zebra2: hsl(37, 5%, 24%);
+  --c-font-clear: hsl(0, 0%, 80%);
+  --c-font-dimmer: hsl(0, 0%, 42%);
+  --m-secondary_bg--mix-30: hsl(84, 35%, 21%);
+  --m-bad_bg--mix-25: hsl(3, 36%, 23%);
+  --m-bad_bg--mix-50: hsl(1, 48%, 32%);
+  --m-accent_bg--mix-15: hsl(24, 39%, 18%);
+
   /* — unused — available when needed */
   /*
   --c-accent-clear:               rgb(171.36, 62.832, 0);
@@ -353,6 +365,18 @@ html.light {
   --m-accent--fade-80: hsla(22, 100%, 42%, 0.2);
   --m-bg--fade-50: hsla(0, 0%, 100%, 0.5);
   --m-secondary--fade-60: hsla(88, 62%, 37%, 0.4);
+
+  /* — game + chat — */
+  --c-secondary: hsl(88, 62%, 43%);
+  --c-secondary-dim: rgb(142.34576, 193.1064, 84.3336);
+  --c-bg-low: hsl(0, 0%, 89%);
+  --c-bg-zebra2: hsl(37, 12%, 92%);
+  --c-font-clear: hsl(0, 0%, 12%);
+  --c-font-dimmer: hsl(0, 0%, 70%);
+  --m-secondary_bg--mix-30: hsl(88, 36%, 81%);
+  --m-bad_bg--mix-25: hsl(0, 60%, 88%);
+  --m-bad_bg--mix-50: hsl(0, 60%, 75%);
+  --m-accent_bg--mix-15: hsl(22, 72%, 91%);
 
   /* — unused — available when needed */
   /*

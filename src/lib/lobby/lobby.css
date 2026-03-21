@@ -410,3 +410,389 @@ html.light .lpool {
     padding: 0.5em;
   }
 }
+
+/* =============================================================
+   Game setup modal (.game-setup)
+   Replaces: src/lib/css/lobby/_setup.scss
+   ============================================================= */
+
+.game-setup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  width: 42rem;
+  max-width: 96vw;
+  max-height: 96vh;
+  padding: 0;
+  overflow: visible;
+  color: var(--c-font);
+  background: var(--c-bg-box);
+  border: none;
+  border-radius: 6px;
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.25),
+    0 10px 10px rgba(0, 0, 0, 0.22);
+}
+
+.game-setup::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.game-setup .scrollable {
+  max-height: calc(100vh - 32px);
+  overflow-x: clip;
+  overflow-y: auto;
+}
+
+.game-setup .close-button-anchor {
+  position: relative;
+  width: 100%;
+  height: 0;
+}
+
+.game-setup .close-button {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  transform: translate(18px, -18px);
+  width: 32px;
+  height: 32px;
+  background: var(--c-bg-box);
+  color: var(--c-font);
+  border-radius: 50%;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.game-setup .close-button:hover {
+  background: var(--c-bad);
+  color: #fff;
+}
+
+.game-setup h2 {
+  margin: 2rem 1.5rem;
+}
+
+.game-setup .setup-content {
+  display: flex;
+  flex-direction: column;
+  border-block: 1px solid var(--c-border);
+  padding: 1.8rem 1.2rem;
+  gap: 1.8rem;
+  background: var(--c-bg-zebra);
+}
+
+.game-setup .config-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.game-setup .config-group .label {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--c-font);
+}
+
+/* Time control tabs */
+.game-setup .time-control-tabs .tabs-horiz {
+  border-bottom: 1px solid var(--c-border);
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.game-setup .time-control-tabs .tabs-horiz button.active,
+.game-setup .time-control-tabs .tabs-horiz button:hover {
+  border-color: var(--c-secondary);
+}
+
+.game-setup .time-control-tabs .tabs-horiz button.active {
+  color: var(--c-secondary);
+}
+
+/* Range inputs styled green */
+.game-setup .time-control-tabs .range {
+  appearance: auto;
+  accent-color: var(--c-secondary);
+}
+
+/* Numeric value pill */
+.game-setup .val-box {
+  background: var(--c-font-dim);
+  color: var(--c-bg-box);
+  padding: 0.1rem 0.5rem;
+  border-radius: 3px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 2.5rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Fischer two-column layout */
+.game-setup .sliders-grid {
+  display: grid;
+  grid-template-columns: 1fr 3ch 1fr;
+  align-items: start;
+}
+
+.game-setup .slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.game-setup .slider-container .label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-setup .slider-container .label-row label {
+  font-size: 0.85rem;
+  color: var(--c-font-dim);
+}
+
+.game-setup .slider-container .range {
+  width: 100%;
+  padding: 0;
+}
+
+.game-setup .slider-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: var(--c-font-dim);
+  padding-top: 1.5rem;
+}
+
+/* Byo-yomi vertical layout */
+.game-setup .time-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.game-setup .time-panel .sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.game-setup .time-panel .slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.game-setup .time-panel .slider-row .slider-label {
+  flex: 0 0 160px;
+  font-size: 0.85rem;
+  color: var(--c-font-dim);
+}
+
+.game-setup .time-panel .slider-row .range {
+  flex: 1;
+  min-width: 60px;
+}
+
+/* Presets row */
+.game-setup .presets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.game-setup .preset-btn {
+  border-radius: 6px;
+  color: var(--c-font-dim);
+  padding: 0.2rem 0.5rem;
+  font-size: 0.9rem;
+  background: var(--c-bg-low);
+}
+
+.game-setup .preset-btn:hover {
+  background: var(--c-bg-zebra2);
+  color: var(--c-font-clear);
+}
+
+.game-setup .preset-btn:focus-visible {
+  outline: 2px solid var(--c-primary);
+}
+
+.game-setup .preset-btn.active {
+  background: var(--c-secondary);
+  color: #000;
+}
+
+.game-setup .unlimited-label {
+  text-align: center;
+  color: var(--c-font-dim);
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+
+/* Board size selector */
+.game-setup .size-choices {
+  display: flex;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.15),
+    0 4px 8px rgba(0, 0, 0, 0.1),
+    0 2px 5px 0 rgba(0, 0, 0, 0.225);
+}
+
+.game-setup .size-choice {
+  background: linear-gradient(to bottom, var(--c-metal-top), var(--c-metal-bottom));
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  padding: 0.6rem 1rem;
+  border-inline-end: 1px solid var(--c-border);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.game-setup .size-choice:last-child {
+  border-inline-end: 0;
+}
+
+.game-setup .size-choice.active {
+  background: var(--c-accent);
+  color: #fff;
+  text-shadow: 0 1px 1px black;
+  box-shadow: 0 3px 4px rgba(0, 0, 0, 0.15) inset;
+}
+
+.game-setup .size-choice:hover:not(.active) {
+  background: linear-gradient(to bottom, var(--c-metal-top-hover), var(--c-metal-bottom-hover));
+}
+
+/* Color picker */
+.game-setup .color-choices {
+  display: flex;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.15),
+    0 4px 8px rgba(0, 0, 0, 0.1),
+    0 2px 5px 0 rgba(0, 0, 0, 0.225);
+}
+
+.game-setup .color-choice {
+  background: linear-gradient(to bottom, var(--c-metal-top), var(--c-metal-bottom));
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  align-items: center;
+  padding: 0.75rem;
+  border-inline-end: 1px solid var(--c-border);
+  cursor: pointer;
+}
+
+.game-setup .color-choice:last-child {
+  border-inline-end: 0;
+}
+
+.game-setup .color-choice.active {
+  background: var(--c-accent);
+  color: #fff;
+  text-shadow: 0 1px 1px black;
+  box-shadow: 0 3px 4px rgba(0, 0, 0, 0.15) inset;
+}
+
+.game-setup .color-choice:hover:not(.active) {
+  background: linear-gradient(to bottom, var(--c-metal-top-hover), var(--c-metal-bottom-hover));
+}
+
+.game-setup .color-choice .text {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+/* Stone images in the color picker */
+.game-setup .color-picker__button {
+  --stone-size: 32px;
+}
+
+.game-setup .color-picker__button i {
+  display: block;
+  width: var(--stone-size);
+  height: var(--stone-size);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: 50%;
+}
+
+.game-setup .color-picker__button.white i {
+  background-image: url('/images/go/stone_-1.svg');
+}
+.game-setup .color-picker__button.black i {
+  background-image: url('/images/go/stone_1.svg');
+}
+.game-setup .color-picker__button.random i {
+  background: conic-gradient(#e8e8e8 180deg, #222 180deg);
+  border-radius: 50%;
+}
+
+/* Footer */
+.game-setup .footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 1.5rem;
+}
+
+.game-setup .lobby__start__button {
+  height: 3rem;
+  padding-inline: 1rem 1.2rem;
+  gap: 0.8rem;
+  color: var(--c-font);
+  border: 1px solid var(--c-border);
+}
+
+.game-setup .lobby__start__button::before {
+  color: var(--c-secondary) !important;
+}
+
+.game-setup .footer .spinner {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+}
+
+.game-setup .disabled {
+  opacity: 0.4;
+  cursor: default !important;
+}
+
+@media (max-height: 900px) {
+  .game-setup h2 {
+    margin-block: 1.1rem;
+  }
+
+  .game-setup .footer {
+    padding: 1.1rem;
+  }
+
+  .game-setup .setup-content {
+    padding: 1.25rem 0.75rem;
+  }
+}

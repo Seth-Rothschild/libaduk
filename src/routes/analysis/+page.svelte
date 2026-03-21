@@ -3,9 +3,9 @@
   import GoBoardLib from '@sabaki/go-board';
   import influence from '@sabaki/influence';
   import { nameMove } from '@sabaki/boardmatcher';
-  import GoBoard from '$lib/GoBoard.svelte';
-  import PlayerStrip from '$lib/PlayerStrip.svelte';
-  import NavigationButtons from '$lib/NavigationButtons.svelte';
+  import GoBoard from '$lib/game/GoBoard.svelte';
+  import PlayerStrip from '$lib/game/PlayerStrip.svelte';
+  import NavigationButtons from '$lib/game/NavigationButtons.svelte';
   import { page } from '$app/state';
   import { boardState } from '$lib/boardState.svelte.js';
   import {
@@ -83,13 +83,14 @@
   let version = $state(0);
   let animatedVertex = $state(null);
   let boardContainerWidth = $state(0);
+  let boardContainerHeight = $state(0);
 
   let tool = $state('stone');
   let blackName = $state('Black');
   let whiteName = $state('White');
 
   const currentSign = $derived(currentNode.signToPlay);
-  const vertexSize = $derived(computeVertexSize(boardContainerWidth, SIZE));
+  const vertexSize = $derived(computeVertexSize(boardContainerWidth, boardContainerHeight, SIZE));
 
   const signMap = $derived(currentNode.board.signMap);
   const blackCaptures = $derived(currentNode.board.getCaptures(1));
@@ -533,7 +534,11 @@
   <div class="round__app">
     <div class="round__app__table"></div>
 
-    <div class="round__app__board" bind:clientWidth={boardContainerWidth}>
+    <div
+      class="round__app__board"
+      bind:clientWidth={boardContainerWidth}
+      bind:clientHeight={boardContainerHeight}
+    >
       <GoBoard
         {signMap}
         lastMove={currentNode.lastMove}

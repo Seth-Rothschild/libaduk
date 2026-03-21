@@ -1,5 +1,5 @@
 <script>
-  import GoBoard from '$lib/GoBoard.svelte';
+  import GoBoard from '$lib/game/GoBoard.svelte';
   import { replayMoves } from '$lib/gameLogic.svelte.js';
 
   let { data } = $props();
@@ -299,24 +299,3 @@
     </div>
   </div>
 </main>
-
-<style>
-  .no-games {
-    padding: 2em;
-    text-align: center;
-    color: var(--c-font-dim);
-  }
-
-  .mini-board {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  .mini-board :global(> div) {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-  }
-</style>

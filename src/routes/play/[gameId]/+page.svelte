@@ -4,26 +4,27 @@
   import { page } from '$app/state';
   import influence from '@sabaki/influence';
   import GoBoardLib from '@sabaki/go-board';
-  import GoBoard from '$lib/GoBoard.svelte';
-  import Clock from '$lib/Clock.svelte';
-  import PlayerStrip from '$lib/PlayerStrip.svelte';
-  import NavigationButtons from '$lib/NavigationButtons.svelte';
-  import ScoreBreakdown from '$lib/ScoreBreakdown.svelte';
+  import GoBoard from '$lib/game/GoBoard.svelte';
+  import Clock from '$lib/game/Clock.svelte';
+  import PlayerStrip from '$lib/game/PlayerStrip.svelte';
+  import NavigationButtons from '$lib/game/NavigationButtons.svelte';
   import { gameSocket } from '$lib/socket.svelte.js';
   import { boardState } from '$lib/boardState.svelte.js';
   import { getGuestId } from '$lib/guestId.js';
   import { GameState } from '$lib/gameLogic.svelte.js';
-  import GameChat from '$lib/GameChat.svelte';
+  import GameChat from '$lib/game/GameChat.svelte';
+  import GameMeta from '$lib/game/GameMeta.svelte';
+  import GameStatusMessage from '$lib/game/GameStatusMessage.svelte';
+  import GameControls from '$lib/game/GameControls.svelte';
+  import AnalysisMoves from '$lib/game/AnalysisMoves.svelte';
+  import AnalysisControls from '$lib/game/AnalysisControls.svelte';
   import {
     colorName,
     computeScore,
     buildScoreBoard,
     toggleDeadStones,
-    formatCorrDeadline,
     computeVertexSize,
-    formatVertex,
-    emptyMarkerMap,
-    scoreVerdictShort
+    emptyMarkerMap
   } from '$lib/gameUtils.js';
 
   let { data } = $props();
@@ -37,6 +38,7 @@
   const isLocal = $derived(data.game.gameType === 'local');
 
   let boardContainerWidth = $state(0);
+  let boardContainerHeight = $state(0);
   let chatMessages = $state(data.chat ?? []);
 
   function handleChatSend(text) {
@@ -46,7 +48,9 @@
 
   let gs = $state(new GameState({ isLocal, onNavigate: goto }));
 
-  const vertexSize = $derived(computeVertexSize(boardContainerWidth, gs.boardSize));
+  const vertexSize = $derived(
+    computeVertexSize(boardContainerWidth, boardContainerHeight, gs.boardSize)
+  );
   const displayBoard = $derived(gs.viewBoard);
   const signMap = $derived(displayBoard.signMap);
   const blackCaptures = $derived(displayBoard.getCaptures(1));
@@ -553,40 +557,17 @@
 
 <div class="round">
   <aside class="round__side">
-    <div class="game__meta">
-      <section>
-        <div class="game__meta__infos" data-icon="&#xe015;">
-          <div class="setup">Casual &bull; {gs.boardSize}&times;{gs.boardSize} &bull; Go</div>
-        </div>
-        <div class="game__meta__players">
-          <div class="player color-icon is black text">
-            {resolvePlayerName('black')}
-          </div>
-          <div class="player color-icon is white text">
-            {resolvePlayerName('white')}
-          </div>
-        </div>
-      </section>
-      {#if gs.status === 'gameover'}
-        <section class="status">
-          {#if isLocal || isSpectator}
-            {gs.winner === 1 ? 'Black' : 'White'} wins{gs.winnerResult
-              ? ` — ${gs.winnerResult}`
-              : ''}.
-          {:else if gs.winnerResult}
-            {gs.winnerResult} &mdash; {gs.winner === mySign ? 'You win!' : 'You lose.'}
-          {:else}
-            {gs.winner === mySign ? 'You win!' : 'You lose.'}
-          {/if}
-        </section>
-      {/if}
-      {#if gs.status === 'abandoned'}
-        <section class="status">{isSpectator ? 'A player left.' : 'Opponent left.'}</section>
-      {/if}
-      {#if gs.status === 'aborted'}
-        <section class="status">Game aborted.</section>
-      {/if}
-    </div>
+    <GameMeta
+      boardSize={gs.boardSize}
+      status={gs.status}
+      winner={gs.winner}
+      winnerResult={gs.winnerResult}
+      {mySign}
+      {isLocal}
+      {isSpectator}
+      blackName={resolvePlayerName('black')}
+      whiteName={resolvePlayerName('white')}
+    />
     <GameChat
       {username}
       {gameId}
@@ -604,7 +585,11 @@
       <div class="connection-lost">Reconnecting&hellip;</div>
     {/if}
 
-    <div class="round__app__board" style="overflow: hidden;" bind:clientWidth={boardContainerWidth}>
+    <div
+      class="round__app__board"
+      bind:clientWidth={boardContainerWidth}
+      bind:clientHeight={boardContainerHeight}
+    >
       {#if analysisMode}
         <GoBoard
           signMap={analysisSignMap}
@@ -659,291 +644,81 @@
 
     <div class="rmoves">
       {#if analysisMode}
-        <div class="analysis-moves">
-          {#if analysisMoveRows.length > 0}
-            <table class="moves-table">
-              <thead>
-                <tr>
-                  <th class="moves-col-num"></th>
-                  <th class="moves-col-black">Black</th>
-                  <th class="moves-col-white">White</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each analysisMoveRows as row}
-                  <tr>
-                    <td class="moves-col-num">{row.moveNum}.</td>
-                    <td class="moves-col-black">
-                      <button
-                        class="move-entry"
-                        class:active={row.black === analysisNode}
-                        onclick={() => {
-                          const path = [];
-                          let n = row.black;
-                          while (n.parent) {
-                            path.unshift(n);
-                            n = n.parent;
-                          }
-                          analysisNode = row.black;
-                        }}
-                      >
-                        {formatVertex(row.black.lastMove, gs.boardSize)}
-                        {#if row.black.children.length > 1}
-                          <span class="move-branches">⑂</span>
-                        {/if}
-                      </button>
-                    </td>
-                    <td class="moves-col-white">
-                      {#if row.white}
-                        <button
-                          class="move-entry"
-                          class:active={row.white === analysisNode}
-                          onclick={() => {
-                            analysisNode = row.white;
-                          }}
-                        >
-                          {formatVertex(row.white.lastMove, gs.boardSize)}
-                          {#if row.white.children.length > 1}
-                            <span class="move-branches">⑂</span>
-                          {/if}
-                        </button>
-                      {/if}
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          {:else}
-            <div class="analysis-empty">Click the board to start analyzing</div>
-          {/if}
-        </div>
-      {:else if gs.isViewingHistory}
-        <div class="history-indicator">
-          Move {gs.currentViewPly} of {gs.totalPly}
-        </div>
-      {/if}
-      {#if !analysisMode && gs.status === 'waiting'}
-        <div class="message" data-icon={ICON_INFO}>
-          <div>
-            {#if isLocal}
-              <strong>{gs.currentSign === 1 ? 'Black' : 'White'}</strong> to move<br />
-            {:else if isSpectator}
-              Waiting for players...
-            {:else}
-              You are <strong>{myColor}</strong><br />
-              Share this link to invite a friend.
-            {/if}
-          </div>
-        </div>
-      {:else if !analysisMode && gs.status === 'playing'}
-        <div class="message" data-icon={ICON_INFO}>
-          <div>
-            {#if isLocal}
-              <strong>{gs.currentSign === 1 ? 'Black' : 'White'}</strong>'s turn
-            {:else if isSpectator}
-              Spectating<br />{gs.currentSign === 1 ? 'Black' : 'White'} to play
-            {:else if isMyTurn}
-              You play the {myColor} stones<br /><strong>It's your turn!</strong>
-            {:else}
-              Waiting for opponent...
-            {/if}
-            {#if isCorrGame && gs.corrState?.turnDeadline}
-              <br /><span class="corr-deadline"
-                >{formatCorrDeadline(gs.corrState.turnDeadline)}</span
-              >
-            {/if}
-          </div>
-        </div>
-      {:else if !analysisMode && gs.status === 'scoring'}
-        <div class="message" data-icon={ICON_INFO}>
-          <div>
-            Counting territory<br />
-            <strong>Click stones to mark dead</strong>
-          </div>
-        </div>
-        <ScoreBreakdown
+        <AnalysisMoves
+          {analysisMoveRows}
+          {analysisNode}
+          boardSize={gs.boardSize}
+          onSelectNode={(node) => (analysisNode = node)}
+        />
+      {:else}
+        {#if gs.isViewingHistory}
+          <div class="history-indicator">Move {gs.currentViewPly} of {gs.totalPly}</div>
+        {/if}
+        <GameStatusMessage
+          status={gs.status}
+          {isLocal}
+          {isSpectator}
+          {isMyTurn}
+          {myColor}
+          {mySign}
+          currentSign={gs.currentSign}
+          {isCorrGame}
+          corrDeadline={gs.corrState?.turnDeadline}
           {score}
           komi={KOMI}
           blackApproved={gs.blackApproved}
           whiteApproved={gs.whiteApproved}
-          showApprovals={true}
+          winner={gs.winner}
+          winnerResult={gs.winnerResult}
+          finalScore={gs.finalScore}
         />
-      {:else if !analysisMode && gs.status === 'gameover'}
-        <div class="message" data-icon={ICON_INFO}>
-          <div>
-            {#if isLocal || isSpectator}
-              {gs.winner === 1 ? 'Black' : 'White'} wins
-            {:else}
-              {gs.winner === mySign ? 'You win' : 'You lose'}
-            {/if}
-            {#if gs.winnerResult}
-              <br />{gs.winnerResult}
-            {:else if gs.finalScore}
-              <br />{gs.finalScore.blackScore.toFixed(1)} &ndash; {gs.finalScore.whiteScore.toFixed(
-                1
-              )}
-            {:else}
-              <br />by resignation
-            {/if}
-          </div>
-        </div>
-      {:else if !analysisMode && gs.status === 'abandoned'}
-        <div class="message" data-icon={ICON_INFO}>
-          <div>
-            {isSpectator ? 'A player has left the game.' : 'Your opponent has left the game.'}
-          </div>
-        </div>
-      {:else if !analysisMode && gs.status === 'aborted'}
-        <div class="message" data-icon={ICON_INFO}>
-          <div>This game was aborted.</div>
-        </div>
       {/if}
     </div>
 
     <div class="rcontrols">
       {#if analysisMode}
-        {#if analysisStatus === 'scoring'}
-          <button class="button button-green" onclick={analysisStopScoring}>Back to analysis</button
-          >
-          {#if analysisScore}
-            <div class="score-display">
-              <span class="color-icon is black text">{analysisScore.blackArea}</span>
-              <span class="color-icon is white text"
-                >{analysisScore.whiteArea} + {KOMI} = {analysisScore.whiteScore.toFixed(1)}</span
-              >
-              <strong>{scoreVerdictShort(analysisScore)}</strong>
-            </div>
-          {/if}
-        {:else}
-          <div class="tool-buttons">
-            <button
-              class="button"
-              class:button-green={analysisTool === 'stone'}
-              class:button-metal={analysisTool !== 'stone'}
-              onclick={() => (analysisTool = 'stone')}
-              title="Place stones">Stone</button
-            >
-            <button
-              class="button"
-              class:button-green={analysisTool === 'cross'}
-              class:button-metal={analysisTool !== 'cross'}
-              onclick={() => (analysisTool = 'cross')}
-              title="Mark X">✕</button
-            >
-            <button
-              class="button"
-              class:button-green={analysisTool === 'circle'}
-              class:button-metal={analysisTool !== 'circle'}
-              onclick={() => (analysisTool = 'circle')}
-              title="Mark circle">◯</button
-            >
-            <button
-              class="button"
-              class:button-green={analysisTool === 'square'}
-              class:button-metal={analysisTool !== 'square'}
-              onclick={() => (analysisTool = 'square')}
-              title="Mark square">⬜</button
-            >
-            <button
-              class="button"
-              class:button-green={analysisTool === 'triangle'}
-              class:button-metal={analysisTool !== 'triangle'}
-              onclick={() => (analysisTool = 'triangle')}
-              title="Mark triangle">△</button
-            >
-            <button
-              class="button"
-              class:button-green={analysisTool === 'label'}
-              class:button-metal={analysisTool !== 'label'}
-              onclick={() => (analysisTool = 'label')}
-              title="Label (A, B, C...)">A</button
-            >
-            <button
-              class="button"
-              class:button-green={analysisTool === 'number'}
-              class:button-metal={analysisTool !== 'number'}
-              onclick={() => (analysisTool = 'number')}
-              title="Number (1, 2, 3...)">1</button
-            >
-          </div>
-          <button class="button button-metal" onclick={analysisStartScoring}>Score</button>
-          <button
-            class="button"
-            class:button-green={analysisShowEstimate}
-            class:button-metal={!analysisShowEstimate}
-            onclick={() => (analysisShowEstimate = !analysisShowEstimate)}>Estimate</button
-          >
-          {#if analysisEstimatedScore}
-            <div class="score-display">
-              <span class="color-icon is black text">{analysisEstimatedScore.blackArea}</span>
-              <span class="color-icon is white text"
-                >{analysisEstimatedScore.whiteArea} + {KOMI} = {analysisEstimatedScore.whiteScore.toFixed(
-                  1
-                )}</span
-              >
-              <strong>{scoreVerdictShort(analysisEstimatedScore)}</strong>
-            </div>
-          {/if}
-        {/if}
-        <button
-          class="button button-metal"
-          onclick={() => {
+        <AnalysisControls
+          {analysisTool}
+          {analysisStatus}
+          {analysisScore}
+          {analysisEstimatedScore}
+          {analysisShowEstimate}
+          onSetTool={(tool) => (analysisTool = tool)}
+          onStartScoring={analysisStartScoring}
+          onStopScoring={analysisStopScoring}
+          onToggleEstimate={() => (analysisShowEstimate = !analysisShowEstimate)}
+          onExit={() => {
             analysisMode = false;
             analysisNode = null;
             analysisStopScoring();
           }}
-        >
-          Back to game
-        </button>
+        />
       {:else if gs.status === 'gameover'}
         <button class="button button-metal analyze-btn" onclick={enterAnalysis} data-icon="&#xe01f;"
           >Analyze</button
         >
       {/if}
-      {#if !isSpectator && gs.status === 'waiting'}
-        <button class="button button-red" onclick={abort}>Abort</button>
-      {:else if !isSpectator && gs.status === 'playing'}
-        <button class="button button-metal" onclick={pass} disabled={!isMyTurn}>Pass</button>
-        <button class="button button-red" onclick={resign}>Resign</button>
-      {:else if !isSpectator && gs.status === 'scoring'}
-        {#if isLocal}
-          <button
-            class="button"
-            class:button-metal={!gs.blackApproved}
-            class:button-green={gs.blackApproved}
-            onclick={() => {
-              gs.blackApproved = true;
-              gameSocket.send({ type: 'approve_score', color: 'black', signMap: gs.board.signMap });
-            }}
-            disabled={gs.blackApproved}
-          >
-            {gs.blackApproved ? 'Black ✓' : 'Black accepts'}
-          </button>
-          <button
-            class="button"
-            class:button-metal={!gs.whiteApproved}
-            class:button-green={gs.whiteApproved}
-            onclick={() => {
-              gs.whiteApproved = true;
-              gameSocket.send({ type: 'approve_score', color: 'white', signMap: gs.board.signMap });
-            }}
-            disabled={gs.whiteApproved}
-          >
-            {gs.whiteApproved ? 'White ✓' : 'White accepts'}
-          </button>
-        {:else}
-          {@const myApproved = myColor === 'black' ? gs.blackApproved : gs.whiteApproved}
-          <button
-            class="button"
-            class:button-metal={!myApproved}
-            class:button-green={myApproved}
-            onclick={approveScore}
-            disabled={myApproved}
-          >
-            {myApproved ? 'Score accepted' : 'Accept score'}
-          </button>
-        {/if}
-      {/if}
+      <GameControls
+        status={gs.status}
+        {isSpectator}
+        {isMyTurn}
+        {isLocal}
+        {myColor}
+        blackApproved={gs.blackApproved}
+        whiteApproved={gs.whiteApproved}
+        onPass={pass}
+        onResign={resign}
+        onAbort={abort}
+        onApproveScore={approveScore}
+        onApproveBlack={() => {
+          gs.blackApproved = true;
+          gameSocket.send({ type: 'approve_score', color: 'black', signMap: gs.board.signMap });
+        }}
+        onApproveWhite={() => {
+          gs.whiteApproved = true;
+          gameSocket.send({ type: 'approve_score', color: 'white', signMap: gs.board.signMap });
+        }}
+      />
     </div>
 
     {#if analysisMode}
@@ -985,149 +760,3 @@
     {/if}
   </div>
 </div>
-
-<style>
-  .corr-deadline {
-    font-size: 0.85em;
-    color: var(--c-font-dim);
-  }
-
-  .analyze-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
-    text-decoration: none;
-  }
-
-  .analyze-btn::before {
-    font-size: 1.2em;
-  }
-
-  .history-indicator {
-    text-align: center;
-    padding: 0.3em;
-    font-size: 0.85em;
-    color: var(--c-font-dim);
-    background: var(--c-bg-zebra);
-    border-radius: 3px;
-    margin-bottom: 0.5em;
-  }
-
-  .tool-buttons {
-    display: flex;
-    gap: 0.3em;
-    flex-wrap: wrap;
-  }
-
-  .tool-buttons .button {
-    flex: 1;
-    font-size: 0.8em;
-    padding: 0.3em 0.4em;
-    min-width: 0;
-  }
-
-  .analysis-moves {
-    padding: 0.5em;
-    overflow-y: auto;
-    flex: 1 1 0;
-  }
-
-  .analysis-empty {
-    color: var(--c-font-dim);
-    font-size: 0.85em;
-    padding: 0.5em;
-  }
-
-  .moves-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9em;
-  }
-
-  .moves-table thead th {
-    font-size: 0.85em;
-    color: var(--c-font-dim);
-    font-weight: normal;
-    text-align: left;
-    padding: 4px 6px;
-    border-bottom: 1px solid var(--c-border);
-  }
-
-  .moves-col-num {
-    width: 2.2em;
-    text-align: right;
-    padding-right: 6px;
-    color: var(--c-font-dim);
-    font-size: 0.9em;
-    vertical-align: middle;
-  }
-
-  .moves-col-black,
-  .moves-col-white {
-    width: 50%;
-    padding: 2px;
-  }
-
-  .moves-table tbody tr:nth-child(even) {
-    background: var(--c-bg-zebra);
-  }
-
-  .move-entry {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 6px;
-    background: none;
-    border: 1px solid transparent;
-    border-radius: 3px;
-    cursor: pointer;
-    color: var(--c-font);
-    width: 100%;
-    text-align: left;
-  }
-
-  .move-entry:hover {
-    background: var(--c-bg-zebra2, var(--c-bg-zebra));
-  }
-
-  .move-entry.active {
-    background: var(--c-accent);
-    color: #fff;
-    border-color: var(--c-accent);
-  }
-
-  .move-branches {
-    font-size: 0.9em;
-    opacity: 0.6;
-  }
-
-  .score-display {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2em;
-    font-size: 0.85em;
-    padding: 0.3em 0;
-  }
-
-  .connection-lost {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 0.4em;
-    background: #b33;
-    color: #fff;
-    font-size: 0.85em;
-    font-weight: bold;
-    border-radius: 3px;
-    animation: pulse-bg 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse-bg {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.7;
-    }
-  }
-</style>

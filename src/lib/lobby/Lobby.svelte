@@ -1,6 +1,6 @@
 <script>
   import { goto } from '$app/navigation';
-  import GameSetupModal from '$lib/GameSetupModal.svelte';
+  import GameSetupModal from './GameSetupModal.svelte';
   import LobbyTabs from './LobbyTabs.svelte';
   import LobbyBackground from './LobbyBackground.svelte';
   import LobbyAbout from './LobbyAbout.svelte';

@@ -251,3 +251,70 @@ main.page-small {
   color: var(--c-accent);
   border-color: var(--c-accent);
 }
+
+/* -------------------------------------------------------------
+   .button — action buttons (primary, red, green, metal)
+   Ported from src/lib/css/component/_button.scss
+   ------------------------------------------------------------- */
+
+.button {
+  font-family: Roboto, sans-serif;
+  font-weight: 500;
+  font-size: inherit;
+  background: var(--c-primary);
+  color: var(--c-over);
+  text-transform: uppercase;
+  padding: 0.8em 1em;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  display: inline-block;
+  box-shadow: 0 2px 5px 0 hsla(0, 0%, 0%, 0.225);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+  user-select: none;
+  text-decoration: none;
+}
+
+.button:visited,
+.button:focus {
+  color: var(--c-over);
+}
+
+.button:not(.disabled):not([disabled]):hover {
+  box-shadow: 0 4px 10px 0 hsla(0, 0%, 0%, 0.225);
+  color: var(--c-over);
+}
+
+.button.button-green {
+  background: var(--c-secondary);
+}
+
+.button.button-red {
+  background: var(--c-bad);
+  color: #fff;
+}
+
+.button.button-red:not(.disabled):not([disabled]):hover {
+  color: #fff;
+}
+
+.button.button-metal {
+  background: linear-gradient(to bottom, var(--c-metal-top), var(--c-metal-bottom));
+  color: var(--c-font-dim);
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+}
+
+.button.button-metal:not(.disabled):not([disabled]):hover {
+  background: linear-gradient(to bottom, var(--c-metal-top-hover), var(--c-metal-bottom-hover));
+  color: var(--c-font-dim);
+}
+
+.button.disabled,
+.button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
