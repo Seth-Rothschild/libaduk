@@ -5,7 +5,6 @@
              app/hook-list (ported from SCSS to plain CSS).
    ============================================================= */
 
-
 /* -------------------------------------------------------------
    .lobby — page grid
    col1 (default): single column stack
@@ -53,11 +52,18 @@
   }
 }
 
-.lobby__side  { grid-area: side; }
-.lobby__app   { grid-area: app; }
-.lobby__table { grid-area: table; }
-.lobby__about { grid-area: about; }
-
+.lobby__side {
+  grid-area: side;
+}
+.lobby__app {
+  grid-area: app;
+}
+.lobby__table {
+  grid-area: table;
+}
+.lobby__about {
+  grid-area: about;
+}
 
 /* -------------------------------------------------------------
    .lobby__pools-wrap — container for the tab content area
@@ -73,7 +79,6 @@
     min-height: 538px;
   }
 }
-
 
 /* -------------------------------------------------------------
    .lobby-bg-circle — decorative Go stone ring behind pools
@@ -111,7 +116,6 @@
   }
 }
 
-
 /* -------------------------------------------------------------
    .lpools — pool card grid  (ported from app/_pool.scss)
    ------------------------------------------------------------- */
@@ -139,7 +143,6 @@
   letter-spacing: 0.05em;
   line-height: 1.6em;
 }
-
 
 /* -------------------------------------------------------------
    .lpool — individual pool card  (ported from app/_pool.scss)
@@ -171,7 +174,9 @@ html.light .lpool {
 }
 
 .lpool.active {
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.25),
+    0 10px 10px rgba(0, 0, 0, 0.22);
 }
 
 .lpool.active .perf {
@@ -191,7 +196,6 @@ html.light .lpool {
   font-size: 0.75em;
   opacity: 0.7;
 }
-
 
 /* -------------------------------------------------------------
    .hooks__list — lobby/correspondence game table
@@ -247,7 +251,6 @@ html.light .lpool {
   font-weight: bold;
 }
 
-
 /* -------------------------------------------------------------
    .lobby__tab-empty — shown when hook/correspondence list is empty
    ------------------------------------------------------------- */
@@ -256,7 +259,6 @@ html.light .lpool {
   padding: 1em;
   color: var(--c-font-dim);
 }
-
 
 /* -------------------------------------------------------------
    .lobby__live-* — active games panel (right side)
@@ -301,7 +303,6 @@ html.light .lpool {
   font-size: 0.85em;
 }
 
-
 /* -------------------------------------------------------------
    .lobby__start — action buttons (ported from lobby/_table.scss)
    ------------------------------------------------------------- */
@@ -335,18 +336,31 @@ html.light .lpool {
   transition: color 150ms ease;
 }
 
-.lobby__start__button--hook.button::before   { content: '\e044'; }
-.lobby__start__button--friend.button::before { content: '\e050'; }
-.lobby__start__button--ai.button::before     { content: '\e07e'; }
-
-.lobby__start__button.disabled { opacity: 0.2; }
-
-@media (hover: hover) {
-  .lobby__start__button:hover:not(.disabled) { color: var(--c-font-clear) !important; }
-  .lobby__start__button:hover:not(.disabled)::before { color: var(--c-accent); }
-  .lobby__start__button:hover.disabled { cursor: default; }
+.lobby__start__button--hook.button::before {
+  content: '\e044';
+}
+.lobby__start__button--friend.button::before {
+  content: '\e050';
+}
+.lobby__start__button--ai.button::before {
+  content: '\e07e';
 }
 
+.lobby__start__button.disabled {
+  opacity: 0.2;
+}
+
+@media (hover: hover) {
+  .lobby__start__button:hover:not(.disabled) {
+    color: var(--c-font-clear) !important;
+  }
+  .lobby__start__button:hover:not(.disabled)::before {
+    color: var(--c-accent);
+  }
+  .lobby__start__button:hover.disabled {
+    cursor: default;
+  }
+}
 
 /* -------------------------------------------------------------
    .lobby__counters — "N players online / N games in play"
@@ -364,7 +378,6 @@ html.light .lpool {
 .lobby__counter strong {
   color: var(--c-font);
 }
-
 
 /* -------------------------------------------------------------
    .lobby__about — footer links  (ported from lobby/_about.scss)

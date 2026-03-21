@@ -9,8 +9,8 @@
    replaces them with var() references.
    Must target html (not body) so html.light { } can override via higher specificity. */
 html {
-	@include default-mix;
-	@include shared-color-defs;
+  @include default-mix;
+  @include shared-color-defs;
 }
 
 /* Step 4: Import light theme — resets $c-* to light values and defines html.light block */
@@ -24,19 +24,19 @@ html {
 
 /* Fonts */
 @font-face {
-	font-family: 'lichess';
-	font-display: block;
-	src: url('/font/lichess.woff2') format('woff2');
+  font-family: 'lichess';
+  font-display: block;
+  src: url('/font/lichess.woff2') format('woff2');
 }
 
 @font-face {
-	font-family: 'Noto Sans';
-	font-display: swap;
-	font-weight: 100 900;
-	src: url('/font/noto-sans-latin.woff2') format('woff2');
-	unicode-range:
-		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
-		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  font-family: 'Noto Sans';
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('/font/noto-sans-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 /* Base */

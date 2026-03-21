@@ -285,7 +285,8 @@
                     text-anchor="middle"
                     dominant-baseline="middle"
                     class="go-marker-label go-marker-label-on-{sign || 'empty'}"
-                  >{marker.label}</text>
+                    >{marker.label}</text
+                  >
                 </svg>
               {/if}
               {#if sign === 0 && childSign !== 0}

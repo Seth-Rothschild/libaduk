@@ -1,110 +1,110 @@
 .sub-ratings {
-	a {
-		@extend %box-radius-left, %flex-center-nowrap, %page-text;
-		@include padding-direction(0.7em, $block-gap, 0.7em, 0.4em);
-		@include transition(background);
+  a {
+    @extend %box-radius-left, %flex-center-nowrap, %page-text;
+    @include padding-direction(0.7em, $block-gap, 0.7em, 0.4em);
+    @include transition(background);
 
-		white-space: nowrap;
+    white-space: nowrap;
 
-		&.empty {
-			opacity: 0.5;
-		}
+    &.empty {
+      opacity: 0.5;
+    }
 
-		&::before {
-			font-size: 3em;
-			opacity: 0.5;
-			margin-inline-end: 0.2em;
+    &::before {
+      font-size: 3em;
+      opacity: 0.5;
+      margin-inline-end: 0.2em;
 
-			@include transition(opacity color);
-		}
+      @include transition(opacity color);
+    }
 
-		&[href]:hover {
-			background: $m-bg-page_bg--mix-50;
+    &[href]:hover {
+      background: $m-bg-page_bg--mix-50;
 
-			&::before {
-				color: $c-link;
-				opacity: 0.7;
-			}
-		}
+      &::before {
+        color: $c-link;
+        opacity: 0.7;
+      }
+    }
 
-		&.active {
-			@extend %box-shadow;
+    &.active {
+      @extend %box-shadow;
 
-			background: $c-bg-box;
+      background: $c-bg-box;
 
-			&::before {
-				color: $c-accent;
-				opacity: 0.7;
-			}
-		}
+      &::before {
+        color: $c-accent;
+        opacity: 0.7;
+      }
+    }
 
-		> span {
-			flex: 1 1 100%;
+    > span {
+      flex: 1 1 100%;
 
-			@extend %flex-column;
+      @extend %flex-column;
 
-			margin-inline-end: 0.5em;
-		}
-	}
+      margin-inline-end: 0.5em;
+    }
+  }
 
-	hr {
-		margin: $block-gap auto;
-		width: 80%;
-	}
+  hr {
+    margin: $block-gap auto;
+    width: 80%;
+  }
 
-	h3 {
-		@extend %roboto;
+  h3 {
+    @extend %roboto;
 
-		font-size: 1.1em;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		margin: 0;
-		display: inline-block;
-	}
+    font-size: 1.1em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+    display: inline-block;
+  }
 
-	strong {
-		color: $c-font-dim;
-		font-weight: bold;
-		font-size: 1.2em;
-	}
+  strong {
+    color: $c-font-dim;
+    font-weight: bold;
+    font-size: 1.2em;
+  }
 
-	@include mq-topnav-hidden {
-		a {
-			padding: 0.3em;
-		}
+  @include mq-topnav-hidden {
+    a {
+      padding: 0.3em;
+    }
 
-		a > i,
-		h3,
-		hr {
-			display: none;
-		}
-	}
+    a > i,
+    h3,
+    hr {
+      display: none;
+    }
+  }
 
-	@include mq-subnav-top {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(9ch, 1fr));
+  @include mq-subnav-top {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9ch, 1fr));
 
-		hr {
-			display: none;
-		}
+    hr {
+      display: none;
+    }
 
-		a {
-			display: flex;
-			justify-content: center;
+    a {
+      display: flex;
+      justify-content: center;
 
-			&::before {
-				opacity: 0.8;
-				font-size: 1.5em;
-			}
+      &::before {
+        opacity: 0.8;
+        font-size: 1.5em;
+      }
 
-			> span {
-				flex: 0 0 auto;
-				margin-inline-end: 0;
-			}
+      > span {
+        flex: 0 0 auto;
+        margin-inline-end: 0;
+      }
 
-			strong {
-				font-weight: normal;
-			}
-		}
-	}
+      strong {
+        font-weight: normal;
+      }
+    }
+  }
 }

@@ -5,7 +5,6 @@
    Replaces: src/lib/css/header/*
    ============================================================= */
 
-
 /* -------------------------------------------------------------
    Custom properties — header height (used throughout this file)
    ------------------------------------------------------------- */
@@ -21,7 +20,6 @@ body {
     ---sticky-gap: 0.5vmin;
   }
 }
-
 
 /* -------------------------------------------------------------
    body > header
@@ -41,7 +39,9 @@ body > header {
 /* Sticky header — only when user hasn't requested reduced motion and screen is tall enough */
 @media (prefers-reduced-motion: no-preference) and (min-height: 600px) {
   body > header {
-    transition: transform 150ms ease-in-out, border-color 150ms ease-in-out;
+    transition:
+      transform 150ms ease-in-out,
+      border-color 150ms ease-in-out;
     max-width: unset;
     position: fixed;
     top: 0;
@@ -54,7 +54,9 @@ body > header {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transition: opacity 150ms, visibility 0s linear 0s;
+    transition:
+      opacity 150ms,
+      visibility 0s linear 0s;
   }
 
   body > header.scrolled {
@@ -79,10 +81,11 @@ body > header {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 150ms, visibility 0s linear 150ms;
+    transition:
+      opacity 150ms,
+      visibility 0s linear 150ms;
   }
 }
-
 
 /* -------------------------------------------------------------
    .site-title-nav
@@ -92,7 +95,6 @@ body > header {
   display: flex;
   justify-content: flex-start;
 }
-
 
 /* -------------------------------------------------------------
    .site-title (logo + name link)
@@ -125,10 +127,18 @@ body > header {
   }
 }
 
-.site-title:hover { color: var(--c-primary); }
-.site-title:hover span { color: var(--c-primary-dim); }
-.site-title:focus-visible { outline-offset: -2px; }
-.site-title span { color: var(--c-font-dim); }
+.site-title:hover {
+  color: var(--c-primary);
+}
+.site-title:hover span {
+  color: var(--c-primary-dim);
+}
+.site-title:focus-visible {
+  outline-offset: -2px;
+}
+.site-title span {
+  color: var(--c-font-dim);
+}
 
 /* Icon hidden on mobile (hamburger takes that space), visible on desktop */
 .site-title .site-icon {
@@ -137,13 +147,16 @@ body > header {
 }
 
 @media (min-height: 599.3px) {
-  .site-title .site-icon { font-size: 36px; }
+  .site-title .site-icon {
+    font-size: 36px;
+  }
 }
 
 @media (min-width: 1019.3px) {
-  .site-title .site-icon { display: block; }
+  .site-title .site-icon {
+    display: block;
+  }
 }
-
 
 /* -------------------------------------------------------------
    Hamburger  (screen width < 1020px)
@@ -170,7 +183,9 @@ body > header {
   }
 
   @media (min-height: 599.3px) {
-    .hbg__in { inset-inline-start: 13px; }
+    .hbg__in {
+      inset-inline-start: 13px;
+    }
   }
 
   .hbg__in,
@@ -201,52 +216,65 @@ body > header {
 
   .hbg__in::before {
     top: -6px;
-    transition: top 0.1s 0.25s ease-in, opacity 0.1s ease-in;
+    transition:
+      top 0.1s 0.25s ease-in,
+      opacity 0.1s ease-in;
   }
 
   @media (min-height: 599.3px) {
-    .hbg__in::before { top: -9px; }
+    .hbg__in::before {
+      top: -9px;
+    }
   }
 
   .hbg__in::after {
     bottom: -7px;
-    transition: bottom 0.1s 0.25s ease-in, transform 0.22s cubic-bezier(0.55, 0.055, 0.675, 0.19);
+    transition:
+      bottom 0.1s 0.25s ease-in,
+      transform 0.22s cubic-bezier(0.55, 0.055, 0.675, 0.19);
   }
 
   @media (min-height: 599.3px) {
-    .hbg__in::after { bottom: -10px; }
+    .hbg__in::after {
+      bottom: -10px;
+    }
   }
 
   /* Hamburger open state — X animation */
-  .hbg[aria-expanded="true"] {
+  .hbg[aria-expanded='true'] {
     background: var(--c-bg-high);
   }
 
-  .hbg[aria-expanded="true"] .hbg__in {
+  .hbg[aria-expanded='true'] .hbg__in {
     transform: rotate(225deg);
     transition-delay: 0.12s;
     transition-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
   }
 
-  .hbg[aria-expanded="true"] .hbg__in::before {
+  .hbg[aria-expanded='true'] .hbg__in::before {
     top: 0;
     opacity: 0;
-    transition: top 0.1s ease-out, opacity 0.1s 0.12s ease-out;
+    transition:
+      top 0.1s ease-out,
+      opacity 0.1s 0.12s ease-out;
   }
 
-  .hbg[aria-expanded="true"] .hbg__in::after {
+  .hbg[aria-expanded='true'] .hbg__in::after {
     bottom: 0;
     transform: rotate(-90deg);
-    transition: bottom 0.1s ease-out, transform 0.22s 0.12s cubic-bezier(0.215, 0.61, 0.355, 1);
+    transition:
+      bottom 0.1s ease-out,
+      transform 0.22s 0.12s cubic-bezier(0.215, 0.61, 0.355, 1);
   }
 }
-
 
 /* -------------------------------------------------------------
    Desktop #topnav  (screen width ≥ 1020px)
    ------------------------------------------------------------- */
 
-#topnav { display: none; }
+#topnav {
+  display: none;
+}
 
 @media (min-width: 1019.3px) {
   .hbg {
@@ -259,7 +287,9 @@ body > header {
   }
 
   @media (min-height: 599.3px) {
-    #topnav { ---nav-section: 53px; }
+    #topnav {
+      ---nav-section: 53px;
+    }
   }
 
   #topnav section {
@@ -282,8 +312,12 @@ body > header {
     text-shadow: 0 1px 0 var(--c-font-shadow);
   }
 
-  #topnav section > a:focus-visible { outline-offset: -2px; }
-  #topnav section .home { display: none; }
+  #topnav section > a:focus-visible {
+    outline-offset: -2px;
+  }
+  #topnav section .home {
+    display: none;
+  }
 
   /* Dropdown panel */
   #topnav div {
@@ -319,13 +353,19 @@ body > header {
   }
 
   #topnav div a:first-child,
-  #topnav div button:first-child { border-radius: 0 3px 0 0; }
+  #topnav div button:first-child {
+    border-radius: 0 3px 0 0;
+  }
 
   #topnav div a:last-child,
-  #topnav div button:last-child { border-radius: 0 0 3px 1px; }
+  #topnav div button:last-child {
+    border-radius: 0 0 3px 1px;
+  }
 
   #topnav div a:focus-visible,
-  #topnav div button:focus-visible { outline-offset: -2px; }
+  #topnav div button:focus-visible {
+    outline-offset: -2px;
+  }
 
   /* Hover / active section — show dropdown */
   #topnav.hover section:hover > a,
@@ -343,7 +383,6 @@ body > header {
     max-height: none;
   }
 }
-
 
 /* -------------------------------------------------------------
    .site-buttons — right side of header
@@ -367,10 +406,16 @@ body > header {
   text-decoration: none;
 }
 
-.site-buttons .link:hover { color: var(--c-font-clearer) !important; }
+.site-buttons .link:hover {
+  color: var(--c-font-clearer) !important;
+}
 .site-buttons .link::before,
-.site-buttons .link span::before { vertical-align: top; }
-.site-buttons .link:focus-visible { border-radius: 3px; }
+.site-buttons .link span::before {
+  vertical-align: top;
+}
+.site-buttons .link:focus-visible {
+  border-radius: 3px;
+}
 
 .site-buttons .toggle {
   display: block;
@@ -413,7 +458,9 @@ body > header {
   color: var(--c-header-dropdown);
 }
 
-.site-buttons .shown .dropdown { display: block; }
+.site-buttons .shown .dropdown {
+  display: block;
+}
 
 .site-buttons .dropdown a.status {
   display: flex;
@@ -454,9 +501,10 @@ body > header {
 }
 
 @media (max-width: 600px) {
-  .site-buttons .signin-or-signup .signup { display: none; }
+  .site-buttons .signin-or-signup .signup {
+    display: none;
+  }
 }
-
 
 /* -------------------------------------------------------------
    #user_tag
@@ -486,8 +534,9 @@ body > header {
   vertical-align: middle;
 }
 
-#user_tag:hover::after { color: var(--c-font-clearer); }
-
+#user_tag:hover::after {
+  color: var(--c-font-clearer);
+}
 
 /* -------------------------------------------------------------
    #clinput (search bar)
@@ -509,8 +558,12 @@ body > header {
   text-decoration: none;
 }
 
-#clinput a:hover { color: var(--c-font-clearer); }
-#clinput:has(input:focus) > a { color: var(--c-primary); }
+#clinput a:hover {
+  color: var(--c-font-clearer);
+}
+#clinput:has(input:focus) > a {
+  color: var(--c-primary);
+}
 
 #clinput input {
   color: var(--c-font-page);
@@ -524,7 +577,9 @@ body > header {
   transition: width 150ms ease;
 }
 
-body.clinput #clinput input { width: 20ch; }
+body.clinput #clinput input {
+  width: 20ch;
+}
 
 /* Search results dropdown */
 .search-results {
@@ -553,8 +608,9 @@ body.clinput #clinput input { width: 20ch; }
   font-size: 0.9em;
 }
 
-.search-result:hover { background: var(--c-bg-zebra); }
-
+.search-result:hover {
+  background: var(--c-bg-zebra);
+}
 
 /* -------------------------------------------------------------
    Dasher dropdown sub-panes (background + board settings)
@@ -581,7 +637,9 @@ body.clinput #clinput input { width: 20ch; }
   font-size: 0.9rem;
 }
 
-.site-buttons .dasher .dropdown .selector { margin: 0.5rem 0; }
+.site-buttons .dasher .dropdown .selector {
+  margin: 0.5rem 0;
+}
 
 .site-buttons .dasher .dropdown .selector button::before {
   margin-inline-end: 8px;
@@ -607,7 +665,6 @@ body.clinput #clinput input { width: 20ch; }
   color: #fff !important;
 }
 
-
 /* -------------------------------------------------------------
    Signal bars (ping status)
    ------------------------------------------------------------- */
@@ -628,14 +685,25 @@ signal > i {
   background-color: var(--m-secondary_dimmer--mix-82);
 }
 
-signal > i:nth-child(2) { height: 60%; }
-signal > i:nth-child(3) { height: 80%; }
-signal > i:nth-child(4) { height: 100%; }
+signal > i:nth-child(2) {
+  height: 60%;
+}
+signal > i:nth-child(3) {
+  height: 80%;
+}
+signal > i:nth-child(4) {
+  height: 100%;
+}
 
-signal.q1 > i { background-color: var(--c-bad); }
-signal.q2 > i { background-color: var(--c-warn); }
-signal > i.off { background-color: var(--c-shade); }
-
+signal.q1 > i {
+  background-color: var(--c-bad);
+}
+signal.q2 > i {
+  background-color: var(--c-warn);
+}
+signal > i.off {
+  background-color: var(--c-shade);
+}
 
 /* -------------------------------------------------------------
    [data-icon] — lichess icon font, used in nav buttons
@@ -654,8 +722,9 @@ signal > i.off { background-color: var(--c-shade); }
   unicode-bidi: isolate;
 }
 
-.text[data-icon]::before { margin-inline: 0 0.4em; }
-
+.text[data-icon]::before {
+  margin-inline: 0 0.4em;
+}
 
 /* -------------------------------------------------------------
    .button / .button-metal — used in sign-in / sign-up area
@@ -681,7 +750,9 @@ signal > i.off { background-color: var(--c-shade); }
 }
 
 .button:visited,
-.button:focus { color: var(--c-over); }
+.button:focus {
+  color: var(--c-over);
+}
 
 .button:not(.disabled):hover {
   box-shadow: 0 4px 10px 0 hsla(0, 0%, 0%, 0.225);
@@ -696,7 +767,9 @@ signal > i.off { background-color: var(--c-shade); }
 }
 
 .button.button-metal,
-.button.button-metal:not(.disabled):hover { color: var(--c-font-dim); }
+.button.button-metal:not(.disabled):hover {
+  color: var(--c-font-dim);
+}
 
 .button.button-metal:not(.disabled):hover {
   background: linear-gradient(to bottom, var(--c-metal-top-hover), var(--c-metal-bottom-hover));

@@ -1,47 +1,47 @@
 .site-buttons .dasher .dropdown {
-	.sub-head {
-		border-bottom: $border;
-		font-weight: 600;
+  .sub-head {
+    border-bottom: $border;
+    font-weight: 600;
 
-		&::before {
-			color: $c-dasher;
-		}
-	}
+    &::before {
+      color: $c-dasher;
+    }
+  }
 
-	.board-settings {
-		padding: 0.75rem 1rem;
+  .board-settings {
+    padding: 0.75rem 1rem;
 
-		.board-setting-toggle {
-			display: flex;
-			align-items: center;
-			gap: 0.5rem;
-			cursor: pointer;
-			font-size: 0.9rem;
-		}
-	}
+    .board-setting-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+  }
 
-	.selector {
-		margin: 0.5rem 0;
+  .selector {
+    margin: 0.5rem 0;
 
-		button {
-			&::before {
-				margin-inline-end: 8px;
-				opacity: 0;
-			}
+    button {
+      &::before {
+        margin-inline-end: 8px;
+        opacity: 0;
+      }
 
-			&.active {
-				background: $c-dasher !important;
-				color: $c-over !important;
+      &.active {
+        background: $c-dasher !important;
+        color: $c-over !important;
 
-				&::before {
-					opacity: 1;
-					color: $c-over !important;
-				}
+        &::before {
+          opacity: 1;
+          color: $c-over !important;
+        }
 
-				&:hover {
-					background: $c-dasher !important;
-				}
-			}
-		}
-	}
+        &:hover {
+          background: $c-dasher !important;
+        }
+      }
+    }
+  }
 }

@@ -195,7 +195,9 @@
   let analysisAreaMap = $state(null);
   let analysisShowEstimate = $state(false);
 
-  const analysisScore = $derived(analysisAreaMap ? computeScore(analysisAreaMap, gs.boardSize, KOMI) : null);
+  const analysisScore = $derived(
+    analysisAreaMap ? computeScore(analysisAreaMap, gs.boardSize, KOMI) : null
+  );
 
   const analysisEstimateAreaMap = $derived.by(() => {
     if (!analysisShowEstimate || analysisStatus === 'scoring' || !analysisNode) return null;
@@ -520,7 +522,8 @@
             for (const entry of msg.analysisLog) {
               if (entry.type === 'analysis_move') applyAnalysisMove(entry.x, entry.y);
               else if (entry.type === 'analysis_nav') applyAnalysisNav(entry.action);
-              else if (entry.type === 'analysis_marker') applyAnalysisMarker(entry.x, entry.y, entry.tool);
+              else if (entry.type === 'analysis_marker')
+                applyAnalysisMarker(entry.x, entry.y, entry.tool);
             }
           } else {
             gs.handleMessage(msg);
@@ -628,7 +631,8 @@
           deadStones={gs.status === 'scoring' ? gs.deadStones : null}
           showCoords={boardState.showCoords}
           currentSign={gs.currentSign}
-          onVertexClick={!gs.isViewingHistory && (gs.status === 'playing' || gs.status === 'scoring')
+          onVertexClick={!gs.isViewingHistory &&
+          (gs.status === 'playing' || gs.status === 'scoring')
             ? onVertexClick
             : null}
         />
@@ -676,7 +680,10 @@
                         onclick={() => {
                           const path = [];
                           let n = row.black;
-                          while (n.parent) { path.unshift(n); n = n.parent; }
+                          while (n.parent) {
+                            path.unshift(n);
+                            n = n.parent;
+                          }
                           analysisNode = row.black;
                         }}
                       >
@@ -691,7 +698,9 @@
                         <button
                           class="move-entry"
                           class:active={row.white === analysisNode}
-                          onclick={() => { analysisNode = row.white; }}
+                          onclick={() => {
+                            analysisNode = row.white;
+                          }}
                         >
                           {formatVertex(row.white.lastMove, gs.boardSize)}
                           {#if row.white.children.length > 1}
@@ -794,7 +803,8 @@
     <div class="rcontrols">
       {#if analysisMode}
         {#if analysisStatus === 'scoring'}
-          <button class="button button-green" onclick={analysisStopScoring}>Back to analysis</button>
+          <button class="button button-green" onclick={analysisStopScoring}>Back to analysis</button
+          >
           {#if analysisScore}
             <div class="score-display">
               <span class="color-icon is black text">{analysisScore.blackArea}</span>
@@ -806,13 +816,55 @@
           {/if}
         {:else}
           <div class="tool-buttons">
-            <button class="button" class:button-green={analysisTool === 'stone'} class:button-metal={analysisTool !== 'stone'} onclick={() => (analysisTool = 'stone')} title="Place stones">Stone</button>
-            <button class="button" class:button-green={analysisTool === 'cross'} class:button-metal={analysisTool !== 'cross'} onclick={() => (analysisTool = 'cross')} title="Mark X">✕</button>
-            <button class="button" class:button-green={analysisTool === 'circle'} class:button-metal={analysisTool !== 'circle'} onclick={() => (analysisTool = 'circle')} title="Mark circle">◯</button>
-            <button class="button" class:button-green={analysisTool === 'square'} class:button-metal={analysisTool !== 'square'} onclick={() => (analysisTool = 'square')} title="Mark square">⬜</button>
-            <button class="button" class:button-green={analysisTool === 'triangle'} class:button-metal={analysisTool !== 'triangle'} onclick={() => (analysisTool = 'triangle')} title="Mark triangle">△</button>
-            <button class="button" class:button-green={analysisTool === 'label'} class:button-metal={analysisTool !== 'label'} onclick={() => (analysisTool = 'label')} title="Label (A, B, C...)">A</button>
-            <button class="button" class:button-green={analysisTool === 'number'} class:button-metal={analysisTool !== 'number'} onclick={() => (analysisTool = 'number')} title="Number (1, 2, 3...)">1</button>
+            <button
+              class="button"
+              class:button-green={analysisTool === 'stone'}
+              class:button-metal={analysisTool !== 'stone'}
+              onclick={() => (analysisTool = 'stone')}
+              title="Place stones">Stone</button
+            >
+            <button
+              class="button"
+              class:button-green={analysisTool === 'cross'}
+              class:button-metal={analysisTool !== 'cross'}
+              onclick={() => (analysisTool = 'cross')}
+              title="Mark X">✕</button
+            >
+            <button
+              class="button"
+              class:button-green={analysisTool === 'circle'}
+              class:button-metal={analysisTool !== 'circle'}
+              onclick={() => (analysisTool = 'circle')}
+              title="Mark circle">◯</button
+            >
+            <button
+              class="button"
+              class:button-green={analysisTool === 'square'}
+              class:button-metal={analysisTool !== 'square'}
+              onclick={() => (analysisTool = 'square')}
+              title="Mark square">⬜</button
+            >
+            <button
+              class="button"
+              class:button-green={analysisTool === 'triangle'}
+              class:button-metal={analysisTool !== 'triangle'}
+              onclick={() => (analysisTool = 'triangle')}
+              title="Mark triangle">△</button
+            >
+            <button
+              class="button"
+              class:button-green={analysisTool === 'label'}
+              class:button-metal={analysisTool !== 'label'}
+              onclick={() => (analysisTool = 'label')}
+              title="Label (A, B, C...)">A</button
+            >
+            <button
+              class="button"
+              class:button-green={analysisTool === 'number'}
+              class:button-metal={analysisTool !== 'number'}
+              onclick={() => (analysisTool = 'number')}
+              title="Number (1, 2, 3...)">1</button
+            >
           </div>
           <button class="button button-metal" onclick={analysisStartScoring}>Score</button>
           <button
@@ -825,20 +877,27 @@
             <div class="score-display">
               <span class="color-icon is black text">{analysisEstimatedScore.blackArea}</span>
               <span class="color-icon is white text"
-                >{analysisEstimatedScore.whiteArea} + {KOMI} = {analysisEstimatedScore.whiteScore.toFixed(1)}</span
+                >{analysisEstimatedScore.whiteArea} + {KOMI} = {analysisEstimatedScore.whiteScore.toFixed(
+                  1
+                )}</span
               >
               <strong>{scoreVerdictShort(analysisEstimatedScore)}</strong>
             </div>
           {/if}
         {/if}
-        <button class="button button-metal" onclick={() => { analysisMode = false; analysisNode = null; analysisStopScoring(); }}>
+        <button
+          class="button button-metal"
+          onclick={() => {
+            analysisMode = false;
+            analysisNode = null;
+            analysisStopScoring();
+          }}
+        >
           Back to game
         </button>
       {:else if gs.status === 'gameover'}
-        <button
-          class="button button-metal analyze-btn"
-          onclick={enterAnalysis}
-          data-icon="&#xe01f;">Analyze</button
+        <button class="button button-metal analyze-btn" onclick={enterAnalysis} data-icon="&#xe01f;"
+          >Analyze</button
         >
       {/if}
       {#if !isSpectator && gs.status === 'waiting'}
@@ -1063,7 +1122,12 @@
   }
 
   @keyframes pulse-bg {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
   }
 </style>

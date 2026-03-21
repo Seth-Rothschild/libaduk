@@ -1,119 +1,119 @@
 .game-row {
-	display: flex;
-	align-items: stretch;
-	min-height: 17rem;
-	padding: 0.5em 1em;
-	border-bottom: $border;
-	position: relative;
+  display: flex;
+  align-items: stretch;
+  min-height: 17rem;
+  padding: 0.5em 1em;
+  border-bottom: $border;
+  position: relative;
 
-	@include transition(background);
+  @include transition(background);
 
-	&:nth-child(odd) {
-		background: $c-bg-zebra;
-	}
+  &:nth-child(odd) {
+    background: $c-bg-zebra;
+  }
 
-	&:hover {
-		background: $m-primary_bg--mix-20;
-	}
+  &:hover {
+    background: $m-primary_bg--mix-20;
+  }
 
-	&__overlay {
-		@extend %link-overlay;
-	}
+  &__overlay {
+    @extend %link-overlay;
+  }
 
-	&__board {
-		flex: 0 0 16rem;
-		margin-inline-end: 0;
+  &__board {
+    flex: 0 0 16rem;
+    margin-inline-end: 0;
 
-		@media (max-width: at-most($small)) {
-			display: none;
-		}
-	}
+    @media (max-width: at-most($small)) {
+      display: none;
+    }
+  }
 
-	&__infos {
-		flex: 1 1 100%;
-		display: flex;
-		flex-flow: column;
-		justify-content: space-between;
-		margin: 0.5em 0;
-		overflow: hidden;
-	}
+  &__infos {
+    flex: 1 1 100%;
+    display: flex;
+    flex-flow: column;
+    justify-content: space-between;
+    margin: 0.5em 0;
+    overflow: hidden;
+  }
 
-	.header {
-		@extend %flex-center;
+  .header {
+    @extend %flex-center;
 
-		&::before {
-			font-size: 1.5em;
-			opacity: 0.7;
-			margin-inline-end: 0.7rem;
+    &::before {
+      font-size: 1.5em;
+      opacity: 0.7;
+      margin-inline-end: 0.7rem;
 
-			@media (min-width: at-least($small)) {
-				font-size: 3em;
-			}
-		}
+      @media (min-width: at-least($small)) {
+        font-size: 3em;
+      }
+    }
 
-		&__text {
-			strong {
-				@extend %roboto;
+    &__text {
+      strong {
+        @extend %roboto;
 
-				font-weight: normal;
-				font-size: 1.4em;
-				text-transform: uppercase;
-				display: block;
-			}
-		}
-	}
+        font-weight: normal;
+        font-size: 1.4em;
+        text-transform: uppercase;
+        display: block;
+      }
+    }
+  }
 
-	.versus {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		column-gap: 1.5em;
+  .versus {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    column-gap: 1.5em;
 
-		.swords {
-			text-align: center;
-			font-size: 2em;
-			opacity: 0.7;
-		}
+    .swords {
+      text-align: center;
+      font-size: 2em;
+      opacity: 0.7;
+    }
 
-		.player {
-			width: 100%;
-			font-size: 1.3em;
-			text-align: right;
-		}
+    .player {
+      width: 100%;
+      font-size: 1.3em;
+      text-align: right;
+    }
 
-		.player.black {
-			text-align: left;
-		}
+    .player.black {
+      text-align: left;
+    }
 
-		a {
-			font-weight: bold;
-			position: relative;
-			z-index: $z-above-link-overlay-3;
-		}
+    a {
+      font-weight: bold;
+      position: relative;
+      z-index: $z-above-link-overlay-3;
+    }
 
-		.anon {
-			line-height: 2em;
-		}
+    .anon {
+      line-height: 2em;
+    }
 
-		@media (width <= $xxx-small) {
-			column-gap: 1em;
+    @media (width <= $xxx-small) {
+      column-gap: 1em;
 
-			.swords {
-				font-size: 1.5em;
-			}
-		}
-	}
+      .swords {
+        font-size: 1.5em;
+      }
+    }
+  }
 
-	.result {
-		display: block;
-		text-align: center;
-	}
+  .result {
+    display: block;
+    text-align: center;
+  }
 
-	.win {
-		color: $c-good;
-	}
+  .win {
+    color: $c-good;
+  }
 
-	.loss {
-		color: $c-bad;
-	}
+  .loss {
+    color: $c-bad;
+  }
 }

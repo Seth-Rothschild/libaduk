@@ -10,7 +10,10 @@
   let open = $state(false);
   let pane = $state('main');
 
-  const close = () => { open = false; pane = 'main'; };
+  const close = () => {
+    open = false;
+    pane = 'main';
+  };
   const toggle = () => (open ? close() : (open = true));
 
   const signOut = () => {
@@ -47,7 +50,9 @@
         <a class="text" data-icon="&#xe005;" href="/">Settings</a>
       {/if}
       <button class="text" data-icon="&#xe028;" onclick={() => (pane = 'board')}>Board</button>
-      <button class="text" data-icon="&#xe061;" onclick={() => (pane = 'background')}>Background</button>
+      <button class="text" data-icon="&#xe061;" onclick={() => (pane = 'background')}
+        >Background</button
+      >
       {#if signedIn}
         <button class="text signout" data-icon="&#xe055;" onclick={signOut}>Sign out</button>
       {/if}

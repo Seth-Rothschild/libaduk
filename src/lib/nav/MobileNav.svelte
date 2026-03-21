@@ -1,14 +1,21 @@
 <script>
   let { open, onClose, onCreateGame, onChallengeAFriend } = $props();
 
-  const handleCreateGame = () => { onClose(); onCreateGame(); };
-  const handleChallengeAFriend = () => { onClose(); onChallengeAFriend(); };
+  const handleCreateGame = () => {
+    onClose();
+    onCreateGame();
+  };
+  const handleChallengeAFriend = () => {
+    onClose();
+    onChallengeAFriend();
+  };
 </script>
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && open && onClose()} />
 
 {#if open}
-  <button class="mobile-nav-overlay" onclick={onClose} tabindex="-1" aria-label="Close navigation"></button>
+  <button class="mobile-nav-overlay" onclick={onClose} tabindex="-1" aria-label="Close navigation"
+  ></button>
 {/if}
 
 <nav class="mobile-nav" class:open inert={!open}>

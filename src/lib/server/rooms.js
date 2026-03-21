@@ -678,7 +678,8 @@ async function handleMessage(socket, raw) {
     if (!room.analysisActive) return;
     room.analysisLog.push({ type: 'analysis_marker', x: msg.x, y: msg.y, tool: msg.tool });
     for (const client of room.analysisClients) {
-      if (client !== socket) send(client, { type: 'analysis_marker', x: msg.x, y: msg.y, tool: msg.tool });
+      if (client !== socket)
+        send(client, { type: 'analysis_marker', x: msg.x, y: msg.y, tool: msg.tool });
     }
     return;
   }

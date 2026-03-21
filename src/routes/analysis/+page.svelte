@@ -550,11 +550,7 @@
       />
     </div>
 
-    <PlayerStrip
-      color="white"
-      name={whiteName}
-      position="top"
-    />
+    <PlayerStrip color="white" name={whiteName} position="top" />
 
     <div class="rmoves">
       <div class="analysis-moves">
@@ -684,12 +680,7 @@
       onLast={jumpLast}
     />
 
-    <PlayerStrip
-      color="black"
-      name={blackName}
-      position="bottom"
-      active={true}
-    />
+    <PlayerStrip color="black" name={blackName} position="bottom" active={true} />
   </div>
 </div>
 

@@ -1,37 +1,37 @@
 .user-show {
-	overflow: hidden;
+  overflow: hidden;
 
-	&__header {
-		background: $c-bg-zebra;
-		padding: 2em 1.5em;
-		display: flex;
-		align-items: center;
+  &__header {
+    background: $c-bg-zebra;
+    padding: 2em 1.5em;
+    display: flex;
+    align-items: center;
 
-		h1 {
-			flex: 0 0 auto;
-			font-size: 2em;
-			margin: 0;
-		}
+    h1 {
+      flex: 0 0 auto;
+      font-size: 2em;
+      margin: 0;
+    }
 
-		.connected {
-			color: $c-good;
-		}
-	}
+    .connected {
+      color: $c-good;
+    }
+  }
 
-	.number-menu .to-games.active,
-	#games.number-menu {
-		background: $c-bg-low !important;
-	}
+  .number-menu .to-games.active,
+  #games.number-menu {
+    background: $c-bg-low !important;
+  }
 
-	.angles {
-		@extend %metal;
+  .angles {
+    @extend %metal;
 
-		font-size: 1.2em;
-		height: 4rem;
-		border-top: $border;
+    font-size: 1.2em;
+    height: 4rem;
+    border-top: $border;
 
-		.nm-item {
-			@extend %flex-center-center;
-		}
-	}
+    .nm-item {
+      @extend %flex-center-center;
+    }
+  }
 }

@@ -35,11 +35,15 @@ html {
 }
 
 @media (min-width: 320px) {
-  html { font-size: calc(12px + 2 * ((100vw - 320px) / 880)); }
+  html {
+    font-size: calc(12px + 2 * ((100vw - 320px) / 880));
+  }
 }
 
 @media (min-width: 1200px) {
-  html { font-size: 14px; }
+  html {
+    font-size: 14px;
+  }
 }
 
 /* Layout spacing */
@@ -49,7 +53,9 @@ body {
 }
 
 @media (min-width: 500px), (orientation: landscape) {
-  body { ---block-gap: 15px; }
+  body {
+    ---block-gap: 15px;
+  }
 }
 
 @media (min-width: 800px) {
@@ -61,10 +67,8 @@ body {
 
 /* Body */
 body {
-  background:
-    var(--c-bg-page)
-    linear-gradient(to bottom, var(--c-body-gradient), var(--c-bg-page) 116px)
-    no-repeat;
+  background: var(--c-bg-page)
+    linear-gradient(to bottom, var(--c-body-gradient), var(--c-bg-page) 116px) no-repeat;
   color: var(--c-font);
   text-align: start;
   overflow-x: hidden;
@@ -99,16 +103,26 @@ button {
 }
 
 /* Headings */
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   font-family: Roboto, sans-serif;
   font-weight: 300;
   font-size: 1em;
 }
 
 /* Inline elements */
-em, i { font-style: normal; }
-li    { list-style: none; }
-small { font-size: 0.9em; }
+em,
+i {
+  font-style: normal;
+}
+li {
+  list-style: none;
+}
+small {
+  font-size: 0.9em;
+}
 
 p {
   margin-bottom: 1em;
@@ -116,8 +130,17 @@ p {
 }
 
 /* Tables */
-table  { border-collapse: collapse; border-spacing: 0; }
-table, tbody, tfoot, thead, tr, th, td {
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+table,
+tbody,
+tfoot,
+thead,
+tr,
+th,
+td {
   border: 0;
   font: inherit;
   vertical-align: middle;
@@ -132,7 +155,6 @@ hr {
   background: var(--c-border);
 }
 
-
 /* -------------------------------------------------------------
    #main-wrap — page content grid, clears the fixed site header
    ------------------------------------------------------------- */
@@ -142,7 +164,9 @@ hr {
 
   display: grid;
   grid-template-areas: '. . main . .';
-  grid-template-columns: var(---main-margin) 1fr minmax(0, var(---main-max-width)) 1fr var(---main-margin);
+  grid-template-columns: var(---main-margin) 1fr minmax(0, var(---main-max-width)) 1fr var(
+      ---main-margin
+    );
 }
 
 /* When the header is sticky (nav.css makes it position:fixed here),
@@ -153,8 +177,12 @@ hr {
   }
 }
 
-#main-wrap.full-screen       { ---main-max-width: auto; }
-#main-wrap.full-screen-force { ---main-max-width: 100%; }
+#main-wrap.full-screen {
+  ---main-max-width: auto;
+}
+#main-wrap.full-screen-force {
+  ---main-max-width: 100%;
+}
 
 main {
   grid-area: main;
@@ -165,7 +193,6 @@ main.page-small {
   margin: auto;
   width: 100%;
 }
-
 
 /* -------------------------------------------------------------
    .tabs-horiz — horizontal tab strip
@@ -183,7 +210,9 @@ main.page-small {
 }
 
 @media (max-width: 399px) {
-  .tabs-horiz { font-size: 0.9em; }
+  .tabs-horiz {
+    font-size: 0.9em;
+  }
 }
 
 .tabs-horiz button,
@@ -200,12 +229,16 @@ main.page-small {
   border-bottom: 2px solid transparent;
   min-width: 15%;
   letter-spacing: -0.5px;
-  transition: color 0.25s ease, border-color 0.25s ease;
+  transition:
+    color 0.25s ease,
+    border-color 0.25s ease;
 }
 
 @media (min-width: 500px) {
   .tabs-horiz button,
-  .tabs-horiz span { letter-spacing: inherit; }
+  .tabs-horiz span {
+    letter-spacing: inherit;
+  }
 }
 
 .tabs-horiz button:hover,

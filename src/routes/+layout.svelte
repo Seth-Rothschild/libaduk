@@ -34,7 +34,6 @@
     await goto('/');
     setupModal = type;
   };
-
 </script>
 
 <SiteHeader {username} onOpenSetup={openSetup} />

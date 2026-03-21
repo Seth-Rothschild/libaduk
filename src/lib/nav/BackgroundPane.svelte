@@ -6,7 +6,7 @@
   const themes = [
     ['system', 'Auto'],
     ['light', 'Light'],
-    ['dark', 'Dark'],
+    ['dark', 'Dark']
   ];
 </script>
 

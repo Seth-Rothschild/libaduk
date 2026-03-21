@@ -1,160 +1,160 @@
 .button {
-	@extend %roboto, %button-shadow, %box-radius;
-	@include prevent-select;
-	@include transition;
-	@include backdrop-blur-if-transparent;
+  @extend %roboto, %button-shadow, %box-radius;
+  @include prevent-select;
+  @include transition;
+  @include backdrop-blur-if-transparent;
 
-	font-weight: 500;
-	background: $c-primary;
-	text-transform: uppercase;
-	padding: 0.8em 1em;
-	border: none;
-	cursor: pointer;
-	text-align: center;
-	white-space: nowrap;
-	display: inline-block;
+  font-weight: 500;
+  background: $c-primary;
+  text-transform: uppercase;
+  padding: 0.8em 1em;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  display: inline-block;
 
-	&,
-	&:visited,
-	&:focus {
-		color: $c-over;
-	}
+  &,
+  &:visited,
+  &:focus {
+    color: $c-over;
+  }
 
-	&:not(.disabled):hover {
-		@extend %button-raised-shadow;
+  &:not(.disabled):hover {
+    @extend %button-raised-shadow;
 
-		color: $c-over;
-		background: $m-primary--lighten-7;
-	}
+    color: $c-over;
+    background: $m-primary--lighten-7;
+  }
 
-	&:not(.disabled):focus-visible {
-		@extend %focus-shadow;
-	}
+  &:not(.disabled):focus-visible {
+    @extend %focus-shadow;
+  }
 
-	&-no-upper {
-		text-transform: none;
-	}
+  &-no-upper {
+    text-transform: none;
+  }
 
-	&-thin {
-		padding: 0.1em 1em;
-		font-size: 90%;
-	}
+  &-thin {
+    padding: 0.1em 1em;
+    font-size: 90%;
+  }
 
-	&-fat {
-		font-size: 1.6rem;
-	}
+  &-fat {
+    font-size: 1.6rem;
+  }
 
-	&-green {
-		background: $c-secondary;
+  &-green {
+    background: $c-secondary;
 
-		&:not(.disabled):hover {
-			background: $m-secondary--lighten-4;
-		}
-	}
+    &:not(.disabled):hover {
+      background: $m-secondary--lighten-4;
+    }
+  }
 
-	&-red {
-		background: $c-error;
+  &-red {
+    background: $c-error;
 
-		&:not(.disabled):hover {
-			background: $m-bad--lighten-11;
-		}
-	}
+    &:not(.disabled):hover {
+      background: $m-bad--lighten-11;
+    }
+  }
 
-	&-link {
-		color: $c-link;
+  &-link {
+    color: $c-link;
 
-		&:hover,
-		&:active,
-		&:focus {
-			color: $c-link-hover;
-		}
-	}
+    &:hover,
+    &:active,
+    &:focus {
+      color: $c-link-hover;
+    }
+  }
 
-	&.button-empty {
-		transition: none;
+  &.button-empty {
+    transition: none;
 
-		&,
-		&:hover {
-			color: $c-primary;
-		}
+    &,
+    &:hover {
+      color: $c-primary;
+    }
 
-		background: none;
-		box-shadow: none;
+    background: none;
+    box-shadow: none;
 
-		&:not(.disabled):hover {
-			@extend %button-shadow;
-		}
+    &:not(.disabled):hover {
+      @extend %button-shadow;
+    }
 
-		&,
-		&.button-green,
-		&.button-red {
-			&:not(.disabled):hover {
-				@extend %metal;
-			}
-		}
+    &,
+    &.button-green,
+    &.button-red {
+      &:not(.disabled):hover {
+        @extend %metal;
+      }
+    }
 
-		&.button-red,
-		&.button-red:hover {
-			color: $c-error;
-		}
+    &.button-red,
+    &.button-red:hover {
+      color: $c-error;
+    }
 
-		&.button-green,
-		&.button-green:hover {
-			color: $c-secondary;
-		}
+    &.button-green,
+    &.button-green:hover {
+      color: $c-secondary;
+    }
 
-		&.button-brag,
-		&.button-brag:hover {
-			color: $c-brag;
-		}
+    &.button-brag,
+    &.button-brag:hover {
+      color: $c-brag;
+    }
 
-		&.button-dim,
-		&.button-dim:hover {
-			color: $c-font-dim;
-		}
-	}
+    &.button-dim,
+    &.button-dim:hover {
+      color: $c-font-dim;
+    }
+  }
 
-	&.button-metal {
-		@extend %metal;
+  &.button-metal {
+    @extend %metal;
 
-		&,
-		&:not(.disabled):hover {
-			color: $c-font-dim;
-		}
+    &,
+    &:not(.disabled):hover {
+      color: $c-font-dim;
+    }
 
-		&:not(.disabled):hover {
-			@extend %metal-hover;
-		}
-	}
+    &:not(.disabled):hover {
+      @extend %metal-hover;
+    }
+  }
 
-	&.button-inverse {
-		@extend %metal-inverse;
+  &.button-inverse {
+    @extend %metal-inverse;
 
-		&:not(.disabled):hover {
-			@extend %metal-inverse-hover;
-		}
-	}
+    &:not(.disabled):hover {
+      @extend %metal-inverse-hover;
+    }
+  }
 
-	&.disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 
-	&.active {
-		@extend %active;
+  &.active {
+    @extend %active;
 
-		color: #fff;
-	}
+    color: #fff;
+  }
 
-	&.active:not(.disabled):hover {
-		@extend %active-hover;
+  &.active:not(.disabled):hover {
+    @extend %active-hover;
 
-		color: #fff;
-	}
+    color: #fff;
+  }
 }
 
 .button-set {
-	@extend %flex-center;
+  @extend %flex-center;
 
-	gap: 1.5em;
+  gap: 1.5em;
 }

@@ -1,38 +1,38 @@
 #clinput {
-	display: flex;
-	height: $site-header-height;
+  display: flex;
+  height: $site-header-height;
 
-	a {
-		@extend %top-icon;
+  a {
+    @extend %top-icon;
 
-		padding: 0 0.8em;
-		color: $c-font;
+    padding: 0 0.8em;
+    color: $c-font;
 
-		@include transition(color);
+    @include transition(color);
 
-		&:hover {
-			color: $c-font-clearer;
-		}
-	}
+    &:hover {
+      color: $c-font-clearer;
+    }
+  }
 
-	&:has(input:focus) > a {
-		color: $c-primary;
-	}
+  &:has(input:focus) > a {
+    color: $c-primary;
+  }
 
-	input {
-		@extend %page-text;
+  input {
+    @extend %page-text;
 
-		line-height: $site-header-height;
-		background: none;
-		padding: 0;
-		border: 0;
-		width: 0;
-		outline: none;
+    line-height: $site-header-height;
+    background: none;
+    padding: 0;
+    border: 0;
+    width: 0;
+    outline: none;
 
-		@include transition(width);
+    @include transition(width);
 
-		body.clinput & {
-			width: 20ch;
-		}
-	}
+    body.clinput & {
+      width: 20ch;
+    }
+  }
 }
