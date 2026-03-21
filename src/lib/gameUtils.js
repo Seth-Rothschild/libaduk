@@ -6,11 +6,6 @@ export function colorName(sign) {
   return 'white';
 }
 
-export function oppositeColor(color) {
-  if (color === 'black') return 'white';
-  return 'black';
-}
-
 export function computeScore(areaMap, size, komi = KOMI) {
   let blackArea = 0;
   let whiteArea = 0;
