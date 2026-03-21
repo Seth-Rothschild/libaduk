@@ -37,18 +37,3 @@
     </span>
   </div>
 </div>
-
-<style>
-  .lobby__counters {
-    display: flex;
-    gap: 1.5em;
-    padding: 0.6em 1em;
-    font-size: 0.9em;
-    color: var(--c-font-dim);
-    grid-column: 1 / -1;
-  }
-
-  .lobby__counter strong {
-    color: var(--c-font);
-  }
-</style>

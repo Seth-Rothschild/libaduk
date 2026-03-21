@@ -3,6 +3,7 @@
   import '$lib/theme.css';
   import '$lib/base.css';
   import '$lib/nav/nav.css';
+  import '$lib/lobby/lobby.css';
   import { setUsername, clearUsername } from '$lib/user.svelte.js';
   import { pingState } from '$lib/ping.svelte.js';
   import { themeState } from '$lib/theme.svelte.js';

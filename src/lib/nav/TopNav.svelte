@@ -14,9 +14,9 @@
     </div>
   </section>
   <section>
-    <a href="/analysis">Tools</a>
+    <a href="/analysis" data-sveltekit-preload-data="off">Tools</a>
     <div role="group">
-      <a href="/analysis">Analysis board</a>
+      <a href="/analysis" data-sveltekit-preload-data="off">Analysis board</a>
     </div>
   </section>
 </nav>

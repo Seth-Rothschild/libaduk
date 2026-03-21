@@ -42,6 +42,23 @@ html {
   html { font-size: 14px; }
 }
 
+/* Layout spacing */
+body {
+  ---block-gap: 10px;
+  ---main-margin: 0px;
+}
+
+@media (min-width: 500px), (orientation: landscape) {
+  body { ---block-gap: 15px; }
+}
+
+@media (min-width: 800px) {
+  body {
+    ---main-margin: 1vw;
+    ---block-gap: 15px;
+  }
+}
+
 /* Body */
 body {
   background:
@@ -113,4 +130,91 @@ hr {
   border: 0;
   height: 1px;
   background: var(--c-border);
+}
+
+
+/* -------------------------------------------------------------
+   #main-wrap — page content grid, clears the fixed site header
+   ------------------------------------------------------------- */
+
+#main-wrap {
+  ---main-max-width: 1300px;
+
+  display: grid;
+  grid-template-areas: '. . main . .';
+  grid-template-columns: var(---main-margin) 1fr minmax(0, var(---main-max-width)) 1fr var(---main-margin);
+}
+
+/* When the header is sticky (nav.css makes it position:fixed here),
+   push the content below it */
+@media (prefers-reduced-motion: no-preference) and (min-height: 600px) {
+  #main-wrap {
+    margin-top: calc(var(---site-header-height, 40px) + var(---sticky-gap, 0px));
+  }
+}
+
+#main-wrap.full-screen       { ---main-max-width: auto; }
+#main-wrap.full-screen-force { ---main-max-width: 100%; }
+
+main {
+  grid-area: main;
+}
+
+main.page-small {
+  max-width: 1000px;
+  margin: auto;
+  width: 100%;
+}
+
+
+/* -------------------------------------------------------------
+   .tabs-horiz — horizontal tab strip
+   (ported from src/lib/css/component/_tabs-horiz.scss)
+   ------------------------------------------------------------- */
+
+.tabs-horiz {
+  display: flex;
+  justify-content: center;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  user-select: none;
+  color: var(--c-font-page);
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+}
+
+@media (max-width: 399px) {
+  .tabs-horiz { font-size: 0.9em; }
+}
+
+.tabs-horiz button,
+.tabs-horiz span {
+  font-family: Roboto, sans-serif;
+  font-weight: 300;
+  white-space: nowrap;
+  overflow: hidden;
+  flex: 1 1 auto;
+  text-align: center;
+  padding: 0.5em 0.2em;
+  cursor: pointer;
+  position: relative;
+  border-bottom: 2px solid transparent;
+  min-width: 15%;
+  letter-spacing: -0.5px;
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+
+@media (min-width: 500px) {
+  .tabs-horiz button,
+  .tabs-horiz span { letter-spacing: inherit; }
+}
+
+.tabs-horiz button:hover,
+.tabs-horiz span:hover {
+  border-color: var(--m-accent--fade-50);
+}
+
+.tabs-horiz button.active,
+.tabs-horiz span.active {
+  color: var(--c-accent);
+  border-color: var(--c-accent);
 }

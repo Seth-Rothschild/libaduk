@@ -50,9 +50,17 @@ html {
   --m-primary--lighten-7:         hsl(209, 79%, 63%);
   --m-secondary_dimmer--mix-82:   hsl(88, 62%, 30%);
 
+  /* — lobby + tabs — */
+  --c-accent:                     hsl(22, 100%, 42%);
+  --c-pool-button:                hsla(37, 7%, 19%, 0.66);
+  --c-good:                       hsl(88, 62%, 43%);
+  --m-accent--fade-50:            hsla(22, 100%, 42%, 0.5);
+  --m-accent--fade-80:            hsla(22, 100%, 42%, 0.2);
+  --m-bg--fade-50:                hsla(37, 7%, 14%, 0.5);
+  --m-secondary--fade-60:         hsla(88, 62%, 37%, 0.4);
+
   /* — unused — available when needed */
   /*
-  --c-accent:                     hsl(22, 100%, 42%);
   --c-accent-clear:               rgb(171.36, 62.832, 0);
   --c-accent-dim:                 rgb(171.36, 62.832, 0);
   --c-accent-faint:               hsla(22, 100%, 42%, 0.4);
@@ -339,9 +347,17 @@ html.light {
   --m-primary--lighten-7:         hsl(209, 77%, 53%);
   --m-secondary_dimmer--mix-82:   hsl(88, 39%, 48%);
 
+  /* — lobby + tabs — */
+  --c-accent:                     hsl(22, 100%, 42%);
+  --c-pool-button:                hsla(37, 7%, 19%, 0.66);
+  --c-good:                       hsl(88, 62%, 43%);
+  --m-accent--fade-50:            hsla(22, 100%, 42%, 0.5);
+  --m-accent--fade-80:            hsla(22, 100%, 42%, 0.2);
+  --m-bg--fade-50:                hsla(0, 0%, 100%, 0.5);
+  --m-secondary--fade-60:         hsla(88, 62%, 37%, 0.4);
+
   /* — unused — available when needed */
   /*
-  --c-accent:                     hsl(22, 100%, 42%);
   --c-accent-clear:               rgb(221.136, 108.5382, 43.35);
   --c-accent-dim:                 rgb(221.136, 108.5382, 43.35);
   --c-accent-faint:               hsla(22, 100%, 42%, 0.4);

@@ -55,10 +55,3 @@
     </tbody>
   </table>
 {/if}
-
-<style>
-  .lobby__tab-empty {
-    padding: 1em;
-    color: var(--c-font-dim);
-  }
-</style>

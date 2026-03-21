@@ -246,6 +246,8 @@ body > header {
    Desktop #topnav  (screen width ≥ 1020px)
    ------------------------------------------------------------- */
 
+#topnav { display: none; }
+
 @media (min-width: 1019.3px) {
   .hbg {
     display: none !important;

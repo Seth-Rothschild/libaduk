@@ -1,0 +1,399 @@
+/* =============================================================
+   lobby.css — all styles for the lobby / matchmaking page.
+
+   Replaces: src/lib/css/lobby/layout, table, about, app/pool,
+             app/hook-list (ported from SCSS to plain CSS).
+   ============================================================= */
+
+
+/* -------------------------------------------------------------
+   .lobby — page grid
+   col1 (default): single column stack
+   col2 (≥500px):  side-by-side app + side/table
+   col3 (≥800px):  table left of app, side below table
+   ------------------------------------------------------------- */
+
+.lobby {
+  grid-area: main;
+  display: grid;
+  grid-template-areas: 'app' 'table' 'side' 'about';
+  gap: var(---block-gap, 10px);
+}
+
+@media (min-width: 500px), (orientation: landscape) {
+  .lobby {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-areas:
+      'app   app'
+      'side  table'
+      'about about';
+  }
+}
+
+@media (min-width: 800px) {
+  .lobby {
+    grid-template-columns: 34% 1fr;
+    grid-template-areas:
+      'table app'
+      'side  app'
+      'about about';
+  }
+}
+
+@media (min-width: 1280px) {
+  .lobby {
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-areas:
+      'side  app   app   table'
+      'about about about about';
+  }
+
+  .lobby__table {
+    align-self: center;
+  }
+}
+
+.lobby__side  { grid-area: side; }
+.lobby__app   { grid-area: app; }
+.lobby__table { grid-area: table; }
+.lobby__about { grid-area: about; }
+
+
+/* -------------------------------------------------------------
+   .lobby__pools-wrap — container for the tab content area
+   ------------------------------------------------------------- */
+
+.lobby__pools-wrap {
+  position: relative;
+  min-height: 365px;
+}
+
+@media (min-width: 800px) {
+  .lobby__pools-wrap {
+    min-height: 538px;
+  }
+}
+
+
+/* -------------------------------------------------------------
+   .lobby-bg-circle — decorative Go stone ring behind pools
+   ------------------------------------------------------------- */
+
+.lobby-bg-circle {
+  position: absolute;
+  opacity: 0.1;
+  color: var(--c-font);
+  pointer-events: none;
+  z-index: 0;
+  width: 280px;
+  height: 280px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.lobby-bg-circle__ring {
+  stroke-width: 3;
+}
+
+@media (min-width: 800px) {
+  .lobby-bg-circle {
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    transform: none;
+    inset: 0;
+  }
+
+  .lobby-bg-circle__ring {
+    stroke-width: 5;
+  }
+}
+
+
+/* -------------------------------------------------------------
+   .lpools — pool card grid  (ported from app/_pool.scss)
+   ------------------------------------------------------------- */
+
+.lpools {
+  font-family: Roboto, sans-serif;
+  font-weight: 300;
+  /* fluid font-size: 14px at 320px viewport → 25px at 1200px */
+  font-size: clamp(14px, calc(10px + 1.25vw), 25px);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: minmax(80px, auto);
+  gap: 9px;
+  padding-top: 9px;
+  background-color: transparent !important;
+  box-shadow: none;
+  overflow: visible !important;
+  position: relative;
+  z-index: 1;
+}
+
+.lpools .clock {
+  display: block;
+  font-size: 1.1em;
+  letter-spacing: 0.05em;
+  line-height: 1.6em;
+}
+
+
+/* -------------------------------------------------------------
+   .lpool — individual pool card  (ported from app/_pool.scss)
+   ------------------------------------------------------------- */
+
+.lpool {
+  display: flex;
+  flex-direction: column;
+  border-radius: 6px;
+  overflow-wrap: break-word;
+  word-break: normal;
+  transition: all 150ms ease;
+  justify-content: center;
+  align-items: center;
+  padding: 0.8em 0.4em;
+  cursor: pointer;
+  color: var(--c-font-dim);
+  background: var(--c-pool-button);
+}
+
+html.light .lpool {
+  background: var(--m-bg--fade-50);
+}
+
+.lpool:hover {
+  color: var(--c-font);
+  background: var(--m-accent--fade-80) !important;
+  opacity: 1;
+}
+
+.lpool.active {
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+}
+
+.lpool.active .perf {
+  display: none;
+}
+
+.lpool.transp {
+  opacity: 0.35;
+}
+
+.lpool--custom {
+  opacity: 0.7;
+}
+
+/* Board size label inside each pool card */
+.board-size {
+  font-size: 0.75em;
+  opacity: 0.7;
+}
+
+
+/* -------------------------------------------------------------
+   .hooks__list — lobby/correspondence game table
+   (ported from app/_hook-list.scss)
+   ------------------------------------------------------------- */
+
+.hooks__list {
+  width: 100%;
+  border-collapse: collapse;
+  position: relative;
+  z-index: 1;
+}
+
+.hooks__list tr.join:hover td {
+  background: var(--m-accent--fade-50);
+  cursor: pointer;
+}
+
+.hooks__list tr.cancel td {
+  background: var(--m-secondary--fade-60);
+}
+
+.hooks__list th {
+  font-family: Roboto, sans-serif;
+  font-weight: 300;
+  padding: 1em 0.7em;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--c-font-dim);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.hooks__list th:first-child {
+  padding-inline-start: 1.5em;
+}
+
+.hooks__list td {
+  padding: 0.5em 0.7em;
+  border-bottom: 1px solid var(--c-border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--m-bg--fade-50);
+}
+
+.hooks__list td:first-child {
+  padding-inline-start: 1.5em;
+  font-weight: 500;
+}
+
+.hooks__list td.your-turn {
+  color: var(--c-good);
+  font-weight: bold;
+}
+
+
+/* -------------------------------------------------------------
+   .lobby__tab-empty — shown when hook/correspondence list is empty
+   ------------------------------------------------------------- */
+
+.lobby__tab-empty {
+  padding: 1em;
+  color: var(--c-font-dim);
+}
+
+
+/* -------------------------------------------------------------
+   .lobby__live-* — active games panel (right side)
+   ------------------------------------------------------------- */
+
+.lobby__box {
+  padding-left: 0.8em;
+}
+
+.lobby__side-empty {
+  padding: 1em;
+  color: var(--c-font-dim);
+  font-size: 0.9em;
+}
+
+.lobby__live-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.lobby__live-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5em 0.8em;
+  text-decoration: none;
+  color: var(--c-font);
+  font-size: 0.9em;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.lobby__live-row:last-child {
+  border-bottom: none;
+}
+
+.lobby__live-row:hover {
+  background: var(--c-bg-zebra);
+}
+
+.lobby__live-row__moves {
+  color: var(--c-font-dim);
+  font-size: 0.85em;
+}
+
+
+/* -------------------------------------------------------------
+   .lobby__start — action buttons (ported from lobby/_table.scss)
+   ------------------------------------------------------------- */
+
+.lobby__start {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: 9px;
+}
+
+.lobby__start__button {
+  display: flex;
+  align-items: center;
+  font-size: 1.2em;
+  gap: 1em;
+  padding-inline: 2em 3em;
+  height: 3.2em;
+  text-transform: none;
+}
+
+.lobby__start__button::before {
+  font-family: lichess;
+  font-style: normal;
+  font-weight: normal;
+  text-transform: none;
+  unicode-bidi: isolate;
+  font-size: 32px;
+  color: var(--c-font-dimmer);
+  opacity: 0.9;
+  transition: color 150ms ease;
+}
+
+.lobby__start__button--hook.button::before   { content: '\e044'; }
+.lobby__start__button--friend.button::before { content: '\e050'; }
+.lobby__start__button--ai.button::before     { content: '\e07e'; }
+
+.lobby__start__button.disabled { opacity: 0.2; }
+
+@media (hover: hover) {
+  .lobby__start__button:hover:not(.disabled) { color: var(--c-font-clear) !important; }
+  .lobby__start__button:hover:not(.disabled)::before { color: var(--c-accent); }
+  .lobby__start__button:hover.disabled { cursor: default; }
+}
+
+
+/* -------------------------------------------------------------
+   .lobby__counters — "N players online / N games in play"
+   ------------------------------------------------------------- */
+
+.lobby__counters {
+  display: flex;
+  gap: 1.5em;
+  padding: 0.6em 1em;
+  font-size: 0.9em;
+  color: var(--c-font-dim);
+  grid-column: 1 / -1;
+}
+
+.lobby__counter strong {
+  color: var(--c-font);
+}
+
+
+/* -------------------------------------------------------------
+   .lobby__about — footer links  (ported from lobby/_about.scss)
+   ------------------------------------------------------------- */
+
+.lobby__about {
+  display: flex;
+  align-content: flex-start;
+  justify-content: center;
+  flex-flow: row wrap;
+  font-size: 0.85em;
+  font-weight: bold;
+  grid-area: about;
+}
+
+.lobby__about a {
+  margin-inline-end: 1.2em;
+  white-space: nowrap;
+  color: var(--c-font-page);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.lobby__about a:hover {
+  color: var(--c-link);
+}
+
+@media (any-pointer: coarse) {
+  .lobby__about a {
+    padding: 0.5em;
+  }
+}

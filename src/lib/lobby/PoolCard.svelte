@@ -18,10 +18,3 @@
     <span class="perf">{label}</span>
   {/if}
 </div>
-
-<style>
-  .board-size {
-    font-size: 0.75em;
-    opacity: 0.7;
-  }
-</style>
