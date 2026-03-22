@@ -12,7 +12,8 @@
     showCoords = false,
     currentSign = 1,
     markerMap = null,
-    childrenMap = null
+    childrenMap = null,
+    interactive = true
   } = $props();
   const half = $derived(vertexSize / 2);
   const fl = Math.floor;
@@ -99,6 +100,7 @@
     class="go-goban go-goban-image"
     class:go-turn-black={currentSign === 1}
     class:go-turn-white={currentSign === -1}
+    class:go-interactive={interactive}
     style="display: inline-grid; line-height: 1em;"
     onclick={handleClick}
     role="img"

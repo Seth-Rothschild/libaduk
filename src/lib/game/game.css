@@ -337,6 +337,59 @@
   margin-top: 0.5em;
 }
 
+.waiting-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.waiting-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-weight: bold;
+  color: var(--c-font);
+}
+
+.waiting-pulse {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  animation: waiting-pulse 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes waiting-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+
+.waiting-context {
+  font-size: 0.85em;
+  color: var(--c-font-dim);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.copy-link-btn {
+  align-self: flex-start;
+  background: var(--c-bg-high);
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  color: var(--c-font);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85em;
+  padding: 0.3em 0.8em;
+  transition: background 150ms ease;
+}
+
+.copy-link-btn:hover {
+  background: var(--c-bg-zebra);
+}
+
 /* -------------------------------------------------------------
    .color-icon — stone icon before player name text
    Dark theme: outline = black stone, filled = white stone
@@ -596,15 +649,18 @@ html.light .color-icon.white::before {
 
 .go-vertex {
   position: relative;
+}
+
+.go-interactive .go-vertex {
   cursor: pointer;
 }
 
-.go-turn-black .go-vertex.go-empty:hover {
+.go-interactive.go-turn-black .go-vertex.go-empty:hover {
   background: rgba(0, 0, 0, 0.3);
   border-radius: 50%;
 }
 
-.go-turn-white .go-vertex.go-empty:hover {
+.go-interactive.go-turn-white .go-vertex.go-empty:hover {
   background: rgba(255, 255, 255, 0.4);
   border-radius: 50%;
 }
@@ -1103,6 +1159,20 @@ html.light .color-icon.white::before {
 .move-branches {
   font-size: 0.9em;
   opacity: 0.6;
+}
+
+.move-name {
+  font-size: 0.78em;
+  color: var(--c-accent);
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.move-entry.active .move-name {
+  color: inherit;
+  opacity: 0.8;
 }
 
 .score-display {

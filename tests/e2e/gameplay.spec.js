@@ -152,6 +152,216 @@ test('black resigns and white wins by resignation', async ({ browser }) => {
   await expect(visitor.locator('.message')).toContainText('by Resignation');
 });
 
+async function playMovesAndResign(black, white) {
+  await black.locator('[data-x="2"][data-y="2"]').click();
+  await expect(white.locator('[data-x="2"][data-y="2"] .go-stone')).toBeVisible();
+
+  await white.locator('[data-x="6"][data-y="6"]').click();
+  await expect(black.locator('[data-x="6"][data-y="6"] .go-stone')).toBeVisible();
+
+  await black.locator('[data-x="3"][data-y="3"]').click();
+  await expect(white.locator('[data-x="3"][data-y="3"] .go-stone')).toBeVisible();
+
+  await black.locator('button', { hasText: 'Resign' }).click();
+
+  await expect(black.locator('.message')).toContainText('You lose');
+  await expect(white.locator('.message')).toContainText('You win');
+}
+
+test('analysis board button appears after game ends', async ({ browser }) => {
+  const { black, white } = await createAndJoinGame(browser);
+  await playMovesAndResign(black, white);
+
+  await expect(black.locator('button', { hasText: 'Analysis board' })).toBeVisible();
+  await expect(white.locator('button', { hasText: 'Analysis board' })).toBeVisible();
+});
+
+test('analysis mode preserves game moves', async ({ browser }) => {
+  const { black, white } = await createAndJoinGame(browser);
+  await playMovesAndResign(black, white);
+
+  await black.locator('button', { hasText: 'Analysis board' }).click();
+
+  // The three stones from the game should still be on the board
+  await expect(black.locator('[data-x="2"][data-y="2"] .go-stone')).toBeVisible();
+  await expect(black.locator('[data-x="6"][data-y="6"] .go-stone')).toBeVisible();
+  await expect(black.locator('[data-x="3"][data-y="3"] .go-stone')).toBeVisible();
+
+  // The move list should show the three moves
+  await expect(black.locator('.analysis-moves')).toBeVisible();
+});
+
+test('one player entering analysis puts both players into analysis', async ({ browser }) => {
+  const { black, white } = await createAndJoinGame(browser);
+  await playMovesAndResign(black, white);
+
+  // Only black clicks the button
+  await black.locator('button', { hasText: 'Analysis board' }).click();
+
+  // Both players should see the analysis board
+  await expect(black.locator('.analysis-moves')).toBeVisible();
+  await expect(white.locator('.analysis-moves')).toBeVisible();
+});
+
+test('analysis moves are synced in real time', async ({ browser }) => {
+  const { black, white } = await createAndJoinGame(browser);
+  await playMovesAndResign(black, white);
+
+  await black.locator('button', { hasText: 'Analysis board' }).click();
+  await expect(white.locator('.analysis-moves')).toBeVisible();
+
+  // White places an analysis move — both see it
+  await white.locator('[data-x="4"][data-y="4"]').click();
+  await expect(white.locator('[data-x="4"][data-y="4"] .go-stone')).toBeVisible();
+  await expect(black.locator('[data-x="4"][data-y="4"] .go-stone')).toBeVisible();
+
+  // Black places an analysis move — both see it
+  await black.locator('[data-x="5"][data-y="5"]').click();
+  await expect(black.locator('[data-x="5"][data-y="5"] .go-stone')).toBeVisible();
+  await expect(white.locator('[data-x="5"][data-y="5"] .go-stone')).toBeVisible();
+});
+
+test('player who refreshes returns to analysis if others are in it', async ({ browser }) => {
+  const { black, white, gameUrl } = await createAndJoinGame(browser);
+  await playMovesAndResign(black, white);
+
+  await black.locator('button', { hasText: 'Analysis board' }).click();
+  await expect(white.locator('.analysis-moves')).toBeVisible();
+
+  // Black adds an analysis move
+  await black.locator('[data-x="4"][data-y="4"]').click();
+  await expect(black.locator('[data-x="4"][data-y="4"] .go-stone')).toBeVisible();
+
+  // Black refreshes — should come back into analysis automatically
+  await black.goto(gameUrl);
+  await expect(black.locator('.analysis-moves')).toBeVisible();
+  await expect(black.locator('[data-x="4"][data-y="4"] .go-stone')).toBeVisible();
+});
+
+test('player who navigates away and back returns to analysis', async ({ browser }) => {
+  const { black, white, gameUrl } = await createAndJoinGame(browser);
+  await playMovesAndResign(black, white);
+
+  await black.locator('button', { hasText: 'Analysis board' }).click();
+  await expect(white.locator('.analysis-moves')).toBeVisible();
+
+  // White adds an analysis move
+  await white.locator('[data-x="4"][data-y="4"]').click();
+  await expect(white.locator('[data-x="4"][data-y="4"] .go-stone')).toBeVisible();
+
+  // White navigates away
+  await white.goto('/');
+
+  // White comes back — should be in analysis with the move visible
+  await white.goto(gameUrl);
+  await expect(white.locator('.analysis-moves')).toBeVisible();
+  await expect(white.locator('[data-x="4"][data-y="4"] .go-stone')).toBeVisible();
+});
+
+test('clicking move in analysis move list syncs to other player', async ({ browser }) => {
+  const { black, white } = await createAndJoinGame(browser);
+  await playMovesAndResign(black, white);
+
+  await black.locator('button', { hasText: 'Analysis board' }).click();
+  await expect(white.locator('.analysis-moves')).toBeVisible();
+
+  // White adds two analysis moves so there's a move to navigate back to
+  await white.locator('[data-x="4"][data-y="4"]').click();
+  await expect(black.locator('[data-x="4"][data-y="4"] .go-stone')).toBeVisible();
+
+  await black.locator('[data-x="5"][data-y="5"]').click();
+  await expect(white.locator('[data-x="5"][data-y="5"] .go-stone')).toBeVisible();
+
+  // White clicks a move in the move list to navigate back — black should follow
+  await white.locator('.move-entry').first().click();
+  await expect(white.locator('[data-x="5"][data-y="5"] .go-stone')).not.toBeVisible();
+  await expect(black.locator('[data-x="5"][data-y="5"] .go-stone')).not.toBeVisible();
+});
+
+test('re-clicking analysis board does not lose analysis state', async ({ browser }) => {
+  const { black, white } = await createAndJoinGame(browser);
+  await playMovesAndResign(black, white);
+
+  await black.locator('button', { hasText: 'Analysis board' }).click();
+  await expect(white.locator('.analysis-moves')).toBeVisible();
+
+  // Add an analysis move
+  await white.locator('[data-x="4"][data-y="4"]').click();
+  await expect(black.locator('[data-x="4"][data-y="4"] .go-stone')).toBeVisible();
+
+  // Black clicks analysis board again — should reload existing state, not reset
+  await black.locator('button', { hasText: 'Analysis board' }).click();
+  await expect(black.locator('[data-x="4"][data-y="4"] .go-stone')).toBeVisible();
+});
+
+async function createAndJoinTimedGame(browser) {
+  const contextOne = await browser.newContext();
+  const contextTwo = await browser.newContext();
+  const black = await contextOne.newPage();
+  const white = await contextTwo.newPage();
+
+  await black.goto('/');
+  await expect.poll(() => black.evaluate(() => localStorage.getItem('guest-id'))).toBeTruthy();
+  await black.locator('.lobby__start__button--friend').click();
+
+  const modal = black.locator('dialog.game-setup');
+  await expect(modal).toBeVisible();
+  await modal.locator('.size-choice', { hasText: '9×9' }).click();
+  await modal.locator('button', { hasText: 'Byo-yomi' }).click();
+  await modal.locator('.color-choice .black').click();
+  await modal.locator('.lobby__start__button--friend').click();
+  await black.waitForURL(/\/play\//);
+  const gameUrl = black.url();
+
+  await white.goto(gameUrl);
+  const joinModal = white.locator('dialog.join-game-modal');
+  await expect(joinModal).toBeVisible();
+  await joinModal.locator('button', { hasText: 'Join game' }).click();
+  await expect(joinModal).not.toBeVisible();
+
+  return { black, white, gameUrl };
+}
+
+test('finished game clocks show final time on reload', async ({ browser }) => {
+  const { black, white, gameUrl } = await createAndJoinTimedGame(browser);
+
+  // Both players should see clocks
+  await expect(black.locator('.rclock')).toHaveCount(2);
+
+  // Black plays a move so clocks start ticking
+  await black.locator('[data-x="2"][data-y="2"]').click();
+  await expect(white.locator('[data-x="2"][data-y="2"] .go-stone')).toBeVisible();
+
+  // White plays a move
+  await white.locator('[data-x="4"][data-y="4"]').click();
+  await expect(black.locator('[data-x="4"][data-y="4"] .go-stone')).toBeVisible();
+
+  // Read the clock text before resigning
+  const blackClockText = await black.locator('.rclock-bottom .time').textContent();
+
+  // Black resigns
+  await black.locator('button', { hasText: 'Resign' }).click();
+  await expect(black.locator('.message')).toContainText('You lose');
+
+  await black.waitForTimeout(200);
+
+  // A visitor loads the finished game — clocks should not show the initial time
+  const contextThree = await browser.newContext();
+  const visitor = await contextThree.newPage();
+  await visitor.goto(gameUrl);
+  await expect(visitor.locator('.message')).toContainText('White wins');
+
+  // The clocks should be visible and show the persisted final time
+  await expect(visitor.locator('.rclock')).toHaveCount(2);
+  const visitorClockTop = await visitor.locator('.rclock-top .time').textContent();
+  const visitorClockBottom = await visitor.locator('.rclock-bottom .time').textContent();
+
+  // At least one clock should differ from the initial time — both started at the same value,
+  // but after moves were played, at least one side has elapsed time
+  const bothShowInitial = visitorClockTop === visitorClockBottom;
+  expect(bothShowInitial).toBe(false);
+});
+
 test('force resignation when opponent leaves', async ({ browser }) => {
   const { black, white, gameUrl } = await createAndJoinGame(browser);
 

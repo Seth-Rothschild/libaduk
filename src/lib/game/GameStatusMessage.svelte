@@ -54,7 +54,7 @@
       {:else if isMyTurn}
         You play the {myColor} stones<br /><strong>It's your turn!</strong>
       {:else}
-        Waiting for opponent...
+        It's your opponent's turn
       {/if}
       {#if isCorrGame && corrDeadline}
         <br /><span class="corr-deadline">{formatCorrDeadline(corrDeadline)}</span>

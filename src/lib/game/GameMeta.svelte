@@ -8,7 +8,9 @@
     isLocal,
     isSpectator,
     blackName,
-    whiteName
+    whiteName,
+    gameType = null,
+    gameUrl = null
   } = $props();
 
   function formatResult(result) {
@@ -17,6 +19,13 @@
     if (result.endsWith('+T')) return 'on time';
     return result;
   }
+
+  async function copyLink() {
+    await navigator.clipboard.writeText(gameUrl);
+  }
+
+  const showWaiting = $derived(status === 'waiting' && !isLocal && !isSpectator);
+  const isLobbyGame = $derived(gameType === 'hook');
 </script>
 
 <div class="game__meta">
@@ -29,6 +38,24 @@
       <div class="player color-icon is white text">{whiteName}</div>
     </div>
   </section>
+  {#if showWaiting}
+    <section class="waiting-section">
+      <div class="waiting-header">
+        <span class="waiting-pulse"></span>
+        Waiting for opponent
+      </div>
+      <p class="waiting-context">
+        {#if isLobbyGame}
+          Visible in the lobby — anyone can join, or you can share this link with a specific person.
+        {:else}
+          Not visible from the lobby. You'll need to share this link to invite your opponent.
+        {/if}
+      </p>
+      {#if gameUrl}
+        <button class="copy-link-btn" onclick={copyLink}>Copy link</button>
+      {/if}
+    </section>
+  {/if}
   {#if status === 'gameover'}
     <section class="status">
       {#if isLocal || isSpectator}

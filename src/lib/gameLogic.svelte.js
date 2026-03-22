@@ -169,7 +169,14 @@ export class GameState {
 
     const tc = this.timeControl;
     const hasRealTimeClock = tc.type === 'byoyomi' || tc.type === 'fischer';
-    if (hasRealTimeClock) {
+    if (hasRealTimeClock && game.clockState) {
+      this.clockState = {
+        black: { ...game.clockState.black },
+        white: { ...game.clockState.white },
+        activeColor: null,
+        turnStartedAt: null
+      };
+    } else if (hasRealTimeClock) {
       const mainMs = (tc.initial ?? 0) * 1000;
       const isByoyomi = tc.type === 'byoyomi';
       const periodMs = isByoyomi ? (tc.periodTime ?? 30) * 1000 : 0;

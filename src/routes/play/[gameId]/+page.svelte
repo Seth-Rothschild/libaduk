@@ -9,15 +9,15 @@
   import { boardState } from '$lib/boardState.svelte.js';
   import { getGuestId } from '$lib/guestId.js';
   import { GameState } from '$lib/gameLogic.svelte.js';
-  import { AnalysisState } from '$lib/game/analysisState.svelte.js';
+  import { AnalysisState, serializeTree, getNodePath, followNodePath } from '$lib/game/analysisState.svelte.js';
   import { gameSocket } from '$lib/socket.svelte.js';
   import GameChat from '$lib/game/GameChat.svelte';
   import GameMeta from '$lib/game/GameMeta.svelte';
   import GameStatusMessage from '$lib/game/GameStatusMessage.svelte';
   import GameControls from '$lib/game/GameControls.svelte';
   import AnalysisMoves from '$lib/game/AnalysisMoves.svelte';
-  import AnalysisControls from '$lib/game/AnalysisControls.svelte';
   import EditBar from '$lib/game/EditBar.svelte';
+  import GameGraph from '$lib/game/GameGraph.svelte';
   import JoinGameModal from '$lib/game/JoinGameModal.svelte';
   import {
     colorName,
@@ -165,13 +165,52 @@
   let analysis = $state(null);
   const analysisMode = $derived(analysis !== null);
 
-  function enterAnalysis() {
+  function enterAnalysisFromTree(tree) {
     analysis = new AnalysisState(gs.boardSize);
-    analysis.loadMoves(data.game.moves);
+    analysis.loadTree(tree);
   }
 
-  function exitAnalysis() {
-    analysis = null;
+  function enterAnalysisFromMoves() {
+    analysis = new AnalysisState(gs.boardSize);
+    const moves = [];
+    for (let i = 1; i < gs.lastMoveHistory.length; i++) {
+      const vertex = gs.lastMoveHistory[i];
+      if (vertex) {
+        moves.push({ type: 'move', x: vertex[0], y: vertex[1] });
+      } else {
+        moves.push({ type: 'pass' });
+      }
+    }
+    analysis.loadMoves(moves);
+  }
+
+  function enterAnalysis() {
+    if (analysis) return;
+    if (data.game.analysisTree) {
+      enterAnalysisFromTree(data.game.analysisTree);
+    } else {
+      enterAnalysisFromMoves();
+    }
+    const tree = serializeTree(analysis.root);
+    gameSocket.send({ type: 'analysis-enter', tree });
+  }
+
+  function persistAnalysisTree() {
+    const tree = serializeTree(analysis.root);
+    gameSocket.send({ type: 'analysis-tree', tree });
+  }
+
+  function onAnalysisVertexClick(x, y) {
+    analysis.onVertexClick(x, y);
+    gameSocket.send({ type: 'analysis-move', x, y, tool: analysis.tool });
+    persistAnalysisTree();
+  }
+
+  function navigateAnalysisTo(node) {
+    analysis.currentNode = node;
+    analysis.animatedVertex = null;
+    const path = getNodePath(node);
+    gameSocket.send({ type: 'analysis-navigate', path });
   }
 
   // --- Game actions ---
@@ -220,6 +259,14 @@
 
   function abort() {}
 
+  function serializeClockState() {
+    if (!gs.clockState) return null;
+    return {
+      black: { ...gs.clockState.black },
+      white: { ...gs.clockState.white }
+    };
+  }
+
   function resign() {
     const winner = myColor === 'black' ? 'white' : 'black';
     const result = winner === 'white' ? 'W+R' : 'B+R';
@@ -228,13 +275,13 @@
       gs.winner = mySign === 1 ? -1 : 1;
       gs.winnerResult = result;
     } else {
-      gameSocket.send({ type: 'gameover', winner, result });
+      gameSocket.send({ type: 'gameover', winner, result, clockState: serializeClockState() });
     }
   }
 
   function forceResign() {
     const result = myColor === 'white' ? 'W+R' : 'B+R';
-    gameSocket.send({ type: 'gameover', winner: myColor, result });
+    gameSocket.send({ type: 'gameover', winner: myColor, result, clockState: serializeClockState() });
   }
 
   function approveScore() {
@@ -255,7 +302,7 @@
     gs.winner = winner;
     gs.finalScore = finalScore;
     if (!isLocal) {
-      gameSocket.send({ type: 'gameover', winner: winner === 1 ? 'black' : 'white', result: resultString });
+      gameSocket.send({ type: 'gameover', winner: winner === 1 ? 'black' : 'white', result: resultString, clockState: serializeClockState() });
     }
   }
 
@@ -293,15 +340,19 @@
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     if (analysisMode) {
       const keyMap = {
-        ArrowLeft: 'prev',
-        ArrowRight: 'next',
+        ArrowUp: 'prev',
+        ArrowDown: 'next',
         Home: 'first',
-        End: 'last'
+        End: 'last',
+        ArrowLeft: 'prev-variation',
+        ArrowRight: 'next-variation'
       };
       const action = keyMap[e.key];
       if (action) {
         e.preventDefault();
         analysis.navigate(action);
+        const path = getNodePath(analysis.currentNode);
+        gameSocket.send({ type: 'analysis-navigate', path });
       }
       return;
     }
@@ -330,7 +381,10 @@
         else if (whiteName === displayName) gs.mySign = -1;
       }
       chatMessages = data.chat ?? [];
-      analysis = null;
+
+      if (data.game.analysisTree) {
+        enterAnalysisFromTree(data.game.analysisTree);
+      }
 
       gameSocket.onMessage((msg) => {
         if (msg.type === 'joined') {
@@ -379,6 +433,20 @@
           gs.winner = msg.winner === 'black' ? 1 : -1;
           gs.winnerResult = msg.result ?? null;
         }
+        if (msg.type === 'analysis-enter') {
+          enterAnalysisFromTree(msg.tree);
+        }
+        if (msg.type === 'analysis-navigate' && analysis) {
+          const target = followNodePath(analysis.root, msg.path);
+          analysis.currentNode = target;
+          analysis.animatedVertex = null;
+        }
+        if (msg.type === 'analysis-move' && analysis) {
+          const prevTool = analysis.tool;
+          analysis.tool = msg.tool ?? 'stone';
+          analysis.onVertexClick(msg.x, msg.y);
+          analysis.tool = prevTool;
+        }
       });
       gameSocket.join(currentGameId, data.viewerColor ?? null);
 
@@ -405,6 +473,8 @@
       {isSpectator}
       blackName={resolvePlayerName('black')}
       whiteName={resolvePlayerName('white')}
+      gameType={data.game.gameType}
+      gameUrl={page.url.href}
     />
     <GameChat
       {username}
@@ -428,15 +498,14 @@
         <GoBoard
           signMap={analysis.signMap}
           lastMove={analysis.currentNode?.lastMove}
+          animatedVertex={analysis.animatedVertex}
           size={gs.boardSize}
           {vertexSize}
           showCoords={boardState.showCoords}
           currentSign={analysis.currentSign}
           childrenMap={analysis.childrenMap}
           markerMap={analysis.markerMap}
-          areaMap={analysis.displayAreaMap}
-          deadStones={analysis.displayDeadStones}
-          onVertexClick={(x, y) => analysis.onVertexClick(x, y)}
+          onVertexClick={(x, y) => onAnalysisVertexClick(x, y)}
         />
         <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
       {:else}
@@ -451,6 +520,7 @@
           deadStones={gs.status === 'scoring' ? gs.deadStones : null}
           showCoords={boardState.showCoords}
           currentSign={gs.currentSign}
+          interactive={isMyTurn || gs.status === 'scoring'}
           onVertexClick={!gs.isViewingHistory &&
           (gs.status === 'playing' || gs.status === 'scoring')
             ? onVertexClick
@@ -484,10 +554,7 @@
           analysisMoveRows={analysis.moveRows}
           analysisNode={analysis.currentNode}
           boardSize={gs.boardSize}
-          onSelectNode={(node) => {
-            analysis.currentNode = node;
-            analysis.animatedVertex = null;
-          }}
+          onSelectNode={navigateAnalysisTo}
         />
       {:else}
         {#if gs.isViewingHistory}
@@ -514,19 +581,18 @@
       {/if}
     </div>
 
-    <div class="rcontrols">
-      {#if analysisMode}
-        <AnalysisControls
-          status={analysis.status}
-          score={analysis.score}
-          estimatedScore={analysis.estimatedScore}
-          showEstimate={analysis.showEstimate}
-          onStartScoring={() => analysis.startScoring()}
-          onStopScoring={() => analysis.stopScoring()}
-          onToggleEstimate={() => (analysis.showEstimate = !analysis.showEstimate)}
-          onExit={exitAnalysis}
+    {#if analysisMode}
+      <div class="rgraph">
+        <GameGraph
+          root={analysis.root}
+          currentNode={analysis.currentNode}
+          version={analysis.version}
+          onSelectNode={navigateAnalysisTo}
         />
-      {/if}
+      </div>
+    {/if}
+
+    <div class="rcontrols">
       <GameControls
         status={gs.status}
         {isSpectator}
@@ -547,6 +613,7 @@
         onApproveWhite={() => {
           gs.whiteApproved = true;
         }}
+        onAnalysis={enterAnalysis}
       />
     </div>
 

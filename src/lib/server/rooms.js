@@ -176,12 +176,27 @@ export function attachWebSocketServer(httpServer) {
       if (msg.type === 'approve-score' && socket.gameId) {
         broadcastToOthers(socket.gameId, socket, { type: 'approve-score', color: msg.color });
       }
+      if (msg.type === 'analysis-enter' && socket.gameId) {
+        await db.updateGame(socket.gameId, { analysisTree: msg.tree });
+        broadcastToOthers(socket.gameId, socket, { type: 'analysis-enter', tree: msg.tree });
+      }
+      if (msg.type === 'analysis-navigate' && socket.gameId) {
+        broadcastToOthers(socket.gameId, socket, { type: 'analysis-navigate', path: msg.path });
+      }
+      if (msg.type === 'analysis-move' && socket.gameId) {
+        broadcastToOthers(socket.gameId, socket, { type: 'analysis-move', x: msg.x, y: msg.y, tool: msg.tool });
+      }
+      if (msg.type === 'analysis-tree' && socket.gameId) {
+        await db.updateGame(socket.gameId, { analysisTree: msg.tree });
+      }
       if (msg.type === 'gameover' && socket.gameId) {
         const game = await db.getGame(socket.gameId);
         if (game && game.status !== 'finished') {
           const winner = msg.winner;
           const result = msg.result ?? null;
-          await db.updateGame(socket.gameId, { status: 'finished', winner, result, endedAt: Date.now() });
+          const patch = { status: 'finished', winner, result, endedAt: Date.now() };
+          if (msg.clockState) patch.clockState = msg.clockState;
+          await db.updateGame(socket.gameId, patch);
           broadcast(socket.gameId, { type: 'gameover', winner, result });
         }
       }

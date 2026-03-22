@@ -45,6 +45,92 @@ function nextNumber(markerMap, size) {
   return String(max + 1);
 }
 
+function hasMarkers(markerMap) {
+  for (const row of markerMap) {
+    for (const cell of row) {
+      if (cell !== null) return true;
+    }
+  }
+  return false;
+}
+
+function serializeNode(node) {
+  const result = {};
+  if (node.lastMove) {
+    result.move = node.lastMove;
+  } else if (node.parent) {
+    result.pass = true;
+  }
+  if (node.comment) result.comment = node.comment;
+  if (hasMarkers(node.markerMap)) result.markers = node.markerMap;
+  if (node.children.length > 0) {
+    result.children = node.children.map(serializeNode);
+  }
+  return result;
+}
+
+function deserializeNode(data, parentBoard, signToPlay, parent, size) {
+  let board = parentBoard;
+  let lastMove = null;
+
+  if (data.move) {
+    lastMove = data.move;
+    try {
+      board = parentBoard.makeMove(signToPlay, lastMove, {
+        preventSuicide: true,
+        preventOverwrite: true,
+        preventKo: true
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  const nextSign = signToPlay === 1 ? -1 : 1;
+  const markers = data.markers ?? emptyMarkerMap(size);
+  const moveName = lastMove ? getAnalysisMoveName(parentBoard, signToPlay, lastMove) : null;
+  const comment = data.comment ?? '';
+  const node = makeAnalysisNode(board, lastMove, markers, nextSign, parent, moveName, comment);
+
+  if (data.children) {
+    for (const childData of data.children) {
+      const childNode = deserializeNode(childData, board, nextSign, node, size);
+      if (childNode) node.children.push(childNode);
+    }
+  }
+
+  return node;
+}
+
+export function getNodePath(node) {
+  const path = [];
+  let current = node;
+  while (current.parent) {
+    const idx = current.parent.children.indexOf(current);
+    path.unshift(idx);
+    current = current.parent;
+  }
+  return path;
+}
+
+export function followNodePath(root, path) {
+  let node = root;
+  for (const idx of path) {
+    if (!node.children[idx]) return node;
+    node = node.children[idx];
+  }
+  return node;
+}
+
+export function serializeTree(root) {
+  return serializeNode(root);
+}
+
+export function deserializeTree(data, size) {
+  const emptyBoard = GoBoardLib.fromDimensions(size);
+  return deserializeNode(data, emptyBoard, 1, null, size);
+}
+
 export class AnalysisState {
   #size;
   #komi;
@@ -191,6 +277,16 @@ export class AnalysisState {
         node = child;
       }
     }
+    this.#root = root;
+    this.currentNode = node;
+    this.#reset();
+  }
+
+  loadTree(data) {
+    const root = deserializeTree(data, this.#size);
+    if (!root) return;
+    let node = root;
+    while (node.children.length > 0) node = node.children[0];
     this.#root = root;
     this.currentNode = node;
     this.#reset();

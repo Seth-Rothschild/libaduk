@@ -14,7 +14,8 @@
     onAbort,
     onApproveScore,
     onApproveBlack,
-    onApproveWhite
+    onApproveWhite,
+    onAnalysis = null
   } = $props();
 </script>
 
@@ -59,4 +60,7 @@
       {myApproved ? 'Score accepted' : 'Accept score'}
     </button>
   {/if}
+{/if}
+{#if status === 'gameover' && onAnalysis}
+  <button class="button button-green" onclick={onAnalysis}>Analysis board</button>
 {/if}
