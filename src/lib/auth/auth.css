@@ -1,0 +1,165 @@
+/* =============================================================
+   auth.css — styles for login, signup, and the shared box +
+   form primitives they use.
+
+   Replaces: ui/bits/css/_auth.scss + ui/lib/css/form/_form3.scss
+             + ui/lib/css/component/_box.scss
+   ============================================================= */
+
+/* -------------------------------------------------------------
+   .box — content card with shadow and bg
+   ------------------------------------------------------------- */
+
+.box {
+  background: var(--c-bg-box);
+  box-shadow:
+    0 2px 2px rgba(0, 0, 0, 0.14),
+    0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 1px 5px rgba(0, 0, 0, 0.12);
+}
+
+@media (min-width: 800px) {
+  .box {
+    border-radius: 6px;
+    overflow: hidden;
+  }
+}
+
+/* -------------------------------------------------------------
+   .box-pad — adds standard interior padding to a .box
+   ------------------------------------------------------------- */
+
+.box-pad {
+  padding: 4vh 2rem;
+}
+
+.box-pad .box__top {
+  padding-top: 0;
+  padding-bottom: 4vh;
+}
+
+/* -------------------------------------------------------------
+   .box__top — title bar inside a box (h1 or heading element)
+   ------------------------------------------------------------- */
+
+.box__top {
+  padding: 4vh 2rem;
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 1.5em;
+}
+
+/* -------------------------------------------------------------
+   .auth — centered narrow container for auth pages
+   ------------------------------------------------------------- */
+
+.auth {
+  width: 100%;
+  margin: auto;
+}
+
+@media (min-width: 650px) {
+  .auth {
+    width: 40em;
+  }
+}
+
+.auth .button {
+  width: 100%;
+  padding: 1rem;
+}
+
+.auth .alternative {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2rem;
+  font-size: 0.9em;
+  line-height: 2em;
+  gap: 1em;
+}
+
+/* .auth-login is narrower than the default .auth width */
+
+@media (min-width: 500px) {
+  .auth-login {
+    width: 30em;
+  }
+}
+
+/* -------------------------------------------------------------
+   .form-group — vertical spacing between form fields
+   ------------------------------------------------------------- */
+
+.form-group {
+  margin-bottom: 3rem;
+}
+
+@media (max-height: 399px) {
+  .form-group {
+    margin-bottom: 1rem;
+  }
+}
+
+/* -------------------------------------------------------------
+   .form-label — label above an input
+   ------------------------------------------------------------- */
+
+.form-label {
+  font-weight: bold;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  cursor: text;
+}
+
+/* -------------------------------------------------------------
+   .form-control — text input
+   ------------------------------------------------------------- */
+
+.form-control {
+  display: block;
+  width: 100%;
+  height: calc(2.7em + 2px);
+  border-radius: 6px;
+  background: var(--c-bg-input);
+  border: 1px solid var(--c-border);
+  padding: 0.6em 1em;
+  color: var(--c-font);
+  font: inherit;
+}
+
+.form-control:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: -2px;
+}
+
+.form-control:invalid,
+.form-control.is-invalid {
+  border-color: var(--c-bad);
+}
+
+/* -------------------------------------------------------------
+   .form-help — hint text below an input
+   ------------------------------------------------------------- */
+
+.form-help {
+  font-size: 90%;
+  margin-top: 0.25rem;
+  unicode-bidi: plaintext;
+  color: var(--c-font-dim);
+}
+
+/* -------------------------------------------------------------
+   .form3 .error — inline validation error message
+   ------------------------------------------------------------- */
+
+.form3 .error {
+  font-size: 90%;
+  margin-top: 0.25rem;
+  unicode-bidi: plaintext;
+  color: var(--c-bad);
+}

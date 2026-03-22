@@ -20,6 +20,7 @@ html {
   /* — used — */
   --c-bad: hsl(0, 60%, 50%);
   --c-bg-box: hsl(37, 7%, 14%);
+  --c-bg-input: hsl(37, 10%, 13%);
   --c-bg-header-dropdown: hsl(37, 7%, 22%);
   --c-bg-high: hsl(37, 7%, 14%);
   --c-bg-page: hsl(37, 10%, 8%);
@@ -328,6 +329,7 @@ html.light {
   /* — used — */
   --c-bad: hsl(0, 60%, 50%);
   --c-bg-box: hsl(0, 0%, 100%);
+  --c-bg-input: hsl(37, 10%, 98%);
   --c-bg-header-dropdown: hsl(0, 0%, 100%);
   --c-bg-high: hsl(0, 0%, 100%);
   --c-bg-page: hsl(37, 10%, 92%);

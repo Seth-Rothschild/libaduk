@@ -33,3 +33,4 @@ CLAUDE.md
 deploy.sh
 setup-prod.sh
 deploy-prod.sh
+test-results/*

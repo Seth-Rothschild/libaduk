@@ -3,6 +3,7 @@ import '../src/lib/base.css';
 import '../src/lib/nav/nav.css';
 import '../src/lib/lobby/lobby.css';
 import '../src/lib/game/game.css';
+import '../src/lib/auth/auth.css';
 import LayoutDecorator from './LayoutDecorator.svelte';
 
 /** @type { import('@storybook/sveltekit').Preview } */

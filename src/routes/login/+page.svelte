@@ -2,11 +2,12 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { setUsername } from '$lib/user.svelte.js';
   import { startAuthentication } from '@simplewebauthn/browser';
+  import LoginForm from '$lib/auth/LoginForm.svelte';
 
   let error = $state('');
   let submitting = $state(false);
 
-  async function submit() {
+  async function signIn() {
     error = '';
     submitting = true;
     try {
@@ -52,27 +53,4 @@
   }
 </script>
 
-<main class="auth auth-login box box-pad">
-  <h1 class="box__top">Sign in</h1>
-
-  <div class="form3">
-    {#if error}
-      <div class="form-group">
-        <p class="error">{error}</p>
-      </div>
-    {/if}
-
-    <button
-      type="button"
-      class="submit button button-metal text"
-      disabled={submitting}
-      onclick={submit}
-    >
-      {submitting ? 'Signing in…' : 'Sign in with passkey'}
-    </button>
-  </div>
-
-  <div class="alternative">
-    <a href="/signup">Register</a>
-  </div>
-</main>
+<LoginForm {error} {submitting} onSignIn={signIn} />

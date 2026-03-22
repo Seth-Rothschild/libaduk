@@ -5,6 +5,7 @@
   import '$lib/nav/nav.css';
   import '$lib/lobby/lobby.css';
   import '$lib/game/game.css';
+  import '$lib/auth/auth.css';
   import './profile/profile.css';
   import { setUsername, clearUsername } from '$lib/user.svelte.js';
   import { pingState } from '$lib/ping.svelte.js';
