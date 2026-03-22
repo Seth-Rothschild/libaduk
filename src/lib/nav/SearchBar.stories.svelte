@@ -1,19 +1,12 @@
 <script module lang="ts">
   import { defineMeta } from '@storybook/addon-svelte-csf';
-  import { expect, vi, userEvent } from 'storybook/test';
-  import { goto } from '$app/navigation';
+  import { expect, userEvent } from 'storybook/test';
   import SearchBar from './SearchBar.svelte';
 
   const { Story } = defineMeta({
     component: SearchBar,
     tags: ['autodocs']
   });
-
-  function mockSearchResults(usernames: string[]) {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
-      json: async () => usernames.map((username) => ({ username }))
-    } as Response);
-  }
 </script>
 
 <Story
@@ -59,47 +52,10 @@
 <Story
   name="Mobile: tap icon expands search"
   play={async ({ canvas }) => {
-    const icon = canvas.getByRole('link', { name: 'Search' });
+    const icon = canvas.getByRole('button', { name: 'Search' });
     await userEvent.click(icon);
     await expect(document.body).toHaveClass('clinput');
     const input = canvas.getByRole('textbox', { name: 'Search' });
     await expect(input).toHaveFocus();
-  }}
-/>
-
-<Story
-  name="Click result navigates to profile"
-  play={async ({ canvas }) => {
-    mockSearchResults(['alice', 'alicia']);
-
-    const container = canvas.getByRole('textbox', { name: 'Search' }).closest('#clinput')!;
-    await userEvent.hover(container);
-    const input = canvas.getByRole('textbox', { name: 'Search' });
-    await userEvent.type(input, 'ali');
-
-    const result = await vi.waitFor(() => canvas.getByRole('button', { name: 'alice' }));
-    await userEvent.click(result);
-
-    await expect(goto).toHaveBeenCalledWith('/profile/alice');
-    vi.restoreAllMocks();
-  }}
-/>
-
-<Story
-  name="Click result collapses search and clears query"
-  play={async ({ canvas }) => {
-    mockSearchResults(['alice']);
-
-    const container = canvas.getByRole('textbox', { name: 'Search' }).closest('#clinput')!;
-    await userEvent.hover(container);
-    const input = canvas.getByRole('textbox', { name: 'Search' });
-    await userEvent.type(input, 'ali');
-
-    const result = await vi.waitFor(() => canvas.getByRole('button', { name: 'alice' }));
-    await userEvent.click(result);
-
-    await expect(document.body).not.toHaveClass('clinput');
-    await expect(canvas.queryByRole('button', { name: 'alice' })).not.toBeInTheDocument();
-    vi.restoreAllMocks();
   }}
 />

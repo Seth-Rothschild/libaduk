@@ -22,7 +22,7 @@
   name="Excellent ping"
   play={async ({ canvas }) => {
     pingState.ping = 42;
-    await expect(canvas.getByText('42')).toBeInTheDocument();
+    await expect(await canvas.findByText('42')).toBeInTheDocument();
   }}
 />
 
@@ -30,7 +30,7 @@
   name="Good ping"
   play={async ({ canvas }) => {
     pingState.ping = 200;
-    await expect(canvas.getByText('200')).toBeInTheDocument();
+    await expect(await canvas.findByText('200')).toBeInTheDocument();
   }}
 />
 
@@ -38,7 +38,7 @@
   name="Fair ping"
   play={async ({ canvas }) => {
     pingState.ping = 400;
-    await expect(canvas.getByText('400')).toBeInTheDocument();
+    await expect(await canvas.findByText('400')).toBeInTheDocument();
   }}
 />
 
@@ -46,7 +46,7 @@
   name="Poor ping"
   play={async ({ canvas }) => {
     pingState.ping = 600;
-    await expect(canvas.getByText('600')).toBeInTheDocument();
+    await expect(await canvas.findByText('600')).toBeInTheDocument();
   }}
 />
 

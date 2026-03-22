@@ -11,6 +11,7 @@
   import { themeState } from '$lib/theme.svelte.js';
   import { boardState } from '$lib/boardState.svelte.js';
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import SiteHeader from '$lib/nav/SiteHeader.svelte';
   import GameSetupModal from '$lib/lobby/GameSetupModal.svelte';
@@ -32,6 +33,8 @@
     else clearUsername();
   });
 
+  const isGamePage = $derived($page.route.id?.startsWith('/play/') || $page.route.id?.startsWith('/analysis'));
+
   const openSetup = async (type) => {
     await goto('/');
     setupModal = type;
@@ -40,7 +43,7 @@
 
 <SiteHeader {username} onOpenSetup={openSetup} />
 
-<div id="main-wrap">
+<div id="main-wrap" class:game-page={isGamePage}>
   <main>
     {@render children()}
   </main>

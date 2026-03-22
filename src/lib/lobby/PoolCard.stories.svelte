@@ -6,6 +6,7 @@
   const { Story } = defineMeta({
     component: PoolCard,
     tags: ['autodocs'],
+    parameters: { layout: 'lobby-app' },
     args: {
       onClick: fn()
     }

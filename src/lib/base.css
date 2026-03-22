@@ -183,6 +183,9 @@ hr {
 #main-wrap.full-screen-force {
   ---main-max-width: 100%;
 }
+#main-wrap.game-page {
+  display: block;
+}
 
 main {
   grid-area: main;

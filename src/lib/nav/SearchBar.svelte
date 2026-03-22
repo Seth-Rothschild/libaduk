@@ -67,7 +67,7 @@
 </script>
 
 <div id="clinput" onmouseenter={onMouseEnter} onmouseleave={onMouseLeave}>
-  <a data-icon="&#xe057;" aria-label="Search" class="link" onclick={onIconClick}></a>
+  <button type="button" data-icon="&#xe057;" aria-label="Search" class="link" onclick={onIconClick}></button>
   <input
     type="text"
     spellcheck="false"

@@ -21,6 +21,7 @@
   const { Story } = defineMeta({
     component: GoBoard,
     tags: ['autodocs'],
+    parameters: { layout: 'game-app' },
     args: {
       onVertexClick: fn()
     }

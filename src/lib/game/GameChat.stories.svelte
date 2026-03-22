@@ -6,6 +6,7 @@
   const { Story } = defineMeta({
     component: GameChat,
     tags: ['autodocs'],
+    parameters: { layout: 'game-side' },
     args: {
       username: 'Alice',
       gameId: 'test123',

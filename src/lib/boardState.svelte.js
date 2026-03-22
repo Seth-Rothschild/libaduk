@@ -9,10 +9,10 @@ class BoardState {
     if (stored !== null) this.showCoords = stored === 'true';
   }
 
-  toggleCoords() {
+  toggleCoords = () => {
     this.showCoords = !this.showCoords;
     localStorage.setItem('go-showCoords', String(this.showCoords));
-  }
+  };
 }
 
 export const boardState = new BoardState();

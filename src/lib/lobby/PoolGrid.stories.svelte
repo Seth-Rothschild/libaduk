@@ -24,6 +24,7 @@
   const { Story } = defineMeta({
     component: PoolGrid,
     tags: ['autodocs'],
+    parameters: { layout: 'lobby-app' },
     args: {
       onSelect: fn(),
       onCustom: fn()

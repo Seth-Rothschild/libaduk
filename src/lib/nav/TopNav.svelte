@@ -2,7 +2,7 @@
   let { onCreateGame, onChallengeAFriend } = $props();
 </script>
 
-<nav id="topnav" class="hover">
+<nav id="topnav" class="hover" aria-label="Main">
   <section>
     <a href="/">
       <span class="play">Play</span>

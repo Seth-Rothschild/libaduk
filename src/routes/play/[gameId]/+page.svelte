@@ -539,15 +539,10 @@
         gameSocket.connect({ type: 'join', gameId: currentGameId, username: displayName });
       }
 
-      const mainWrap = document.getElementById('main-wrap');
-      if (mainWrap) mainWrap.style.display = 'block';
-
       document.addEventListener('keydown', handleKeydown);
     });
 
     return () => {
-      const mainWrap = document.getElementById('main-wrap');
-      if (mainWrap) mainWrap.style.display = '';
       document.removeEventListener('keydown', handleKeydown);
       gameSocket.onMessage(null);
       gameSocket.disconnect();

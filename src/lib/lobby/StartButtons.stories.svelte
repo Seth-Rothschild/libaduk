@@ -6,6 +6,7 @@
   const { Story } = defineMeta({
     component: StartButtons,
     tags: ['autodocs'],
+    parameters: { layout: 'lobby-table' },
     args: {
       onCreateGame: fn(),
       onChallengeFriend: fn(),

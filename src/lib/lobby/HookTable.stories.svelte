@@ -32,6 +32,7 @@
   const { Story } = defineMeta({
     component: HookTable,
     tags: ['autodocs'],
+    parameters: { layout: 'lobby-app' },
     args: {
       onJoin: fn()
     }

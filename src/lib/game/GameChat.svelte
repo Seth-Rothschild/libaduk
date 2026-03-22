@@ -108,7 +108,7 @@
 
   {#if activeTab === 'discussion'}
     <div class="mchat__content">
-      <ol class="mchat__messages" role="log" aria-live="polite" bind:this={messagesEl}>
+      <ol class="mchat__messages" aria-live="polite" aria-label="Chat messages" tabindex="0" bind:this={messagesEl}>
         {#each messages as msg}
           <li class:me={msg.user === username} class:system={msg.system}>
             {#if msg.system}

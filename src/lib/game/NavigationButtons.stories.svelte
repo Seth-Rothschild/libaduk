@@ -5,7 +5,8 @@
 
   const { Story } = defineMeta({
     component: NavigationButtons,
-    tags: ['autodocs']
+    tags: ['autodocs'],
+    parameters: { layout: 'game-app' }
   });
 </script>
 

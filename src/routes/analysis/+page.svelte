@@ -698,10 +698,6 @@
 /> -->
 
 <style>
-  :global(#main-wrap) {
-    display: block;
-  }
-
   .analysis-tools {
     padding: 0.5em;
   }

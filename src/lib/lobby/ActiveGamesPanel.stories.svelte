@@ -11,7 +11,8 @@
 
   const { Story } = defineMeta({
     component: ActiveGamesPanel,
-    tags: ['autodocs']
+    tags: ['autodocs'],
+    parameters: { layout: 'lobby' }
   });
 </script>
 

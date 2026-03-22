@@ -6,6 +6,7 @@
   const { Story } = defineMeta({
     component: LobbyTabs,
     tags: ['autodocs'],
+    parameters: { layout: 'lobby-app' },
     args: {
       onTabChange: fn()
     }

@@ -18,7 +18,7 @@
   ></button>
 {/if}
 
-<nav class="mobile-nav" class:open inert={!open}>
+<nav class="mobile-nav" class:open inert={!open} aria-label="Mobile">
   <section>
     <a href="/" onclick={onClose}>Play</a>
     <div role="group">

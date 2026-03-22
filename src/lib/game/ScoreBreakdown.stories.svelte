@@ -5,7 +5,8 @@
 
   const { Story } = defineMeta({
     component: ScoreBreakdown,
-    tags: ['autodocs']
+    tags: ['autodocs'],
+    parameters: { layout: 'game-app' }
   });
 </script>
 
@@ -42,8 +43,8 @@
     whiteApproved: false
   }}
   play={async ({ canvas }) => {
-    await expect(canvas.getByText(/Black/)).toBeInTheDocument();
-    await expect(canvas.getByText(/White/)).toBeInTheDocument();
+    await expect(canvas.getByText('Black …')).toBeInTheDocument();
+    await expect(canvas.getByText('White …')).toBeInTheDocument();
   }}
 />
 
@@ -65,7 +66,6 @@
   name="No score"
   args={{ score: null }}
   play={async ({ canvas }) => {
-    const container = canvas.getByTestId?.('score-breakdown');
-    await expect(container).toBeUndefined();
+    await expect(canvas.queryByText('Black leads')).not.toBeInTheDocument();
   }}
 />
