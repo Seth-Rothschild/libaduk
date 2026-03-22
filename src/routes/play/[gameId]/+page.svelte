@@ -17,6 +17,7 @@
   import GameControls from '$lib/game/GameControls.svelte';
   import AnalysisMoves from '$lib/game/AnalysisMoves.svelte';
   import AnalysisControls from '$lib/game/AnalysisControls.svelte';
+  import EditBar from '$lib/game/EditBar.svelte';
   import JoinGameModal from '$lib/game/JoinGameModal.svelte';
   import {
     colorName,
@@ -267,7 +268,8 @@
       return name ?? (targetColor === 'black' ? 'Black' : 'White');
     }
     if (targetColor === myColor) return displayName;
-    return data.game[targetColor + 'Name'] ?? '...';
+    const oppName = targetColor === 'black' ? blackName : whiteName;
+    return oppName ?? '...';
   }
 
   function resolveStripName(targetColor) {
@@ -280,7 +282,8 @@
       return name ?? (targetColor === 'black' ? 'Black' : 'White');
     }
     if (targetColor === myColor) return displayName;
-    return data.game[targetColor + 'Name'] ?? (gs.status === 'waiting' ? 'Waiting...' : targetColor);
+    const oppName = targetColor === 'black' ? blackName : whiteName;
+    return oppName ?? (gs.status === 'waiting' ? 'Waiting...' : targetColor);
   }
 
   const topStripColor = $derived(isSpectator ? 'black' : oppColor);
@@ -435,6 +438,7 @@
           deadStones={analysis.displayDeadStones}
           onVertexClick={(x, y) => analysis.onVertexClick(x, y)}
         />
+        <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
       {:else}
         <GoBoard
           {signMap}
@@ -513,12 +517,10 @@
     <div class="rcontrols">
       {#if analysisMode}
         <AnalysisControls
-          tool={analysis.tool}
           status={analysis.status}
           score={analysis.score}
           estimatedScore={analysis.estimatedScore}
           showEstimate={analysis.showEstimate}
-          onSetTool={(t) => (analysis.tool = t)}
           onStartScoring={() => analysis.startScoring()}
           onStopScoring={() => analysis.stopScoring()}
           onToggleEstimate={() => (analysis.showEstimate = !analysis.showEstimate)}

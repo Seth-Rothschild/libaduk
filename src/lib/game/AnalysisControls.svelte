@@ -3,23 +3,11 @@
 
   const KOMI = 6.5;
 
-  const MARKER_TOOLS = [
-    { id: 'stone', label: 'Stone', title: 'Place stones' },
-    { id: 'cross', label: '✕', title: 'Mark X' },
-    { id: 'circle', label: '◯', title: 'Mark circle' },
-    { id: 'square', label: '⬜', title: 'Mark square' },
-    { id: 'triangle', label: '△', title: 'Mark triangle' },
-    { id: 'label', label: 'A', title: 'Label (A, B, C...)' },
-    { id: 'number', label: '1', title: 'Number (1, 2, 3...)' }
-  ];
-
   let {
-    tool,
     status,
     score,
     estimatedScore,
     showEstimate,
-    onSetTool,
     onStartScoring,
     onStopScoring,
     onToggleEstimate,
@@ -42,17 +30,6 @@
     </div>
   {/if}
 {:else}
-  <div class="tool-buttons">
-    {#each MARKER_TOOLS as t}
-      <button
-        class="button"
-        class:button-green={tool === t.id}
-        class:button-metal={tool !== t.id}
-        onclick={() => onSetTool(t.id)}
-        title={t.title}>{t.label}</button
-      >
-    {/each}
-  </div>
   <button class="button button-metal" onclick={onStartScoring}>Score</button>
   <button
     class="button"

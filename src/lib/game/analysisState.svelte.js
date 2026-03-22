@@ -3,8 +3,8 @@ import influence from '@sabaki/influence';
 import { nameMove } from '@sabaki/boardmatcher';
 import { computeScore, toggleDeadStones, buildScoreBoard, emptyMarkerMap } from '$lib/gameUtils.js';
 
-export function makeAnalysisNode(board, lastMove, markerMap, signToPlay, parent, moveName = null) {
-  return { board, lastMove, markerMap, signToPlay, children: [], parent, moveName };
+export function makeAnalysisNode(board, lastMove, markerMap, signToPlay, parent, moveName = null, comment = '') {
+  return { board, lastMove, markerMap, signToPlay, children: [], parent, moveName, comment };
 }
 
 export function getAnalysisMoveName(parentBoard, sign, vertex) {
@@ -67,6 +67,11 @@ export class AnalysisState {
   markerMap = $derived.by(() => {
     this.#version;
     return this.currentNode?.markerMap ?? null;
+  });
+
+  currentComment = $derived.by(() => {
+    this.#version;
+    return this.currentNode?.comment ?? '';
   });
 
   childrenMap = $derived.by(() => {
@@ -142,6 +147,10 @@ export class AnalysisState {
 
   get size() {
     return this.#size;
+  }
+
+  get version() {
+    return this.#version;
   }
 
   get root() {
@@ -257,6 +266,12 @@ export class AnalysisState {
     this.status = 'playing';
     this.deadStones = [];
     this.areaMap = null;
+  }
+
+  setComment(text) {
+    if (!this.currentNode) return;
+    this.currentNode.comment = text;
+    this.#version++;
   }
 
   #makeMove(x, y) {

@@ -50,6 +50,10 @@ function stringifyNode(node, size, isRoot, options) {
     parts.push(';');
   }
 
+  if (node.comment) {
+    parts.push('C[' + escapeSgf(node.comment) + ']');
+  }
+
   const mp = markerProps(node.markerMap, size);
   for (const key of ['MA', 'CR', 'SQ', 'TR', 'LB']) {
     if (mp[key].length > 0) {
@@ -241,4 +245,10 @@ export function sgfNodeMarkers(sgfNode, size) {
   }
 
   return map;
+}
+
+export function sgfNodeComment(sgfNode) {
+  const values = sgfNode.props.C;
+  if (!values || values.length === 0) return '';
+  return values[0];
 }

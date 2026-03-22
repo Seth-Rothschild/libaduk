@@ -7,6 +7,8 @@
   import AnalysisMoves from '$lib/game/AnalysisMoves.svelte';
   import AnalysisControls from '$lib/game/AnalysisControls.svelte';
   import AnalysisInfo from '$lib/game/AnalysisInfo.svelte';
+  import EditBar from '$lib/game/EditBar.svelte';
+  import GameGraph from '$lib/game/GameGraph.svelte';
   import {
     AnalysisState,
     makeAnalysisNode,
@@ -15,7 +17,7 @@
   import { page } from '$app/state';
   import { boardState } from '$lib/boardState.svelte.js';
   import { clampBoardSize, emptyMarkerMap, computeVertexSize } from '$lib/gameUtils.js';
-  import { exportSgf, parseSgf, sgfNodeToMove, sgfNodeMarkers } from '$lib/sgf.js';
+  import { exportSgf, parseSgf, sgfNodeToMove, sgfNodeMarkers, sgfNodeComment } from '$lib/sgf.js';
 
   let { data } = $props();
 
@@ -85,7 +87,8 @@
       }
 
       const markers = sgfNodeMarkers(sgfNode, SIZE);
-      const node = makeAnalysisNode(newBoard, lastMove, markers, nextSign, parent, moveName);
+      const comment = sgfNodeComment(sgfNode);
+      const node = makeAnalysisNode(newBoard, lastMove, markers, nextSign, parent, moveName, comment);
 
       for (const childSgf of sgfNode.children) {
         const childNode = buildNode(childSgf, newBoard, nextSign, node);
@@ -112,12 +115,12 @@
   function handleKeydown(e) {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     const keyMap = {
-      ArrowLeft: 'prev',
-      ArrowRight: 'next',
+      ArrowUp: 'prev',
+      ArrowDown: 'next',
       Home: 'first',
       End: 'last',
-      ArrowUp: 'prev-variation',
-      ArrowDown: 'next-variation'
+      ArrowLeft: 'prev-variation',
+      ArrowRight: 'next-variation'
     };
     const action = keyMap[e.key];
     if (action) {
@@ -143,6 +146,8 @@
         whiteCaptures={analysis.whiteCaptures}
         currentNode={analysis.currentNode}
         boardSize={SIZE}
+        comment={analysis.currentComment}
+        onCommentChange={(text) => analysis.setComment(text)}
       />
     </div>
   </aside>
@@ -169,6 +174,7 @@
         deadStones={analysis.displayDeadStones}
         onVertexClick={(x, y) => analysis.onVertexClick(x, y)}
       />
+      <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
     </div>
 
     <PlayerStrip color="white" name={whiteName} position="top" />
@@ -200,14 +206,24 @@
       {/if}
     </div>
 
+    <div class="rgraph">
+      <GameGraph
+        root={analysis.root}
+        currentNode={analysis.currentNode}
+        version={analysis.version}
+        onSelectNode={(node) => {
+          analysis.currentNode = node;
+          analysis.animatedVertex = null;
+        }}
+      />
+    </div>
+
     <div class="rcontrols">
       <AnalysisControls
-        tool={analysis.tool}
         status={analysis.status}
         score={analysis.score}
         estimatedScore={analysis.estimatedScore}
         showEstimate={analysis.showEstimate}
-        onSetTool={(t) => (analysis.tool = t)}
         onStartScoring={() => analysis.startScoring()}
         onStopScoring={() => analysis.stopScoring()}
         onToggleEstimate={() => (analysis.showEstimate = !analysis.showEstimate)}
