@@ -1,7 +1,7 @@
 <script>
   import { goto } from '$app/navigation';
 
-  let { gameType, onClose } = $props();
+  let { gameType, onClose, creatorName = null } = $props();
 
   let dialog = $state(null);
   let timeMode = $state('byoyomi');
@@ -137,7 +137,7 @@
       const res = await fetch('/api/game', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ size: boardSize, timeControl, color, gameType })
+        body: JSON.stringify({ size: boardSize, timeControl, color, gameType, creatorName })
       });
       const { gameId } = await res.json();
       goto(gameType === 'local' ? `/play/${gameId}?local=true` : `/play/${gameId}`);

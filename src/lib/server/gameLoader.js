@@ -2,7 +2,7 @@ import { getGame, getChat, getNote } from './db.js';
 
 const SENTINEL_NAMES = new Set(['black', 'white']);
 
-export async function loadGameData(gameId, username) {
+export async function loadGameData(gameId, username, guestId = null) {
   const raw = await getGame(gameId);
   if (!raw) return null;
 
@@ -10,10 +10,11 @@ export async function loadGameData(gameId, username) {
   const whiteName = SENTINEL_NAMES.has(raw.whiteName) ? null : (raw.whiteName ?? null);
   const game = { ...raw, blackName, whiteName };
 
+  const identity = username ?? guestId;
   let viewerColor = null;
-  if (username && blackName === username) {
+  if (identity && blackName === identity) {
     viewerColor = 'black';
-  } else if (username && whiteName === username) {
+  } else if (identity && whiteName === identity) {
     viewerColor = 'white';
   }
 

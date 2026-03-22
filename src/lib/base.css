@@ -299,6 +299,7 @@ main.page-small {
 .button.button-red {
   background: var(--c-bad);
   color: #fff;
+  transition: box-shadow 0.15s ease;
 }
 
 .button.button-red:not(.disabled):not([disabled]):hover {

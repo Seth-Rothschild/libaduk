@@ -10,6 +10,13 @@
     blackName,
     whiteName
   } = $props();
+
+  function formatResult(result) {
+    if (!result) return null;
+    if (result.endsWith('+R')) return 'by resignation';
+    if (result.endsWith('+T')) return 'on time';
+    return result;
+  }
 </script>
 
 <div class="game__meta">
@@ -25,9 +32,9 @@
   {#if status === 'gameover'}
     <section class="status">
       {#if isLocal || isSpectator}
-        {winner === 1 ? 'Black' : 'White'} wins{winnerResult ? ` — ${winnerResult}` : ''}.
+        {winner === 1 ? 'Black' : 'White'} wins{formatResult(winnerResult) ? ` ${formatResult(winnerResult)}` : ''}.
       {:else if winnerResult}
-        {winnerResult} &mdash; {winner === mySign ? 'You win!' : 'You lose.'}
+        {winner === mySign ? 'You win!' : 'You lose.'} &mdash; {formatResult(winnerResult)}
       {:else}
         {winner === mySign ? 'You win!' : 'You lose.'}
       {/if}

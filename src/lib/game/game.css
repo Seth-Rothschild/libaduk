@@ -183,16 +183,24 @@
   user-select: none;
 }
 
-.ruser .line {
+.ruser name {
+  flex: 1 1 auto;
+}
+
+.ruser .presence {
   width: 0.55em;
   height: 0.55em;
   border-radius: 50%;
-  background: var(--c-good);
   flex: 0 0 auto;
 }
 
-.ruser name {
-  flex: 1 1 auto;
+.ruser .presence.online {
+  background: var(--c-good);
+}
+
+.ruser .presence.offline {
+  background: transparent;
+  border: 0.12em solid var(--c-bad);
 }
 
 .ruser .material {

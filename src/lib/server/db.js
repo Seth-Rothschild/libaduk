@@ -25,6 +25,11 @@ export async function connectDb() {
   return connectPromise;
 }
 
+export async function clearGames() {
+  const d = await getDb();
+  await d.collection('games').deleteMany({});
+}
+
 export async function closeDb() {
   if (client) {
     await client.close();

@@ -10,9 +10,11 @@
   import StartButtons from './StartButtons.svelte';
   import { LIVE_POOLS } from './pools.js';
   import { pingState } from '$lib/ping.svelte.js';
+  import { getGuestId } from '$lib/guestId.js';
 
   let { data } = $props();
   const username = $derived(data.user?.username ?? '');
+  const displayName = $derived(username || getGuestId());
 
   // --- Tab state ---
 
@@ -28,7 +30,7 @@
   // --- Game creation ---
 
   async function createGame(pool = null) {
-    const body = { size: pool?.size ?? 19, color: 'random' };
+    const body = { size: pool?.size ?? 19, color: 'random', creatorName: displayName };
     if (pool) {
       body.timeControl = pool.timeControl;
     }
@@ -126,12 +128,12 @@
       gamesInPlay={pingState.lobbyStats.gamesInPlay}
       onCreateGame={() => (setupModal = 'hook')}
       onChallengeFriend={() => (setupModal = 'friend')}
-      onPlayLocally={() => (setupModal = 'local')}
+      onPlayLocally={() => goto('/analysis')}
     />
   </div>
 
   {#if setupModal}
-    <GameSetupModal gameType={setupModal} onClose={() => (setupModal = null)} />
+    <GameSetupModal gameType={setupModal} creatorName={displayName} onClose={() => (setupModal = null)} />
   {/if}
 
   <LobbyAbout />

@@ -57,7 +57,6 @@ export class GameState {
   timedOutColor = $state(null);
   mySign = $state(null);
   isLocal = false;
-  onNavigate = null;
 
   boardHistory = $state([]);
   lastMoveHistory = $state([]);
@@ -112,9 +111,8 @@ export class GameState {
     this.viewPly = null;
   }
 
-  constructor({ isLocal = false, onNavigate = null } = {}) {
+  constructor({ isLocal = false } = {}) {
     this.isLocal = isLocal;
-    this.onNavigate = onNavigate;
     if (isLocal) this.mySign = 1;
   }
 
@@ -169,15 +167,27 @@ export class GameState {
       this.shiftMapHistory = [emptyShiftMap(this.boardSize)];
     }
 
-    if (game.clockBlack && game.clockWhite) {
+    const tc = this.timeControl;
+    const hasRealTimeClock = tc.type === 'byoyomi' || tc.type === 'fischer';
+    if (hasRealTimeClock) {
+      const mainMs = (tc.initial ?? 0) * 1000;
+      const isByoyomi = tc.type === 'byoyomi';
+      const periodMs = isByoyomi ? (tc.periodTime ?? 30) * 1000 : 0;
+      const clockEntry = {
+        mainMs,
+        byoMs: isByoyomi ? periodMs : 0,
+        byoPeriods: isByoyomi ? (tc.periods ?? 5) : 0,
+        inByoYomi: isByoyomi && mainMs === 0,
+        periodMs
+      };
       const moves = game.moves ?? [];
       const activeColor = moves.length % 2 === 0 ? 'black' : 'white';
       this.clockState = {
-        black: { ...game.clockBlack },
-        white: { ...game.clockWhite },
+        black: { ...clockEntry },
+        white: { ...clockEntry },
         activeColor,
         turnStartedAt: null,
-        periodMs: game.timeControl?.periodTime ? game.timeControl.periodTime * 1000 : 0
+        periodMs
       };
     } else {
       this.clockState = null;
@@ -248,82 +258,28 @@ export class GameState {
     this.shiftMapHistory.push(this.shiftMap.map((row) => [...row]));
   }
 
-  handleMessage(msg) {
-    if (msg.type === 'joined') {
-      if (msg.color && !this.isLocal) {
-        this.mySign = msg.color === 'black' ? 1 : -1;
+  tickClock() {
+    if (!this.clockState) return;
+
+    const now = Date.now();
+    const movedColor = this.clockState.activeColor;
+    const clock = this.clockState[movedColor];
+
+    if (this.clockState.turnStartedAt) {
+      const elapsed = now - this.clockState.turnStartedAt;
+
+      if (clock.inByoYomi) {
+        clock.byoMs = clock.periodMs ?? clock.byoMs;
+      } else {
+        clock.mainMs = Math.max(0, clock.mainMs - elapsed);
+        if (clock.mainMs <= 0 && clock.byoPeriods > 0) {
+          clock.inByoYomi = true;
+        }
       }
-      if (msg.status) {
-        this.status = msg.status === 'finished' ? 'gameover' : msg.status;
-      }
-      if (msg.clock) this.clockState = msg.clock;
-      if (msg.corrState) this.corrState = msg.corrState;
     }
-    if (msg.type === 'opponent_joined') {
-      this.status = 'playing';
-      if (msg.clock) this.clockState = msg.clock;
-      if (msg.corrState) this.corrState = msg.corrState;
-    }
-    if (msg.type === 'opponent_left') {
-      if (this.status !== 'gameover') this.status = 'abandoned';
-    }
-    if (msg.type === 'move') {
-      if (this.mySign === null) return;
-      const opponentSign = this.mySign === 1 ? -1 : 1;
-      this.applyMove(msg.x, msg.y, opponentSign);
-      if (msg.clock) this.clockState = msg.clock;
-      if (msg.corrState) this.corrState = msg.corrState;
-    }
-    if (msg.type === 'pass') {
-      this.consecutivePasses++;
-      this.lastMove = null;
-      this.animatedVertex = null;
-      this.currentSign = this.currentSign === 1 ? -1 : 1;
-      this.recordPass();
-      if (msg.clock) this.clockState = msg.clock;
-      if (msg.corrState) this.corrState = msg.corrState;
-    }
-    if (msg.type === 'aborted') {
-      this.onNavigate?.('/');
-    }
-    if (msg.type === 'resign') {
-      this.status = 'gameover';
-      this.winner = this.mySign;
-      this.winnerResult = null;
-    }
-    if (msg.type === 'timeout') {
-      this.status = 'gameover';
-      const myColor = this.mySign === 1 ? 'black' : 'white';
-      this.winner = msg.loser === myColor ? (this.mySign === 1 ? -1 : 1) : this.mySign;
-      this.winnerResult = 'Time';
-    }
-    if (msg.type === 'score_phase') {
-      this.status = 'scoring';
-      this.deadStones = msg.deadStones ?? [];
-      this.blackApproved = false;
-      this.whiteApproved = false;
-    }
-    if (msg.type === 'dead_stones_update') {
-      this.deadStones = msg.deadStones ?? [];
-      this.blackApproved = false;
-      this.whiteApproved = false;
-    }
-    if (msg.type === 'approve_update') {
-      this.blackApproved = msg.blackApproved;
-      this.whiteApproved = msg.whiteApproved;
-    }
-    if (msg.type === 'score_result') {
-      this.finalScore = { blackScore: msg.blackScore, whiteScore: msg.whiteScore };
-      this.winner = msg.winner === 'black' ? 1 : -1;
-      this.winnerResult = msg.result;
-      this.status = 'gameover';
-    }
-    if (msg.type === 'clock_update') {
-      if (msg.clock) this.clockState = msg.clock;
-    }
-    if (msg.type === 'corr_update') {
-      if (msg.corrState) this.corrState = msg.corrState;
-    }
-    if (msg.type === 'error') console.error('Game error:', msg.message);
+
+    this.clockState.activeColor = movedColor === 'black' ? 'white' : 'black';
+    this.clockState.turnStartedAt = now;
   }
+
 }

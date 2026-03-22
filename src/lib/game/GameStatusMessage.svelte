@@ -4,6 +4,13 @@
 
   const ICON_INFO = '\ue060';
 
+  function resultLabel(result) {
+    if (!result) return null;
+    if (result.endsWith('+R')) return 'by Resignation';
+    if (result.endsWith('+T')) return 'by Time';
+    return result;
+  }
+
   let {
     status,
     isLocal,
@@ -71,7 +78,7 @@
         {winner === mySign ? 'You win' : 'You lose'}
       {/if}
       {#if winnerResult}
-        <br />{winnerResult}
+        <br />{resultLabel(winnerResult)}
       {:else if finalScore}
         <br />{finalScore.blackScore.toFixed(1)} &ndash; {finalScore.whiteScore.toFixed(1)}
       {:else}

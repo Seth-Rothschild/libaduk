@@ -309,7 +309,7 @@
 }
 
 @media (max-width: 799.29px) {
-  .game-row__board {
+  .game-row__board.mini-board {
     display: none;
   }
 }

@@ -7,8 +7,10 @@
     myColor,
     blackApproved,
     whiteApproved,
+    opponentOnline = null,
     onPass,
     onResign,
+    onForceResign,
     onAbort,
     onApproveScore,
     onApproveBlack,
@@ -20,7 +22,11 @@
   <button class="button button-red" onclick={onAbort}>Abort</button>
 {:else if !isSpectator && status === 'playing'}
   <button class="button button-metal" onclick={onPass} disabled={!isMyTurn}>Pass</button>
-  <button class="button button-red" onclick={onResign}>Resign</button>
+  {#if opponentOnline === false}
+    <button class="button button-red" onclick={onForceResign}>Force Resignation</button>
+  {:else}
+    <button class="button button-red" onclick={onResign}>Resign</button>
+  {/if}
 {:else if !isSpectator && status === 'scoring'}
   {#if isLocal}
     <button

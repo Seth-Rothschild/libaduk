@@ -1,12 +1,10 @@
 class GameSocket {
   status = $state('disconnected');
-  gameId = $state(null);
-  color = $state(null);
-  opponent = $state(null);
 
   #ws = null;
   #onMessage = null;
-  #joinMsg = null;
+  #gameId = null;
+  #color = null;
   #reconnectTimer = null;
   #reconnectDelay = 1000;
   #intentionalClose = false;
@@ -15,9 +13,10 @@ class GameSocket {
     this.#onMessage = handler;
   }
 
-  connect(joinMsg = null) {
+  join(gameId, color = null) {
     this.#intentionalClose = false;
-    this.#joinMsg = joinMsg;
+    this.#gameId = gameId;
+    this.#color = color;
     this.#reconnectDelay = 1000;
     this.#openSocket();
   }
@@ -32,19 +31,13 @@ class GameSocket {
     this.#ws.addEventListener('open', () => {
       this.status = 'connected';
       this.#reconnectDelay = 1000;
-      if (this.#joinMsg) this.send(this.#joinMsg);
+      if (this.#gameId) {
+        this.send({ type: 'join', gameId: this.#gameId, color: this.#color });
+      }
     });
 
     this.#ws.addEventListener('message', (e) => {
       const msg = JSON.parse(e.data);
-      if (msg.type === 'joined') {
-        this.gameId = msg.gameId;
-        this.color = msg.color;
-        if (msg.opponent) this.opponent = msg.opponent;
-      }
-      if (msg.type === 'opponent_joined') {
-        this.opponent = msg.opponent;
-      }
       this.#onMessage?.(msg);
     });
 
@@ -78,15 +71,12 @@ class GameSocket {
     }
   }
 
-  disconnect() {
+  leave() {
     this.#intentionalClose = true;
     clearTimeout(this.#reconnectTimer);
     this.#ws?.close();
     this.#ws = null;
-    this.#joinMsg = null;
-    this.gameId = null;
-    this.color = null;
-    this.opponent = null;
+    this.#gameId = null;
     this.status = 'disconnected';
   }
 }
