@@ -2,7 +2,6 @@
   import { untrack } from 'svelte';
   import { page } from '$app/state';
   import influence from '@sabaki/influence';
-  import GoBoardLib from '@sabaki/go-board';
   import GoBoard from '$lib/game/GoBoard.svelte';
   import Clock from '$lib/game/Clock.svelte';
   import PlayerStrip from '$lib/game/PlayerStrip.svelte';
@@ -10,6 +9,7 @@
   import { boardState } from '$lib/boardState.svelte.js';
   import { getGuestId } from '$lib/guestId.js';
   import { GameState } from '$lib/gameLogic.svelte.js';
+  import { AnalysisState } from '$lib/game/analysisState.svelte.js';
   import { gameSocket } from '$lib/socket.svelte.js';
   import GameChat from '$lib/game/GameChat.svelte';
   import GameMeta from '$lib/game/GameMeta.svelte';
@@ -24,7 +24,6 @@
     buildScoreBoard,
     toggleDeadStones,
     computeVertexSize,
-    emptyMarkerMap,
     scoreVerdictShort
   } from '$lib/gameUtils.js';
 
@@ -33,7 +32,6 @@
   const displayName = $derived(username || getGuestId());
 
   const KOMI = 6.5;
-  const ICON_INFO = '\ue060';
 
   const gameId = $derived(page.params.gameId);
   const isLocal = $derived(data.game.gameType === 'local');
@@ -41,6 +39,8 @@
   let boardContainerWidth = $state(0);
   let boardContainerHeight = $state(0);
   let chatMessages = $state(data.chat ?? []);
+  let blackName = $state(data.game.blackName ?? null);
+  let whiteName = $state(data.game.whiteName ?? null);
   let blackOnline = $state(false);
   let whiteOnline = $state(false);
   let clockPausedAt = $state(null);
@@ -71,7 +71,8 @@
   function handleJoined(color) {
     gs.mySign = color === 'black' ? 1 : -1;
     gs.status = 'playing';
-    data.game[color + 'Name'] = displayName;
+    if (color === 'black') blackName = displayName;
+    else whiteName = displayName;
     gameSocket.send({ type: 'join', gameId, color });
   }
 
@@ -160,259 +161,27 @@
 
   // --- Analysis mode ---
 
-  function makeTreeNode(board, lastMove, signToPlay, parent, size) {
-    return { board, lastMove, signToPlay, children: [], parent, markerMap: emptyMarkerMap(size) };
-  }
-
-  function buildGameTree(moves, size) {
-    const treeRoot = makeTreeNode(GoBoardLib.fromDimensions(size), null, 1, null, size);
-    let node = treeRoot;
-    for (const move of moves) {
-      if (move.type === 'move') {
-        let newBoard;
-        try {
-          newBoard = node.board.makeMove(node.signToPlay, [move.x, move.y], {
-            preventSuicide: true,
-            preventOverwrite: true,
-            preventKo: true
-          });
-        } catch {
-          continue;
-        }
-        const nextSign = node.signToPlay === 1 ? -1 : 1;
-        const child = makeTreeNode(newBoard, [move.x, move.y], nextSign, node, size);
-        node.children.push(child);
-        node = child;
-      } else if (move.type === 'pass') {
-        const nextSign = node.signToPlay === 1 ? -1 : 1;
-        const child = makeTreeNode(node.board, null, nextSign, node, size);
-        node.children.push(child);
-        node = child;
-      }
-    }
-    return { root: treeRoot, lastNode: node };
-  }
-
-  let analysisMode = $state(false);
-  let analysisNode = $state(null);
-  let analysisTool = $state('stone');
-  let analysisVersion = $state(0);
-
-  const analysisSignMap = $derived(analysisNode?.board.signMap ?? null);
-  const analysisChildrenMap = $derived.by(() => {
-    if (!analysisNode || analysisNode.children.length === 0) return null;
-    const size = gs.boardSize;
-    const map = Array.from({ length: size }, () => new Array(size).fill(0));
-    for (const child of analysisNode.children) {
-      if (!child.lastMove) continue;
-      const [cx, cy] = child.lastMove;
-      map[cy][cx] = analysisNode.signToPlay;
-    }
-    return map;
-  });
-
-  const analysisMarkerMap = $derived.by(() => {
-    analysisVersion;
-    return analysisNode?.markerMap ?? null;
-  });
-
-  const analysisMovePath = $derived.by(() => {
-    analysisVersion;
-    if (!analysisNode) return [];
-    const path = [];
-    let node = analysisNode;
-    while (node.parent) {
-      path.unshift(node);
-      node = node.parent;
-    }
-    return path;
-  });
-
-  const analysisMoveRows = $derived.by(() => {
-    const rows = [];
-    for (let i = 0; i < analysisMovePath.length; i += 2) {
-      const moveNum = Math.floor(i / 2) + 1;
-      const black = analysisMovePath[i];
-      const white = i + 1 < analysisMovePath.length ? analysisMovePath[i + 1] : null;
-      rows.push({ moveNum, black, white });
-    }
-    return rows;
-  });
-
-  let analysisStatus = $state('playing');
-  let analysisDeadStones = $state([]);
-  let analysisAreaMap = $state(null);
-  let analysisShowEstimate = $state(false);
-
-  const analysisScore = $derived(
-    analysisAreaMap ? computeScore(analysisAreaMap, gs.boardSize, KOMI) : null
-  );
-
-  const analysisEstimateAreaMap = $derived.by(() => {
-    if (!analysisShowEstimate || analysisStatus === 'scoring' || !analysisNode) return null;
-    return influence.map(analysisNode.board.signMap, { discrete: true });
-  });
-
-  const analysisEstimatedScore = $derived(
-    analysisEstimateAreaMap ? computeScore(analysisEstimateAreaMap, gs.boardSize, KOMI) : null
-  );
-
-  function analysisStartScoring() {
-    analysisStatus = 'scoring';
-    analysisDeadStones = [];
-    analysisAreaMap = influence.areaMap(analysisNode.board.signMap);
-  }
-
-  function analysisStopScoring() {
-    analysisStatus = 'playing';
-    analysisDeadStones = [];
-    analysisAreaMap = null;
-  }
-
-  function analysisToggleDeadGroup(x, y) {
-    analysisDeadStones = toggleDeadStones(analysisNode.board, analysisDeadStones, x, y);
-    const sb = buildScoreBoard(analysisNode.board, analysisDeadStones);
-    analysisAreaMap = influence.areaMap(sb.signMap);
-  }
-
-  function nextLabel(markerMap, size) {
-    const used = new Set();
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const m = markerMap[y][x];
-        if (m && m.type === 'label') used.add(m.label);
-      }
-    }
-    for (let i = 0; i < 26; i++) {
-      const ch = String.fromCharCode(65 + i);
-      if (!used.has(ch)) return ch;
-    }
-    return 'A';
-  }
-
-  function nextNumber(markerMap, size) {
-    let max = 0;
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const m = markerMap[y][x];
-        if (m && m.type === 'number') {
-          const n = parseInt(m.label);
-          if (n > max) max = n;
-        }
-      }
-    }
-    return String(max + 1);
-  }
-
-  function applyAnalysisMarker(x, y, tool) {
-    if (!analysisNode) return;
-    const current = analysisNode.markerMap[y][x];
-    const newMap = analysisNode.markerMap.map((row) => [...row]);
-    if (tool === 'label') {
-      if (current && current.type === 'label') {
-        newMap[y][x] = null;
-      } else {
-        const letter = nextLabel(analysisNode.markerMap, gs.boardSize);
-        newMap[y][x] = { type: 'label', label: letter };
-      }
-    } else if (tool === 'number') {
-      if (current && current.type === 'number') {
-        newMap[y][x] = null;
-      } else {
-        const num = nextNumber(analysisNode.markerMap, gs.boardSize);
-        newMap[y][x] = { type: 'number', label: num };
-      }
-    } else {
-      newMap[y][x] = current === tool ? null : tool;
-    }
-    analysisNode.markerMap = newMap;
-    analysisVersion++;
-  }
-
-  function applyAnalysisMove(x, y) {
-    if (!analysisNode) return;
-    const existing = analysisNode.children.find(
-      (c) => c.lastMove && c.lastMove[0] === x && c.lastMove[1] === y
-    );
-    if (existing) {
-      analysisNode = existing;
-      return;
-    }
-    const sign = analysisNode.signToPlay;
-    const analysis = analysisNode.board.analyzeMove(sign, [x, y]);
-    if (analysis.overwrite || analysis.suicide || analysis.ko) return;
-    let newBoard;
-    try {
-      newBoard = analysisNode.board.makeMove(sign, [x, y], {
-        preventSuicide: true,
-        preventOverwrite: true,
-        preventKo: true
-      });
-    } catch {
-      return;
-    }
-    const nextSign = sign === 1 ? -1 : 1;
-    const child = makeTreeNode(newBoard, [x, y], nextSign, analysisNode, gs.boardSize);
-    analysisNode.children.push(child);
-    analysisNode = child;
-  }
-
-  function applyAnalysisNav(action) {
-    if (!analysisNode) return;
-    if (action === 'prev' && analysisNode.parent) {
-      analysisNode = analysisNode.parent;
-    } else if (action === 'next' && analysisNode.children.length > 0) {
-      analysisNode = analysisNode.children[0];
-    } else if (action === 'first') {
-      let node = analysisNode;
-      while (node.parent) node = node.parent;
-      analysisNode = node;
-    } else if (action === 'last') {
-      let node = analysisNode;
-      while (node.children.length > 0) node = node.children[0];
-      analysisNode = node;
-    }
-  }
+  let analysis = $state(null);
+  const analysisMode = $derived(analysis !== null);
 
   function enterAnalysis() {
-    const tree = buildGameTree(data.game.moves, gs.boardSize);
-    analysisNode = tree.lastNode;
-    analysisMode = true;
-    analysisTool = 'stone';
-    analysisStatus = 'playing';
-    analysisDeadStones = [];
-    analysisAreaMap = null;
-    analysisShowEstimate = false;
+    analysis = new AnalysisState(gs.boardSize);
+    analysis.loadMoves(data.game.moves);
   }
 
-  function onAnalysisVertexClick(x, y) {
-    if (analysisStatus === 'scoring') {
-      analysisToggleDeadGroup(x, y);
-      return;
-    }
-    if (analysisTool === 'stone') {
-      applyAnalysisMove(x, y);
-    } else {
-      applyAnalysisMarker(x, y, analysisTool);
-    }
+  function exitAnalysis() {
+    analysis = null;
   }
 
-  function analysisNav(action) {
-    applyAnalysisNav(action);
-  }
-
-  const isGameOver = $derived(
-    gs.status === 'gameover' || gs.status === 'abandoned' || gs.status === 'aborted'
-  );
+  // --- Game actions ---
 
   function onVertexClick(x, y) {
     if (isSpectator) return;
     if (gs.status === 'playing') {
       if (!isMyTurn) return;
       const movingSign = isLocal ? gs.currentSign : mySign;
-      const movingColor = colorName(movingSign);
-      const analysis = gs.board.analyzeMove(movingSign, [x, y]);
-      if (analysis.overwrite || analysis.suicide || analysis.ko) return;
+      const moveResult = gs.board.analyzeMove(movingSign, [x, y]);
+      if (moveResult.overwrite || moveResult.suicide || moveResult.ko) return;
       gs.applyMove(x, y, movingSign);
       gs.tickClock();
       if (!isLocal) {
@@ -494,7 +263,7 @@
   function resolvePlayerName(targetColor) {
     if (isLocal) return targetColor === 'black' ? 'Black' : 'White';
     if (isSpectator) {
-      const name = targetColor === 'black' ? data.game.blackName : data.game.whiteName;
+      const name = targetColor === 'black' ? blackName : whiteName;
       return name ?? (targetColor === 'black' ? 'Black' : 'White');
     }
     if (targetColor === myColor) return displayName;
@@ -503,11 +272,11 @@
 
   function resolveStripName(targetColor) {
     if (isLocal) {
-      const name = targetColor === 'black' ? data.game.blackName : data.game.whiteName;
+      const name = targetColor === 'black' ? blackName : whiteName;
       return name ?? (targetColor === 'black' ? 'Black' : 'White');
     }
     if (isSpectator) {
-      const name = targetColor === 'black' ? data.game.blackName : data.game.whiteName;
+      const name = targetColor === 'black' ? blackName : whiteName;
       return name ?? (targetColor === 'black' ? 'Black' : 'White');
     }
     if (targetColor === myColor) return displayName;
@@ -520,18 +289,16 @@
   function handleKeydown(e) {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     if (analysisMode) {
-      if (e.key === 'ArrowLeft') {
+      const keyMap = {
+        ArrowLeft: 'prev',
+        ArrowRight: 'next',
+        Home: 'first',
+        End: 'last'
+      };
+      const action = keyMap[e.key];
+      if (action) {
         e.preventDefault();
-        analysisNav('prev');
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        analysisNav('next');
-      } else if (e.key === 'Home') {
-        e.preventDefault();
-        analysisNav('first');
-      } else if (e.key === 'End') {
-        e.preventDefault();
-        analysisNav('last');
+        analysis.navigate(action);
       }
       return;
     }
@@ -556,18 +323,17 @@
     untrack(() => {
       gs.initFromData(data.game, data.viewerColor);
       if (gs.mySign === null) {
-        if (data.game.blackName === displayName) gs.mySign = 1;
-        else if (data.game.whiteName === displayName) gs.mySign = -1;
+        if (blackName === displayName) gs.mySign = 1;
+        else if (whiteName === displayName) gs.mySign = -1;
       }
       chatMessages = data.chat ?? [];
-      analysisMode = false;
-      analysisNode = null;
+      analysis = null;
 
       gameSocket.onMessage((msg) => {
         if (msg.type === 'joined') {
           gs.status = 'playing';
-          if (msg.color === 'black') data.game.blackName = msg.name;
-          else data.game.whiteName = msg.name;
+          if (msg.color === 'black') blackName = msg.name;
+          else whiteName = msg.name;
         }
         if (msg.type === 'move') {
           const opponentSign = gs.currentSign;
@@ -657,17 +423,17 @@
     >
       {#if analysisMode}
         <GoBoard
-          signMap={analysisSignMap}
-          lastMove={analysisNode?.lastMove}
+          signMap={analysis.signMap}
+          lastMove={analysis.currentNode?.lastMove}
           size={gs.boardSize}
           {vertexSize}
           showCoords={boardState.showCoords}
-          currentSign={analysisNode?.signToPlay ?? 1}
-          childrenMap={analysisChildrenMap}
-          markerMap={analysisMarkerMap}
-          areaMap={analysisStatus === 'scoring' ? analysisAreaMap : analysisEstimateAreaMap}
-          deadStones={analysisStatus === 'scoring' ? analysisDeadStones : null}
-          onVertexClick={onAnalysisVertexClick}
+          currentSign={analysis.currentSign}
+          childrenMap={analysis.childrenMap}
+          markerMap={analysis.markerMap}
+          areaMap={analysis.displayAreaMap}
+          deadStones={analysis.displayDeadStones}
+          onVertexClick={(x, y) => analysis.onVertexClick(x, y)}
         />
       {:else}
         <GoBoard
@@ -711,10 +477,13 @@
     <div class="rmoves">
       {#if analysisMode}
         <AnalysisMoves
-          {analysisMoveRows}
-          {analysisNode}
+          analysisMoveRows={analysis.moveRows}
+          analysisNode={analysis.currentNode}
           boardSize={gs.boardSize}
-          onSelectNode={(node) => (analysisNode = node)}
+          onSelectNode={(node) => {
+            analysis.currentNode = node;
+            analysis.animatedVertex = null;
+          }}
         />
       {:else}
         {#if gs.isViewingHistory}
@@ -744,20 +513,16 @@
     <div class="rcontrols">
       {#if analysisMode}
         <AnalysisControls
-          {analysisTool}
-          {analysisStatus}
-          {analysisScore}
-          {analysisEstimatedScore}
-          {analysisShowEstimate}
-          onSetTool={(tool) => (analysisTool = tool)}
-          onStartScoring={analysisStartScoring}
-          onStopScoring={analysisStopScoring}
-          onToggleEstimate={() => (analysisShowEstimate = !analysisShowEstimate)}
-          onExit={() => {
-            analysisMode = false;
-            analysisNode = null;
-            analysisStopScoring();
-          }}
+          tool={analysis.tool}
+          status={analysis.status}
+          score={analysis.score}
+          estimatedScore={analysis.estimatedScore}
+          showEstimate={analysis.showEstimate}
+          onSetTool={(t) => (analysis.tool = t)}
+          onStartScoring={() => analysis.startScoring()}
+          onStopScoring={() => analysis.stopScoring()}
+          onToggleEstimate={() => (analysis.showEstimate = !analysis.showEstimate)}
+          onExit={exitAnalysis}
         />
       {/if}
       <GameControls
@@ -785,12 +550,12 @@
 
     {#if analysisMode}
       <NavigationButtons
-        canPrev={!!analysisNode?.parent}
-        canNext={analysisNode?.children.length > 0}
-        onFirst={() => analysisNav('first')}
-        onPrev={() => analysisNav('prev')}
-        onNext={() => analysisNav('next')}
-        onLast={() => analysisNav('last')}
+        canPrev={analysis.canGoPrev}
+        canNext={analysis.canGoNext}
+        onFirst={() => analysis.navigate('first')}
+        onPrev={() => analysis.navigate('prev')}
+        onNext={() => analysis.navigate('next')}
+        onLast={() => analysis.navigate('last')}
       />
     {:else if gs.totalPly > 0}
       <NavigationButtons

@@ -10,39 +10,30 @@ test('two guests are matched into the same 9x9 game and can chat', async ({ brow
   await playerOne.goto('/');
   await playerTwo.goto('/');
 
-  const poolSelectorOne = playerOne.locator('.lpool', { hasText: '9×9' }).first();
-  const poolSelectorTwo = playerTwo.locator('.lpool', { hasText: '9×9' }).first();
-
   await expect.poll(() => playerOne.evaluate(() => localStorage.getItem('guest-id'))).toBeTruthy();
   await expect.poll(() => playerTwo.evaluate(() => localStorage.getItem('guest-id'))).toBeTruthy();
 
   const guestIdOne = await playerOne.evaluate(() => localStorage.getItem('guest-id'));
   const guestIdTwo = await playerTwo.evaluate(() => localStorage.getItem('guest-id'));
 
-  await poolSelectorOne.click();
-  await playerOne.waitForURL(/\/play\//);
+  await playerOne.locator('.lpool', { hasText: '9×9' }).first().click();
+  await expect(playerOne).toHaveURL(/\/play\//);
   const gameUrl = playerOne.url();
 
-  const namesAfterCreate = await playerOne.locator('.ruser name').allTextContents();
-  expect(namesAfterCreate).toContain(guestIdOne);
+  await expect(playerOne.locator('.ruser name', { hasText: guestIdOne })).toBeVisible();
 
-  await poolSelectorTwo.click();
-  await playerTwo.waitForURL(/\/play\//);
-  expect(playerTwo.url()).toBe(gameUrl);
+  await playerTwo.locator('.lpool', { hasText: '9×9' }).first().click();
+  await expect(playerTwo).toHaveURL(gameUrl);
 
-  const namesTwo = await playerTwo.locator('.ruser name').allTextContents();
-  expect(namesTwo).toContain(guestIdOne);
-  expect(namesTwo).toContain(guestIdTwo);
+  await expect(playerTwo.locator('.ruser name', { hasText: guestIdOne })).toBeVisible();
+  await expect(playerTwo.locator('.ruser name', { hasText: guestIdTwo })).toBeVisible();
 
   // Player one sends a chat message
   const chatInputOne = playerOne.locator('.mchat__say');
   await chatInputOne.fill('hello from player one');
   await chatInputOne.press('Enter');
 
-  // Player one should see their own message immediately
   await expect(playerOne.locator('.mchat__messages t', { hasText: 'hello from player one' })).toBeVisible();
-
-  // Player two should see player one's message
   await expect(playerTwo.locator('.mchat__messages t', { hasText: 'hello from player one' })).toBeVisible();
 
   // Player two sends a reply
@@ -50,10 +41,7 @@ test('two guests are matched into the same 9x9 game and can chat', async ({ brow
   await chatInputTwo.fill('hello from player two');
   await chatInputTwo.press('Enter');
 
-  // Player two sees their own message
   await expect(playerTwo.locator('.mchat__messages t', { hasText: 'hello from player two' })).toBeVisible();
-
-  // Player one sees player two's message
   await expect(playerOne.locator('.mchat__messages t', { hasText: 'hello from player two' })).toBeVisible();
 
   // A third user navigates directly to the game as a spectator
@@ -64,18 +52,15 @@ test('two guests are matched into the same 9x9 game and can chat', async ({ brow
   await expect.poll(() => spectator.evaluate(() => localStorage.getItem('guest-id'))).toBeTruthy();
   const guestIdThree = await spectator.evaluate(() => localStorage.getItem('guest-id'));
 
-  // Spectator is not in either player seat
-  const spectatorNames = await spectator.locator('.ruser name').allTextContents();
-  expect(spectatorNames).not.toContain(guestIdThree);
-  expect(spectatorNames).toContain(guestIdOne);
-  expect(spectatorNames).toContain(guestIdTwo);
+  await expect(spectator.locator('.ruser name', { hasText: guestIdOne })).toBeVisible();
+  await expect(spectator.locator('.ruser name', { hasText: guestIdTwo })).toBeVisible();
+  await expect(spectator.locator('.ruser name', { hasText: guestIdThree })).not.toBeVisible();
 
   // Spectator sends a chat message
   const chatInputThree = spectator.locator('.mchat__say');
   await chatInputThree.fill('hello from spectator');
   await chatInputThree.press('Enter');
 
-  // All three see the spectator's message
   await expect(spectator.locator('.mchat__messages t', { hasText: 'hello from spectator' })).toBeVisible();
   await expect(playerOne.locator('.mchat__messages t', { hasText: 'hello from spectator' })).toBeVisible();
   await expect(playerTwo.locator('.mchat__messages t', { hasText: 'hello from spectator' })).toBeVisible();
@@ -100,22 +85,17 @@ test('signed-in user plays against a guest', async ({ browser }) => {
   await expect.poll(() => playerTwo.evaluate(() => localStorage.getItem('guest-id'))).toBeTruthy();
   const guestId = await playerTwo.evaluate(() => localStorage.getItem('guest-id'));
 
-  const poolOne = playerOne.locator('.lpool', { hasText: '9×9' }).first();
-  await poolOne.click();
-  await playerOne.waitForURL(/\/play\//);
+  await playerOne.locator('.lpool', { hasText: '9×9' }).first().click();
+  await expect(playerOne).toHaveURL(/\/play\//);
   const gameUrl = playerOne.url();
 
-  const namesAfterCreate = await playerOne.locator('.ruser name').allTextContents();
-  expect(namesAfterCreate).toContain('AlphaPlayer');
+  await expect(playerOne.locator('.ruser name', { hasText: 'AlphaPlayer' })).toBeVisible();
 
-  const poolTwo = playerTwo.locator('.lpool', { hasText: '9×9' }).first();
-  await poolTwo.click();
-  await playerTwo.waitForURL(/\/play\//);
-  expect(playerTwo.url()).toBe(gameUrl);
+  await playerTwo.locator('.lpool', { hasText: '9×9' }).first().click();
+  await expect(playerTwo).toHaveURL(gameUrl);
 
-  const namesTwo = await playerTwo.locator('.ruser name').allTextContents();
-  expect(namesTwo).toContain('AlphaPlayer');
-  expect(namesTwo).toContain(guestId);
+  await expect(playerTwo.locator('.ruser name', { hasText: 'AlphaPlayer' })).toBeVisible();
+  await expect(playerTwo.locator('.ruser name', { hasText: guestId })).toBeVisible();
 });
 
 test('presence icon turns red when opponent disconnects, green when they reconnect', async ({ browser }) => {
@@ -134,7 +114,7 @@ test('presence icon turns red when opponent disconnects, green when they reconne
   await modal.locator('.color-choice .black').click();
   await modal.locator('.lobby__start__button--friend').click();
 
-  await playerOne.waitForURL(/\/play\//);
+  await expect(playerOne).toHaveURL(/\/play\//);
   const gameUrl = playerOne.url();
 
   await playerTwo.goto(gameUrl);
@@ -142,21 +122,16 @@ test('presence icon turns red when opponent disconnects, green when they reconne
   await joinModal.locator('button', { hasText: 'Join game' }).click();
   await expect(joinModal).not.toBeVisible();
 
-  // Both players are online
   await expect(playerTwo.locator('[data-testid="presence-black"].online')).toBeVisible();
   await expect(playerTwo.locator('[data-testid="presence-white"].online')).toBeVisible();
 
-  // Player one (black) navigates away
   await playerOne.goto('/');
 
-  // Player two sees black go offline
   await expect(playerTwo.locator('[data-testid="presence-black"].offline')).toBeVisible();
   await expect(playerTwo.locator('[data-testid="presence-white"].online')).toBeVisible();
 
-  // Player one navigates back
   await playerOne.goto(gameUrl);
 
-  // Player two sees black come back online
   await expect(playerTwo.locator('[data-testid="presence-black"].online')).toBeVisible();
 });
 
@@ -177,19 +152,50 @@ test('two signed-in users are matched', async ({ browser }) => {
   await playerTwo.goto('/');
 
   const poolOne = playerOne.locator('.lpool', { hasText: '9×9' }).first();
+  const poolTwo = playerTwo.locator('.lpool', { hasText: '9×9' }).first();
+  await expect(poolOne).toBeVisible();
+  await expect(poolTwo).toBeVisible();
+
   await poolOne.click();
-  await playerOne.waitForURL(/\/play\//);
+  await expect(playerOne).toHaveURL(/\/play\//);
   const gameUrl = playerOne.url();
 
-  const namesAfterCreate = await playerOne.locator('.ruser name').allTextContents();
-  expect(namesAfterCreate).toContain('BetaPlayer');
+  await expect(playerOne.locator('.ruser name', { hasText: 'BetaPlayer' })).toBeVisible();
 
-  const poolTwo = playerTwo.locator('.lpool', { hasText: '9×9' }).first();
   await poolTwo.click();
-  await playerTwo.waitForURL(/\/play\//);
-  expect(playerTwo.url()).toBe(gameUrl);
+  await expect(playerTwo).toHaveURL(gameUrl);
 
-  const namesTwo = await playerTwo.locator('.ruser name').allTextContents();
-  expect(namesTwo).toContain('BetaPlayer');
-  expect(namesTwo).toContain('GammaPlayer');
+  await expect(playerTwo.locator('.ruser name', { hasText: 'BetaPlayer' })).toBeVisible();
+  await expect(playerTwo.locator('.ruser name', { hasText: 'GammaPlayer' })).toBeVisible();
+});
+
+test('creator sees opponent name after opponent joins', async ({ browser }) => {
+  const contextOne = await browser.newContext();
+  const contextTwo = await browser.newContext();
+  const playerOne = await contextOne.newPage();
+  const playerTwo = await contextTwo.newPage();
+
+  await playerOne.goto('/');
+  await playerTwo.goto('/');
+
+  await expect.poll(() => playerOne.evaluate(() => localStorage.getItem('guest-id'))).toBeTruthy();
+  await expect.poll(() => playerTwo.evaluate(() => localStorage.getItem('guest-id'))).toBeTruthy();
+
+  const guestIdOne = await playerOne.evaluate(() => localStorage.getItem('guest-id'));
+  const guestIdTwo = await playerTwo.evaluate(() => localStorage.getItem('guest-id'));
+
+  await playerOne.locator('.lpool', { hasText: '9×9' }).first().click();
+  await expect(playerOne).toHaveURL(/\/play\//);
+
+  // Wait for player one's own presence dot — this means their WebSocket has connected
+  // and the server has added them to the game room. It's now safe for player two to
+  // click, because the `joined` broadcast will reach player one's socket.
+  await expect(playerOne.locator('.presence.online')).toHaveCount(1);
+
+  await playerTwo.locator('.lpool', { hasText: '9×9' }).first().click();
+  await expect(playerTwo).toHaveURL(/\/play\//);
+
+  // Player one's strip should now show both names
+  await expect(playerOne.locator('.ruser name', { hasText: guestIdOne })).toBeVisible();
+  await expect(playerOne.locator('.ruser name', { hasText: guestIdTwo })).toBeVisible();
 });

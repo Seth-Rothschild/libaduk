@@ -3,19 +3,6 @@
 
   const KOMI = 6.5;
 
-  let {
-    analysisTool,
-    analysisStatus,
-    analysisScore,
-    analysisEstimatedScore,
-    analysisShowEstimate,
-    onSetTool,
-    onStartScoring,
-    onStopScoring,
-    onToggleEstimate,
-    onExit
-  } = $props();
-
   const MARKER_TOOLS = [
     { id: 'stone', label: 'Stone', title: 'Place stones' },
     { id: 'cross', label: '✕', title: 'Mark X' },
@@ -25,47 +12,74 @@
     { id: 'label', label: 'A', title: 'Label (A, B, C...)' },
     { id: 'number', label: '1', title: 'Number (1, 2, 3...)' }
   ];
+
+  let {
+    tool,
+    status,
+    score,
+    estimatedScore,
+    showEstimate,
+    onSetTool,
+    onStartScoring,
+    onStopScoring,
+    onToggleEstimate,
+    onExit = null,
+    onClear = null,
+    onDownloadSgf = null,
+    onImportSgf = null
+  } = $props();
 </script>
 
-{#if analysisStatus === 'scoring'}
+{#if status === 'scoring'}
   <button class="button button-green" onclick={onStopScoring}>Back to analysis</button>
-  {#if analysisScore}
+  {#if score}
     <div class="score-display">
-      <span class="color-icon is black text">{analysisScore.blackArea}</span>
+      <span class="color-icon is black text">{score.blackArea}</span>
       <span class="color-icon is white text">
-        {analysisScore.whiteArea} + {KOMI} = {analysisScore.whiteScore.toFixed(1)}
+        {score.whiteArea} + {KOMI} = {score.whiteScore.toFixed(1)}
       </span>
-      <strong>{scoreVerdictShort(analysisScore)}</strong>
+      <strong>{scoreVerdictShort(score)}</strong>
     </div>
   {/if}
 {:else}
   <div class="tool-buttons">
-    {#each MARKER_TOOLS as tool}
+    {#each MARKER_TOOLS as t}
       <button
         class="button"
-        class:button-green={analysisTool === tool.id}
-        class:button-metal={analysisTool !== tool.id}
-        onclick={() => onSetTool(tool.id)}
-        title={tool.title}>{tool.label}</button
+        class:button-green={tool === t.id}
+        class:button-metal={tool !== t.id}
+        onclick={() => onSetTool(t.id)}
+        title={t.title}>{t.label}</button
       >
     {/each}
   </div>
   <button class="button button-metal" onclick={onStartScoring}>Score</button>
   <button
     class="button"
-    class:button-green={analysisShowEstimate}
-    class:button-metal={!analysisShowEstimate}
+    class:button-green={showEstimate}
+    class:button-metal={!showEstimate}
     onclick={onToggleEstimate}>Estimate</button
   >
-  {#if analysisEstimatedScore}
+  {#if onClear}
+    <button class="button button-metal" onclick={onClear}>Clear</button>
+  {/if}
+  {#if onDownloadSgf}
+    <button class="button button-metal" onclick={onDownloadSgf}>Download SGF</button>
+  {/if}
+  {#if onImportSgf}
+    <button class="button button-metal" onclick={onImportSgf}>Import SGF</button>
+  {/if}
+  {#if estimatedScore}
     <div class="score-display">
-      <span class="color-icon is black text">{analysisEstimatedScore.blackArea}</span>
+      <span class="color-icon is black text">{estimatedScore.blackArea}</span>
       <span class="color-icon is white text">
-        {analysisEstimatedScore.whiteArea} + {KOMI} = {analysisEstimatedScore.whiteScore.toFixed(1)}
+        {estimatedScore.whiteArea} + {KOMI} = {estimatedScore.whiteScore.toFixed(1)}
       </span>
-      <strong>{scoreVerdictShort(analysisEstimatedScore)}</strong>
+      <strong>{scoreVerdictShort(estimatedScore)}</strong>
     </div>
   {/if}
 {/if}
 
-<button class="button button-metal" onclick={onExit}>Back to game</button>
+{#if onExit}
+  <button class="button button-metal" onclick={onExit}>Back to game</button>
+{/if}

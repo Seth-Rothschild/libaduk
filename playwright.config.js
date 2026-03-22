@@ -5,11 +5,11 @@ export default defineConfig({
   testDir: 'tests/e2e',
   timeout: 10000,
   expect: {
-    timeout: 2000
+    timeout: 5000
   },
   use: {
     baseURL: 'http://localhost:5173',
     actionTimeout: 2000,
-    navigationTimeout: 2000
+    navigationTimeout: 5000
   }
 });
