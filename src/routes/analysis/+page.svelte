@@ -662,8 +662,8 @@
           onclick={() => (showEstimate = !showEstimate)}>Estimate</button
         >
         <button class="button button-metal" onclick={clearBoard}>Clear</button>
-        <!-- <button class="button button-metal" onclick={downloadSgf}>SGF</button>
-        <button class="button button-metal" onclick={() => fileInput.click()}>Load</button> -->
+        <button class="button button-metal" onclick={downloadSgf}>Download SGF</button>
+        <button class="button button-metal" onclick={() => fileInput.click()}>Import SGF</button>
         {#if estimatedScore}
           <div class="score-display">
             <span class="color-icon is black text">{estimatedScore.blackArea}</span>
@@ -689,13 +689,13 @@
   </div>
 </div>
 
-<!-- <input
+<input
   type="file"
   accept=".sgf"
   style="display: none"
   bind:this={fileInput}
   onchange={importSgfFile}
-/> -->
+/>
 
 <style>
   .analysis-tools {
