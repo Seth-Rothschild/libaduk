@@ -17,3 +17,12 @@
     await expect(link).toHaveTextContent('libaduk');
   }}
 />
+
+<Story
+  name="Mobile: site name is hidden"
+  parameters={{ viewport: { defaultViewport: 'mobile' } }}
+  play={async ({ canvas }) => {
+    const homeSpan = canvas.getByText('libaduk.com');
+    await expect(homeSpan).not.toBeVisible();
+  }}
+/>

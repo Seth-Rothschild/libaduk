@@ -8,6 +8,8 @@
   let inputEl;
   let searchTimer = null;
   let blurTimer = null;
+  let clickedIconTimer = null;
+  let clickedIcon = false;
 
   $effect(() => {
     document.body.classList.toggle('clinput', expanded);
@@ -17,6 +19,7 @@
   onDestroy(() => {
     clearTimeout(searchTimer);
     clearTimeout(blurTimer);
+    clearTimeout(clickedIconTimer);
   });
 
   const expand = () => {
@@ -26,12 +29,16 @@
 
   const onIconClick = (e) => {
     e.preventDefault();
+    clickedIcon = true;
+    clearTimeout(clickedIconTimer);
+    clickedIconTimer = setTimeout(() => { clickedIcon = false; }, 300);
     expand();
   };
 
   const onMouseEnter = () => expand();
 
   const onMouseLeave = () => {
+    if (clickedIcon) return;
     if (query.length === 0) expanded = false;
     inputEl?.blur();
   };

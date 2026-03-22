@@ -59,3 +59,14 @@
     await expect(input).toHaveFocus();
   }}
 />
+
+<Story
+  name="Mobile: search stays open after icon tap when mouse leaves"
+  play={async ({ canvas }) => {
+    const icon = canvas.getByRole('button', { name: 'Search' });
+    await userEvent.click(icon);
+    const container = canvas.getByRole('textbox', { name: 'Search' }).closest('#clinput')!;
+    await userEvent.unhover(container);
+    await expect(document.body).toHaveClass('clinput');
+  }}
+/>

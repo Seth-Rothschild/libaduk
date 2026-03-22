@@ -119,6 +119,10 @@ body > header {
   .site-title {
     margin-inline-start: calc(0.5rem + var(---site-header-height));
   }
+
+  .site-title .home {
+    display: none;
+  }
 }
 
 @media (min-height: 599.3px) {
