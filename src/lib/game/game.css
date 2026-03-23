@@ -67,6 +67,16 @@
       'buttons';
   }
 
+  .round__app .rmoves {
+    min-height: 120px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .round__app .rgraph {
+    height: 120px;
+  }
+
   .round__app .rclock-top {
     grid-area: user-top;
     justify-self: end;
@@ -110,21 +120,16 @@
 
 .round__app__board {
   grid-area: board;
-}
-
-@media (max-width: 499px) {
-  .round__app__board {
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
-    min-width: 0;
-  }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
 }
 
 @media (min-width: 500px) {
   .round__app__board {
     height: 100%;
-    min-width: 0;
-    overflow: hidden;
+    justify-content: center;
   }
 }
 

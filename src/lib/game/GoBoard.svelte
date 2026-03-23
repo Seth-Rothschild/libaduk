@@ -238,18 +238,19 @@
               {/if}
               {#if marker === 'cross'}
                 <svg class="go-marker" viewBox="0 0 1 1">
-                  <line
-                    x1="0.25"
-                    y1="0.25"
-                    x2="0.75"
-                    y2="0.75"
-                    class="go-marker-shape go-marker-on-{sign || 'empty'}"
-                  />
-                  <line
-                    x1="0.75"
-                    y1="0.25"
-                    x2="0.25"
-                    y2="0.75"
+                  {#if sign === 0}
+                    <rect
+                      x="0.25"
+                      y="0.25"
+                      width="0.5"
+                      height="0.5"
+                      class="go-marker-bg"
+                      stroke="none"
+                    />
+                  {/if}
+                  <path
+                    d="M 0 0 L .5 .5 M .5 0 L 0 .5"
+                    transform="translate(.25 .25)"
                     class="go-marker-shape go-marker-on-{sign || 'empty'}"
                   />
                 </svg>
@@ -274,22 +275,16 @@
                 </svg>
               {:else if marker === 'triangle'}
                 <svg class="go-marker" viewBox="0 0 1 1">
-                  <polygon
-                    points="0.5,0.2 0.22,0.75 0.78,0.75"
+                  <path
+                    d="M 0 .5 L .6 .5 L .3 0 z"
+                    transform="translate(.2 .2)"
                     class="go-marker-shape go-marker-on-{sign || 'empty'}"
                   />
                 </svg>
               {:else if marker?.type === 'label' || marker?.type === 'number'}
-                <svg class="go-marker" viewBox="0 0 1 1">
-                  <text
-                    x="0.5"
-                    y="0.55"
-                    text-anchor="middle"
-                    dominant-baseline="middle"
-                    class="go-marker-label go-marker-label-on-{sign || 'empty'}"
-                    >{marker.label}</text
-                  >
-                </svg>
+                <div class="go-marker-label go-marker-label-on-{sign || 'empty'}">
+                  {marker.label}
+                </div>
               {/if}
               {#if sign === 0 && childSign !== 0}
                 <div class="go-ghost go-ghost-{childSign}"></div>
@@ -368,41 +363,62 @@
     z-index: 2;
   }
 
+  .go-marker-bg {
+    fill: var(--go-board-background-color, #f1b458);
+  }
+
   .go-marker-shape {
     fill: none;
-    stroke-width: 0.07;
+    stroke-width: 2px;
     stroke-linejoin: round;
     stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
   }
 
   .go-marker-on-1 {
-    stroke: #eee;
+    stroke: var(--go-black-foreground-color, #fff);
   }
 
   .go-marker-on--1 {
-    stroke: #222;
+    stroke: var(--go-white-foreground-color, rgba(0, 0, 0, 0.75));
   }
 
   .go-marker-on-empty {
-    stroke: #333;
+    stroke: var(--go-board-foreground-color, #5e2e0c);
+  }
+
+  circle.go-marker-on-empty,
+  rect.go-marker-on-empty,
+  path.go-marker-on-empty {
+    fill: var(--go-board-background-color, #f1b458);
   }
 
   .go-marker-label {
-    font-size: 0.45px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    pointer-events: none;
+    font-size: 0.5em;
     font-weight: bold;
     font-family: sans-serif;
+    line-height: 1;
+    text-align: center;
+    white-space: pre;
   }
 
   .go-marker-label-on-1 {
-    fill: #eee;
+    color: var(--go-black-foreground-color, #fff);
   }
 
   .go-marker-label-on--1 {
-    fill: #222;
+    color: var(--go-white-foreground-color, rgba(0, 0, 0, 0.75));
   }
 
   .go-marker-label-on-empty {
-    fill: #333;
+    color: var(--go-board-foreground-color, #5e2e0c);
+    background: var(--go-board-background-color, #f1b458);
   }
 
   .go-ghost {

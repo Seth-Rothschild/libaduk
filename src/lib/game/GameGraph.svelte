@@ -102,7 +102,7 @@
       }
     }
 
-    layoutSequence(rootNode, 0, 0);
+    layoutSequence(rootNode, 0, 1);
 
     const currentPath = new Set();
     let walk = currentNode;
