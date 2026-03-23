@@ -31,7 +31,9 @@
     e.preventDefault();
     clickedIcon = true;
     clearTimeout(clickedIconTimer);
-    clickedIconTimer = setTimeout(() => { clickedIcon = false; }, 300);
+    clickedIconTimer = setTimeout(() => {
+      clickedIcon = false;
+    }, 300);
     expand();
   };
 
@@ -74,7 +76,8 @@
 </script>
 
 <div id="clinput" onmouseenter={onMouseEnter} onmouseleave={onMouseLeave}>
-  <button type="button" data-icon="&#xe057;" aria-label="Search" class="link" onclick={onIconClick}></button>
+  <button type="button" data-icon="&#xe057;" aria-label="Search" class="link" onclick={onIconClick}
+  ></button>
   <input
     type="text"
     spellcheck="false"

@@ -184,7 +184,12 @@ export function attachWebSocketServer(httpServer) {
         broadcastToOthers(socket.gameId, socket, { type: 'analysis-navigate', path: msg.path });
       }
       if (msg.type === 'analysis-move' && socket.gameId) {
-        broadcastToOthers(socket.gameId, socket, { type: 'analysis-move', x: msg.x, y: msg.y, tool: msg.tool });
+        broadcastToOthers(socket.gameId, socket, {
+          type: 'analysis-move',
+          x: msg.x,
+          y: msg.y,
+          tool: msg.tool
+        });
       }
       if (msg.type === 'analysis-exit' && socket.gameId) {
         await db.updateGame(socket.gameId, { analysisActive: false });

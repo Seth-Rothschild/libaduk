@@ -34,7 +34,9 @@
     else clearUsername();
   });
 
-  const isGamePage = $derived($page.route.id?.startsWith('/play/') || $page.route.id?.startsWith('/analysis'));
+  const isGamePage = $derived(
+    $page.route.id?.startsWith('/play/') || $page.route.id?.startsWith('/analysis')
+  );
 
   const openSetup = async (type) => {
     await goto('/');

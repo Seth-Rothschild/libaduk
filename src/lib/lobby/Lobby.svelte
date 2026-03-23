@@ -133,7 +133,11 @@
   </div>
 
   {#if setupModal}
-    <GameSetupModal gameType={setupModal} creatorName={displayName} onClose={() => (setupModal = null)} />
+    <GameSetupModal
+      gameType={setupModal}
+      creatorName={displayName}
+      onClose={() => (setupModal = null)}
+    />
   {/if}
 
   <LobbyAbout />

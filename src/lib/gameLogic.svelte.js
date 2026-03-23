@@ -288,5 +288,4 @@ export class GameState {
     this.clockState.activeColor = movedColor === 'black' ? 'white' : 'black';
     this.clockState.turnStartedAt = now;
   }
-
 }

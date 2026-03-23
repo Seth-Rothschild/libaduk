@@ -33,16 +33,24 @@ test('two guests are matched into the same 9x9 game and can chat', async ({ brow
   await chatInputOne.fill('hello from player one');
   await chatInputOne.press('Enter');
 
-  await expect(playerOne.locator('.mchat__messages t', { hasText: 'hello from player one' })).toBeVisible();
-  await expect(playerTwo.locator('.mchat__messages t', { hasText: 'hello from player one' })).toBeVisible();
+  await expect(
+    playerOne.locator('.mchat__messages t', { hasText: 'hello from player one' })
+  ).toBeVisible();
+  await expect(
+    playerTwo.locator('.mchat__messages t', { hasText: 'hello from player one' })
+  ).toBeVisible();
 
   // Player two sends a reply
   const chatInputTwo = playerTwo.locator('.mchat__say');
   await chatInputTwo.fill('hello from player two');
   await chatInputTwo.press('Enter');
 
-  await expect(playerTwo.locator('.mchat__messages t', { hasText: 'hello from player two' })).toBeVisible();
-  await expect(playerOne.locator('.mchat__messages t', { hasText: 'hello from player two' })).toBeVisible();
+  await expect(
+    playerTwo.locator('.mchat__messages t', { hasText: 'hello from player two' })
+  ).toBeVisible();
+  await expect(
+    playerOne.locator('.mchat__messages t', { hasText: 'hello from player two' })
+  ).toBeVisible();
 
   // A third user navigates directly to the game as a spectator
   const contextThree = await browser.newContext();
@@ -61,9 +69,15 @@ test('two guests are matched into the same 9x9 game and can chat', async ({ brow
   await chatInputThree.fill('hello from spectator');
   await chatInputThree.press('Enter');
 
-  await expect(spectator.locator('.mchat__messages t', { hasText: 'hello from spectator' })).toBeVisible();
-  await expect(playerOne.locator('.mchat__messages t', { hasText: 'hello from spectator' })).toBeVisible();
-  await expect(playerTwo.locator('.mchat__messages t', { hasText: 'hello from spectator' })).toBeVisible();
+  await expect(
+    spectator.locator('.mchat__messages t', { hasText: 'hello from spectator' })
+  ).toBeVisible();
+  await expect(
+    playerOne.locator('.mchat__messages t', { hasText: 'hello from spectator' })
+  ).toBeVisible();
+  await expect(
+    playerTwo.locator('.mchat__messages t', { hasText: 'hello from spectator' })
+  ).toBeVisible();
 
   await contextThree.close();
 });
@@ -98,7 +112,9 @@ test('signed-in user plays against a guest', async ({ browser }) => {
   await expect(playerTwo.locator('.ruser name', { hasText: guestId })).toBeVisible();
 });
 
-test('presence icon turns red when opponent disconnects, green when they reconnect', async ({ browser }) => {
+test('presence icon turns red when opponent disconnects, green when they reconnect', async ({
+  browser
+}) => {
   const contextOne = await browser.newContext();
   const contextTwo = await browser.newContext();
   const playerOne = await contextOne.newPage();

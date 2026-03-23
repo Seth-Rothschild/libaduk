@@ -112,9 +112,10 @@
     }
 
     for (const edge of edges) {
-      const sourceNode = nodes.find(n => n.x === edge.x1 && n.y === edge.y1)?.node;
-      const targetNode = nodes.find(n => n.x === edge.x2 && n.y === edge.y2)?.node;
-      edge.current = sourceNode && targetNode && currentPath.has(sourceNode) && currentPath.has(targetNode);
+      const sourceNode = nodes.find((n) => n.x === edge.x1 && n.y === edge.y1)?.node;
+      const targetNode = nodes.find((n) => n.x === edge.x2 && n.y === edge.y2)?.node;
+      edge.current =
+        sourceNode && targetNode && currentPath.has(sourceNode) && currentPath.has(targetNode);
     }
 
     return { nodes, edges };
@@ -196,7 +197,10 @@
           {@const y2 = edge.y2 * GRID}
           {#if x1 === x2}
             <line
-              {x1} {y1} {x2} {y2}
+              {x1}
+              {y1}
+              {x2}
+              {y2}
               stroke={edge.current ? '#ccc' : '#555'}
               stroke-width={edge.current ? 2 : 1}
             />
@@ -221,15 +225,16 @@
               y={cy - NODE_RADIUS}
               width={NODE_RADIUS * 2}
               height={NODE_RADIUS * 2}
-              fill={fill}
+              {fill}
               stroke={isCurrent ? 'var(--c-accent, #639b24)' : 'none'}
               stroke-width={isCurrent ? 2 : 0}
             />
           {:else}
             <circle
-              {cx} {cy}
+              {cx}
+              {cy}
               r={NODE_RADIUS}
-              fill={fill}
+              {fill}
               stroke={isCurrent ? 'var(--c-accent, #639b24)' : 'none'}
               stroke-width={isCurrent ? 2 : 0}
             />

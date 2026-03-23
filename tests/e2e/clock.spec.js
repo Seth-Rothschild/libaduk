@@ -35,7 +35,9 @@ async function joinAsWhite(white, gameId) {
   await expect(joinModal).not.toBeVisible();
 }
 
-test('clock does not start until both players join and first move is played', async ({ browser }) => {
+test('clock does not start until both players join and first move is played', async ({
+  browser
+}) => {
   const contextOne = await browser.newContext();
   const contextTwo = await browser.newContext();
   const black = await contextOne.newPage();
@@ -96,4 +98,3 @@ test('game ends on time when a player runs out of time', async ({ browser }) => 
   await expect(black.locator('.message')).toContainText('You win', { timeout: 6000 });
   await expect(white.locator('.message')).toContainText('You lose');
 });
-

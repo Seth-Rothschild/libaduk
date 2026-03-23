@@ -1,7 +1,14 @@
 <script>
   import { colorName, formatVertex } from '$lib/gameUtils.js';
 
-  let { blackCaptures, whiteCaptures, currentNode, boardSize, comment = '', onCommentChange } = $props();
+  let {
+    blackCaptures,
+    whiteCaptures,
+    currentNode,
+    boardSize,
+    comment = '',
+    onCommentChange
+  } = $props();
 
   const lastMoveColor = $derived(
     currentNode?.lastMove ? colorName(currentNode.signToPlay === 1 ? -1 : 1) : null

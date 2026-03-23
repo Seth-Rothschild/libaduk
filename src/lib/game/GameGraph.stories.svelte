@@ -66,71 +66,41 @@
 <Story name="Single node">
   {@const node = makeNode(null, null)}
   <div style="width: 240px; height: 200px;">
-    <GameGraph
-      root={node}
-      currentNode={node}
-      version={0}
-      onSelectNode={fn()}
-    />
+    <GameGraph root={node} currentNode={node} version={0} onSelectNode={fn()} />
   </div>
 </Story>
 
 <Story name="Linear game">
   {@const tree = buildLinearTree(10)}
   <div style="width: 240px; height: 300px;">
-    <GameGraph
-      root={tree.root}
-      currentNode={tree.leaf}
-      version={0}
-      onSelectNode={fn()}
-    />
+    <GameGraph root={tree.root} currentNode={tree.leaf} version={0} onSelectNode={fn()} />
   </div>
 </Story>
 
 <Story name="With branches">
   {@const tree = buildBranchingTree()}
   <div style="width: 240px; height: 300px;">
-    <GameGraph
-      root={tree.root}
-      currentNode={tree.move2a}
-      version={0}
-      onSelectNode={fn()}
-    />
+    <GameGraph root={tree.root} currentNode={tree.move2a} version={0} onSelectNode={fn()} />
   </div>
 </Story>
 
 <Story name="With comments (orange nodes)">
   {@const tree = buildTreeWithComments()}
   <div style="width: 240px; height: 300px;">
-    <GameGraph
-      root={tree.root}
-      currentNode={tree.move3}
-      version={0}
-      onSelectNode={fn()}
-    />
+    <GameGraph root={tree.root} currentNode={tree.move3} version={0} onSelectNode={fn()} />
   </div>
 </Story>
 
 <Story name="Current at root">
   {@const tree = buildBranchingTree()}
   <div style="width: 240px; height: 300px;">
-    <GameGraph
-      root={tree.root}
-      currentNode={tree.root}
-      version={0}
-      onSelectNode={fn()}
-    />
+    <GameGraph root={tree.root} currentNode={tree.root} version={0} onSelectNode={fn()} />
   </div>
 </Story>
 
 <Story name="Current on branch">
   {@const tree = buildBranchingTree()}
   <div style="width: 240px; height: 300px;">
-    <GameGraph
-      root={tree.root}
-      currentNode={tree.move3b}
-      version={0}
-      onSelectNode={fn()}
-    />
+    <GameGraph root={tree.root} currentNode={tree.move3b} version={0} onSelectNode={fn()} />
   </div>
 </Story>

@@ -32,7 +32,15 @@
           <line x1="19" y1="19" x2="10" y2="1" stroke="currentColor" stroke-width="2" />
           <line x1="10" y1="1" x2="1" y2="19" stroke="currentColor" stroke-width="2" />
         {:else if t.id === 'square'}
-          <rect x="1" y="1" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" />
+          <rect
+            x="1"
+            y="1"
+            width="18"
+            height="18"
+            stroke="currentColor"
+            stroke-width="2"
+            fill="none"
+          />
         {:else if t.id === 'circle'}
           <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2" fill="none" />
         {:else if t.id === 'label'}
@@ -72,7 +80,9 @@
     background: none;
     color: var(--c-font-dim);
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition:
+      background 0.15s,
+      color 0.15s;
   }
 
   .edit-bar-btn:hover {

@@ -3,7 +3,15 @@ import influence from '@sabaki/influence';
 import { nameMove } from '@sabaki/boardmatcher';
 import { computeScore, toggleDeadStones, buildScoreBoard, emptyMarkerMap } from '$lib/gameUtils.js';
 
-export function makeAnalysisNode(board, lastMove, markerMap, signToPlay, parent, moveName = null, comment = '') {
+export function makeAnalysisNode(
+  board,
+  lastMove,
+  markerMap,
+  signToPlay,
+  parent,
+  moveName = null,
+  comment = ''
+) {
   return { board, lastMove, markerMap, signToPlay, children: [], parent, moveName, comment };
 }
 
@@ -268,11 +276,25 @@ export class AnalysisState {
         }
         const lastMove = [move.x, move.y];
         const moveName = getAnalysisMoveName(node.board, node.signToPlay, lastMove);
-        const child = makeAnalysisNode(newBoard, lastMove, emptyMarkerMap(size), nextSign, node, moveName);
+        const child = makeAnalysisNode(
+          newBoard,
+          lastMove,
+          emptyMarkerMap(size),
+          nextSign,
+          node,
+          moveName
+        );
         node.children.push(child);
         node = child;
       } else if (move.type === 'pass') {
-        const child = makeAnalysisNode(node.board, null, emptyMarkerMap(size), nextSign, node, null);
+        const child = makeAnalysisNode(
+          node.board,
+          null,
+          emptyMarkerMap(size),
+          nextSign,
+          node,
+          null
+        );
         node.children.push(child);
         node = child;
       }

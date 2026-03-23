@@ -59,7 +59,9 @@
   {#if status === 'gameover'}
     <section class="status">
       {#if isLocal || isSpectator}
-        {winner === 1 ? 'Black' : 'White'} wins{formatResult(winnerResult) ? ` ${formatResult(winnerResult)}` : ''}.
+        {winner === 1 ? 'Black' : 'White'} wins{formatResult(winnerResult)
+          ? ` ${formatResult(winnerResult)}`
+          : ''}.
       {:else if winnerResult}
         {winner === mySign ? 'You win!' : 'You lose.'} &mdash; {formatResult(winnerResult)}
       {:else}

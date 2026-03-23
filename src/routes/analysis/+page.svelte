@@ -88,7 +88,15 @@
 
       const markers = sgfNodeMarkers(sgfNode, SIZE);
       const comment = sgfNodeComment(sgfNode);
-      const node = makeAnalysisNode(newBoard, lastMove, markers, nextSign, parent, moveName, comment);
+      const node = makeAnalysisNode(
+        newBoard,
+        lastMove,
+        markers,
+        nextSign,
+        parent,
+        moveName,
+        comment
+      );
 
       for (const childSgf of sgfNode.children) {
         const childNode = buildNode(childSgf, newBoard, nextSign, node);

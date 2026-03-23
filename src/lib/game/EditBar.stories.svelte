@@ -21,7 +21,7 @@
   play={async ({ canvas }) => {
     const buttons = canvas.getAllByRole('button');
     await expect(buttons).toHaveLength(7);
-    const selected = buttons.filter(b => b.classList.contains('selected'));
+    const selected = buttons.filter((b) => b.classList.contains('selected'));
     await expect(selected).toHaveLength(1);
     await expect(selected[0]).toHaveAttribute('title', 'Place stones');
   }}
@@ -32,7 +32,7 @@
   args={{ tool: 'cross' }}
   play={async ({ canvas }) => {
     const buttons = canvas.getAllByRole('button');
-    const selected = buttons.filter(b => b.classList.contains('selected'));
+    const selected = buttons.filter((b) => b.classList.contains('selected'));
     await expect(selected).toHaveLength(1);
     await expect(selected[0]).toHaveAttribute('title', 'Mark X');
   }}

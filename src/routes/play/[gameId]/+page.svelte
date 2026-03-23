@@ -9,7 +9,12 @@
   import { boardState } from '$lib/boardState.svelte.js';
   import { getGuestId } from '$lib/guestId.js';
   import { GameState } from '$lib/gameLogic.svelte.js';
-  import { AnalysisState, serializeTree, getNodePath, followNodePath } from '$lib/game/analysisState.svelte.js';
+  import {
+    AnalysisState,
+    serializeTree,
+    getNodePath,
+    followNodePath
+  } from '$lib/game/analysisState.svelte.js';
   import { gameSocket } from '$lib/socket.svelte.js';
   import GameChat from '$lib/game/GameChat.svelte';
   import GameMeta from '$lib/game/GameMeta.svelte';
@@ -65,9 +70,7 @@
   const blackCaptures = $derived(displayBoard.getCaptures(1));
   const whiteCaptures = $derived(displayBoard.getCaptures(-1));
 
-  const showJoinModal = $derived(
-    gs.status === 'waiting' && gs.mySign === null && !isLocal
-  );
+  const showJoinModal = $derived(gs.status === 'waiting' && gs.mySign === null && !isLocal);
 
   function handleJoined(color) {
     gs.mySign = color === 'black' ? 1 : -1;
@@ -292,7 +295,12 @@
 
   function forceResign() {
     const result = myColor === 'white' ? 'W+R' : 'B+R';
-    gameSocket.send({ type: 'gameover', winner: myColor, result, clockState: serializeClockState() });
+    gameSocket.send({
+      type: 'gameover',
+      winner: myColor,
+      result,
+      clockState: serializeClockState()
+    });
   }
 
   function approveScore() {
@@ -313,11 +321,18 @@
     gs.winner = winner;
     gs.finalScore = finalScore;
     if (!isLocal) {
-      gameSocket.send({ type: 'gameover', winner: winner === 1 ? 'black' : 'white', result: resultString, clockState: serializeClockState() });
+      gameSocket.send({
+        type: 'gameover',
+        winner: winner === 1 ? 'black' : 'white',
+        result: resultString,
+        clockState: serializeClockState()
+      });
     }
   }
 
-  const opponentOnline = $derived(isLocal ? null : (oppColor === 'black' ? blackOnline : whiteOnline));
+  const opponentOnline = $derived(
+    isLocal ? null : oppColor === 'black' ? blackOnline : whiteOnline
+  );
 
   function resolvePlayerName(targetColor) {
     if (isLocal) return targetColor === 'black' ? 'Black' : 'White';
@@ -417,9 +432,7 @@
           checkBothApproved();
         }
         if (msg.type === 'chat') {
-          const isDuplicate = chatMessages.some(
-            (m) => m.user === msg.user && m.text === msg.text
-          );
+          const isDuplicate = chatMessages.some((m) => m.user === msg.user && m.text === msg.text);
           if (!isDuplicate) {
             chatMessages.push({ user: msg.user, text: msg.text });
           }
@@ -559,7 +572,7 @@
       name={resolveStripName(topStripColor)}
       captures={opponentCaptures}
       position="top"
-      online={isLocal ? null : (topStripColor === 'black' ? blackOnline : whiteOnline)}
+      online={isLocal ? null : topStripColor === 'black' ? blackOnline : whiteOnline}
     />
 
     <div class="rmoves">
@@ -658,7 +671,7 @@
       name={resolveStripName(bottomStripColor)}
       captures={myCaptures}
       position="bottom"
-      online={isLocal ? null : (bottomStripColor === 'black' ? blackOnline : whiteOnline)}
+      online={isLocal ? null : bottomStripColor === 'black' ? blackOnline : whiteOnline}
     />
 
     {#if !isCorrGame}
