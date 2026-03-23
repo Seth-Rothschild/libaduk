@@ -9,7 +9,10 @@
 </script>
 
 <main class="auth auth-signup box box-pad">
-  <h1 class="box__top">Sign up</h1>
+  <div class="auth-tabs">
+    <a href="/login">Sign In</a>
+    <a href="/signup" class="active">Register</a>
+  </div>
 
   <form id="signup-form" class="form3" onsubmit={handleSubmit}>
     <div class="form-group">
@@ -36,12 +39,20 @@
       </div>
     {/if}
 
-    <button type="submit" class="submit button button-metal big" disabled={submitting}>
-      {submitting ? 'Creating account…' : 'Sign up with passkey'}
+    <button type="submit" class="submit button" disabled={submitting}>
+      {submitting ? 'Creating account…' : 'Register with passkey'}
     </button>
   </form>
 
-  <div class="alternative">
-    Already have an account? <a href="/login">Sign in</a>
+  <div class="passkey-info">
+    <p>
+      This site uses <a href="https://simplewebauthn.dev/">Simple WebAuthn</a> for passkeys. Passkeys
+      are natively supported by modern browsers. They create "public keys" we store in our database while
+      the matching private key stays within your operating system or password manager.
+    </p>
+    <p>
+      The upshot of this is that we don't have to try to store passwords or email addresses
+      securely, which is why we use them here.
+    </p>
   </div>
 </main>

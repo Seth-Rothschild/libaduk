@@ -2,8 +2,7 @@
    auth.css — styles for login, signup, and the shared box +
    form primitives they use.
 
-   Replaces: ui/bits/css/_auth.scss + ui/lib/css/form/_form3.scss
-             + ui/lib/css/component/_box.scss
+   Gold accent color from --c-warn (hsl(37, 74%, 43%)).
    ============================================================= */
 
 /* -------------------------------------------------------------
@@ -33,25 +32,6 @@
   padding: 4vh 2rem;
 }
 
-.box-pad .box__top {
-  padding-top: 0;
-  padding-bottom: 4vh;
-}
-
-/* -------------------------------------------------------------
-   .box__top — title bar inside a box (h1 or heading element)
-   ------------------------------------------------------------- */
-
-.box__top {
-  padding: 4vh 2rem;
-  display: flex;
-  flex-flow: row wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  font-size: 1.5em;
-}
-
 /* -------------------------------------------------------------
    .auth — centered narrow container for auth pages
    ------------------------------------------------------------- */
@@ -67,28 +47,99 @@
   }
 }
 
+/* -------------------------------------------------------------
+   .auth-tabs — Sign In / Register tab navigation
+   ------------------------------------------------------------- */
+
+.auth-tabs {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.auth-tabs a {
+  flex: 1 1 auto;
+  text-align: center;
+  font-size: 1.5em;
+  padding: 1em 0.2em;
+  color: var(--c-font);
+  border-bottom: 2px solid hsla(37, 74%, 43%, 0.3);
+  transition:
+    color 0.25s,
+    border-color 0.25s;
+}
+
+.auth-tabs a:hover {
+  border-bottom-color: var(--c-warn);
+}
+
+.auth-tabs a.active {
+  font-weight: bold;
+  color: var(--c-warn);
+  border-bottom-color: var(--c-warn);
+}
+
+/* -------------------------------------------------------------
+   .auth buttons
+   ------------------------------------------------------------- */
+
 .auth .button {
   width: 100%;
-  padding: 1rem;
+  padding: 1.3rem;
+  border-radius: 16px;
+  font-size: 1.125rem;
+  font-weight: bold;
+  box-shadow: none;
+  text-shadow: none;
 }
 
-.auth .alternative {
-  display: flex;
-  flex-flow: row wrap;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 2rem;
+.auth .button:focus-visible {
+  outline: 2px solid var(--c-warn);
+  outline-offset: -2px;
+  box-shadow: 0 0 12px var(--c-warn);
+}
+
+.auth .submit.button {
+  background: var(--c-warn);
+  color: var(--c-bg-box);
+  border: none;
+  cursor: pointer;
+}
+
+.auth .submit.button:hover:not(:disabled) {
+  background: hsl(37, 74%, 36%);
+}
+
+.auth .submit.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* -------------------------------------------------------------
+   .passkey-info — explanatory text about passkeys
+   ------------------------------------------------------------- */
+
+.passkey-info {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--c-border);
   font-size: 0.9em;
-  line-height: 2em;
-  gap: 1em;
+  color: var(--c-font-dim);
+  line-height: 1.6;
 }
 
-/* .auth-login is narrower than the default .auth width */
+.passkey-info h3 {
+  color: var(--c-font);
+  font-size: 1em;
+  margin-bottom: 0.5rem;
+}
 
-@media (min-width: 500px) {
-  .auth-login {
-    width: 30em;
-  }
+.passkey-info p {
+  margin-bottom: 0.75rem;
+}
+
+.passkey-info p:last-child {
+  margin-bottom: 0;
 }
 
 /* -------------------------------------------------------------
@@ -117,29 +168,28 @@
 }
 
 /* -------------------------------------------------------------
-   .form-control — text input
+   .form-control — text input (gold-themed)
    ------------------------------------------------------------- */
 
 .form-control {
   display: block;
   width: 100%;
-  height: calc(2.7em + 2px);
-  border-radius: 6px;
-  background: var(--c-bg-input);
-  border: 1px solid var(--c-border);
+  height: 50px;
+  border-radius: 16px;
+  background: rgba(26, 22, 16, 1);
+  border: none;
   padding: 0.6em 1em;
   color: var(--c-font);
   font: inherit;
 }
 
-.form-control:focus-visible {
-  outline: 2px solid var(--c-primary);
-  outline-offset: -2px;
+html.light .form-control {
+  background: rgba(245, 242, 237, 1);
 }
 
-.form-control:invalid,
-.form-control.is-invalid {
-  border-color: var(--c-bad);
+.form-control:focus-visible {
+  outline: 2px solid var(--c-warn);
+  outline-offset: -2px;
 }
 
 /* -------------------------------------------------------------
@@ -162,4 +212,13 @@
   margin-top: 0.25rem;
   unicode-bidi: plaintext;
   color: var(--c-bad);
+}
+
+/* -------------------------------------------------------------
+   .auth links
+   ------------------------------------------------------------- */
+
+.auth a:focus-visible {
+  outline: 2px solid var(--c-warn);
+  outline-offset: -2px;
 }
