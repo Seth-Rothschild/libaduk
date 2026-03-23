@@ -271,7 +271,9 @@
     }
   }
 
-  function abort() {}
+  function abort() {
+    gameSocket.send({ type: 'gameover', winner: null, result: 'Aborted' });
+  }
 
   function serializeClockState() {
     if (!gs.clockState) return null;
