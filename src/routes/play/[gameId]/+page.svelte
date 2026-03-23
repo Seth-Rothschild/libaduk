@@ -165,6 +165,10 @@
   let analysis = $state(null);
   const analysisMode = $derived(analysis !== null);
 
+  // Tracks the latest analysis tree. data.game.analysisTree is a page-load snapshot
+  // and goes stale as moves are made, so we keep our own up-to-date copy.
+  let savedAnalysisTree = data.game.analysisTree ?? null;
+
   function enterAnalysisFromTree(tree) {
     analysis = new AnalysisState(gs.boardSize);
     analysis.loadTree(tree);
@@ -186,8 +190,8 @@
 
   function enterAnalysis() {
     if (analysis) return;
-    if (data.game.analysisTree) {
-      enterAnalysisFromTree(data.game.analysisTree);
+    if (savedAnalysisTree) {
+      enterAnalysisFromTree(savedAnalysisTree);
     } else {
       enterAnalysisFromMoves();
     }
@@ -195,8 +199,15 @@
     gameSocket.send({ type: 'analysis-enter', tree });
   }
 
+  function exitAnalysis() {
+    savedAnalysisTree = serializeTree(analysis.root);
+    analysis = null;
+    gameSocket.send({ type: 'analysis-exit' });
+  }
+
   function persistAnalysisTree() {
     const tree = serializeTree(analysis.root);
+    savedAnalysisTree = tree;
     gameSocket.send({ type: 'analysis-tree', tree });
   }
 
@@ -382,7 +393,7 @@
       }
       chatMessages = data.chat ?? [];
 
-      if (data.game.analysisTree) {
+      if (data.game.analysisActive) {
         enterAnalysisFromTree(data.game.analysisTree);
       }
 
@@ -435,6 +446,9 @@
         }
         if (msg.type === 'analysis-enter') {
           enterAnalysisFromTree(msg.tree);
+        }
+        if (msg.type === 'analysis-exit') {
+          analysis = null;
         }
         if (msg.type === 'analysis-navigate' && analysis) {
           const target = followNodePath(analysis.root, msg.path);
@@ -599,6 +613,7 @@
         {isMyTurn}
         {isLocal}
         {myColor}
+        {analysisMode}
         blackApproved={gs.blackApproved}
         whiteApproved={gs.whiteApproved}
         {opponentOnline}
@@ -614,6 +629,7 @@
           gs.whiteApproved = true;
         }}
         onAnalysis={enterAnalysis}
+        onExitAnalysis={exitAnalysis}
       />
     </div>
 

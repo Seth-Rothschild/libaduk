@@ -177,7 +177,7 @@ export function attachWebSocketServer(httpServer) {
         broadcastToOthers(socket.gameId, socket, { type: 'approve-score', color: msg.color });
       }
       if (msg.type === 'analysis-enter' && socket.gameId) {
-        await db.updateGame(socket.gameId, { analysisTree: msg.tree });
+        await db.updateGame(socket.gameId, { analysisTree: msg.tree, analysisActive: true });
         broadcastToOthers(socket.gameId, socket, { type: 'analysis-enter', tree: msg.tree });
       }
       if (msg.type === 'analysis-navigate' && socket.gameId) {
@@ -185,6 +185,10 @@ export function attachWebSocketServer(httpServer) {
       }
       if (msg.type === 'analysis-move' && socket.gameId) {
         broadcastToOthers(socket.gameId, socket, { type: 'analysis-move', x: msg.x, y: msg.y, tool: msg.tool });
+      }
+      if (msg.type === 'analysis-exit' && socket.gameId) {
+        await db.updateGame(socket.gameId, { analysisActive: false });
+        broadcastToOthers(socket.gameId, socket, { type: 'analysis-exit' });
       }
       if (msg.type === 'analysis-tree' && socket.gameId) {
         await db.updateGame(socket.gameId, { analysisTree: msg.tree });

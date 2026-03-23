@@ -18,7 +18,7 @@
 
 html {
   /* — used — */
-  --c-bad: hsl(0, 60%, 50%);
+  --c-bad: hsl(0, 65%, 65%);
   --c-bg-box: hsl(37, 7%, 14%);
   --c-bg-input: hsl(37, 10%, 13%);
   --c-bg-header-dropdown: hsl(37, 7%, 22%);

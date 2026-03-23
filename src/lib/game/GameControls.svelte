@@ -5,6 +5,7 @@
     isMyTurn,
     isLocal,
     myColor,
+    analysisMode = false,
     blackApproved,
     whiteApproved,
     opponentOnline = null,
@@ -15,7 +16,8 @@
     onApproveScore,
     onApproveBlack,
     onApproveWhite,
-    onAnalysis = null
+    onAnalysis = null,
+    onExitAnalysis = null
   } = $props();
 </script>
 
@@ -61,6 +63,10 @@
     </button>
   {/if}
 {/if}
-{#if status === 'gameover' && onAnalysis}
-  <button class="button button-green" onclick={onAnalysis}>Analysis board</button>
+{#if status === 'gameover'}
+  {#if analysisMode && onExitAnalysis}
+    <button class="button button-metal" onclick={onExitAnalysis}>Close analysis</button>
+  {:else if !analysisMode && onAnalysis}
+    <button class="button button-green" onclick={onAnalysis}>Analysis board</button>
+  {/if}
 {/if}

@@ -278,7 +278,30 @@ test('clicking move in analysis move list syncs to other player', async ({ brows
   await expect(black.locator('[data-x="5"][data-y="5"] .go-stone')).not.toBeVisible();
 });
 
-test('re-clicking analysis board does not lose analysis state', async ({ browser }) => {
+test('closing analysis exits both players and refresh does not re-enter', async ({ browser }) => {
+  const { black, white, gameUrl } = await createAndJoinGame(browser);
+  await playMovesAndResign(black, white);
+
+  // Black enters analysis — both players enter
+  await black.locator('button', { hasText: 'Analysis board' }).click();
+  await expect(black.locator('.analysis-moves')).toBeVisible();
+  await expect(white.locator('.analysis-moves')).toBeVisible();
+
+  // Black closes analysis — both players should leave analysis
+  await black.locator('button', { hasText: 'Close analysis' }).click();
+  await expect(black.locator('.analysis-moves')).not.toBeVisible();
+  await expect(white.locator('.analysis-moves')).not.toBeVisible();
+
+  // Allow the DB write to complete
+  await black.waitForTimeout(200);
+
+  // Black refreshes — should NOT re-enter analysis
+  await black.goto(gameUrl);
+  await expect(black.locator('.analysis-moves')).not.toBeVisible();
+  await expect(black.locator('button', { hasText: 'Analysis board' })).toBeVisible();
+});
+
+test('re-entering analysis after closing preserves analysis state', async ({ browser }) => {
   const { black, white } = await createAndJoinGame(browser);
   await playMovesAndResign(black, white);
 
@@ -289,7 +312,10 @@ test('re-clicking analysis board does not lose analysis state', async ({ browser
   await white.locator('[data-x="4"][data-y="4"]').click();
   await expect(black.locator('[data-x="4"][data-y="4"] .go-stone')).toBeVisible();
 
-  // Black clicks analysis board again — should reload existing state, not reset
+  // Close analysis, then re-enter — the analysis move should still be there
+  await black.locator('button', { hasText: 'Close analysis' }).click();
+  await expect(black.locator('.analysis-moves')).not.toBeVisible();
+
   await black.locator('button', { hasText: 'Analysis board' }).click();
   await expect(black.locator('[data-x="4"][data-y="4"] .go-stone')).toBeVisible();
 });

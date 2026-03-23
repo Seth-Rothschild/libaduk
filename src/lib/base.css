@@ -294,6 +294,7 @@ main.page-small {
 
 .button.button-green {
   background: var(--c-secondary);
+  color: hsl(0, 0%, 10%);
 }
 
 .button.button-red {
