@@ -1,5 +1,5 @@
 <script>
-  import { themeState } from '$lib/theme.svelte.js';
+  import { themeState } from './theme.svelte.js';
 
   let { onBack } = $props();
 

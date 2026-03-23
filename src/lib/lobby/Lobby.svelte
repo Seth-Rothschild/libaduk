@@ -9,8 +9,8 @@
   import ActiveGamesPanel from './ActiveGamesPanel.svelte';
   import StartButtons from './StartButtons.svelte';
   import { LIVE_POOLS } from './pools.js';
-  import { pingState } from '$lib/ping.svelte.js';
-  import { getGuestId } from '$lib/guestId.js';
+  import { pingState } from '$lib/state/ping.svelte.js';
+  import { getGuestId } from '$lib/state/guestId.js';
 
   let { data } = $props();
   const username = $derived(data.user?.username ?? '');

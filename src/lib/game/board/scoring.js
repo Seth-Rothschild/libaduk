@@ -1,10 +1,4 @@
-const COL_LETTERS = 'ABCDEFGHJKLMNOPQRST';
 const KOMI = 6.5;
-
-export function colorName(sign) {
-  if (sign === 1) return 'black';
-  return 'white';
-}
 
 export function computeScore(areaMap, size, komi = KOMI) {
   let blackArea = 0;
@@ -58,43 +52,4 @@ export function toggleDeadStones(board, deadStones, x, y) {
     return deadStones.filter(([cx, cy]) => !chainKeys.has(`${cx},${cy}`));
   }
   return [...deadStones, ...chain];
-}
-
-export function formatCorrDeadline(deadline) {
-  if (!deadline) return '';
-  const remaining = deadline - Date.now();
-  if (remaining <= 0) return 'Overdue';
-  const days = Math.floor(remaining / 86400000);
-  const hours = Math.floor((remaining % 86400000) / 3600000);
-  if (days > 0) return `${days}d ${hours}h remaining`;
-  const minutes = Math.floor((remaining % 3600000) / 60000);
-  if (hours > 0) return `${hours}h ${minutes}m remaining`;
-  return `${minutes}m remaining`;
-}
-
-export function formatVertex(vertex, size) {
-  if (!vertex) return 'pass';
-  const col = COL_LETTERS[vertex[0]];
-  const row = size - vertex[1];
-  return `${col}${row}`;
-}
-
-export function emptyMarkerMap(size) {
-  return Array.from({ length: size }, () => new Array(size).fill(null));
-}
-
-export function emptyShiftMap(size) {
-  return Array.from({ length: size }, () => new Array(size).fill(0));
-}
-
-export function computeVertexSize(containerWidth, containerHeight, boardSize) {
-  if (containerWidth <= 0) return 24;
-  const available =
-    containerHeight > 0 ? Math.min(containerWidth, containerHeight) : containerWidth;
-  return Math.floor(available / (boardSize + 0.8));
-}
-
-export function clampBoardSize(size) {
-  const VALID_SIZES = [9, 13, 19];
-  return VALID_SIZES.includes(size) ? size : 19;
 }

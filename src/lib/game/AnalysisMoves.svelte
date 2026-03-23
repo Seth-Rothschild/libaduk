@@ -1,5 +1,5 @@
 <script>
-  import { formatVertex } from '$lib/gameUtils.js';
+  import { formatVertex } from '$lib/game/board';
 
   let { analysisMoveRows, analysisNode, boardSize, onSelectNode } = $props();
 </script>

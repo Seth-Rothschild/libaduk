@@ -6,16 +6,16 @@
   import Clock from '$lib/game/Clock.svelte';
   import PlayerStrip from '$lib/game/PlayerStrip.svelte';
   import NavigationButtons from '$lib/game/NavigationButtons.svelte';
-  import { boardState } from '$lib/boardState.svelte.js';
-  import { getGuestId } from '$lib/guestId.js';
-  import { GameState } from '$lib/gameLogic.svelte.js';
+  import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
+  import { getGuestId } from '$lib/state/guestId.js';
+  import { GameState } from '$lib/game/GameState.svelte.js';
   import {
     AnalysisState,
     serializeTree,
     getNodePath,
     followNodePath
   } from '$lib/game/analysisState.svelte.js';
-  import { gameSocket } from '$lib/socket.svelte.js';
+  import { gameSocket } from '$lib/state/socket.svelte.js';
   import GameChat from '$lib/game/GameChat.svelte';
   import GameMeta from '$lib/game/GameMeta.svelte';
   import GameStatusMessage from '$lib/game/GameStatusMessage.svelte';
@@ -24,14 +24,14 @@
   import EditBar from '$lib/game/EditBar.svelte';
   import GameGraph from '$lib/game/GameGraph.svelte';
   import JoinGameModal from '$lib/game/JoinGameModal.svelte';
+  import { computeVertexSize } from '$lib/game/layout.js';
   import {
     colorName,
     computeScore,
     buildScoreBoard,
     toggleDeadStones,
-    computeVertexSize,
     scoreVerdictShort
-  } from '$lib/gameUtils.js';
+  } from '$lib/game/board';
 
   let { data } = $props();
   const username = $derived(data.user?.username ?? '');
@@ -528,7 +528,7 @@
           animatedVertex={analysis.animatedVertex}
           size={gs.boardSize}
           {vertexSize}
-          showCoords={boardState.showCoords}
+          showCoords={boardSettings.showCoords}
           currentSign={analysis.currentSign}
           childrenMap={analysis.childrenMap}
           markerMap={analysis.markerMap}
@@ -545,7 +545,7 @@
           {vertexSize}
           {areaMap}
           deadStones={gs.status === 'scoring' ? gs.deadStones : null}
-          showCoords={boardState.showCoords}
+          showCoords={boardSettings.showCoords}
           currentSign={gs.currentSign}
           interactive={isMyTurn || gs.status === 'scoring'}
           onVertexClick={!gs.isViewingHistory &&

@@ -1,5 +1,5 @@
 <script>
-  import { scoreVerdictShort } from '$lib/gameUtils.js';
+  import { scoreVerdictShort } from '$lib/game/board';
 
   const KOMI = 6.5;
 

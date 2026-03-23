@@ -1,44 +1,15 @@
-import GoBoardLib from '@sabaki/go-board';
-import { emptyShiftMap } from './gameUtils.js';
+import {
+  createBoard,
+  applyMoveWithShifts,
+  replayMovesWithHistory,
+  emptyShiftMap
+} from '$lib/game/board';
 
-function readjustShifts(shiftMap, x, y) {
-  const direction = shiftMap[y]?.[x];
-  if (!direction) return;
-  const neighbors = [
-    [[1, 5, 8], x - 1, y, [3, 7, 6]],
-    [[2, 5, 6], x, y - 1, [4, 7, 8]],
-    [[3, 7, 6], x + 1, y, [1, 5, 8]],
-    [[4, 7, 8], x, y + 1, [2, 5, 6]]
-  ];
-  for (const [dirs, qx, qy, removeShifts] of neighbors) {
-    if (!dirs.includes(direction)) continue;
-    if (shiftMap[qy]?.[qx] && removeShifts.includes(shiftMap[qy][qx])) {
-      shiftMap[qy][qx] = 0;
-    }
-  }
-}
-
-export function replayMoves(moves, size) {
-  let board = GoBoardLib.fromDimensions(size);
-  let sign = 1;
-  for (const move of moves) {
-    if (move.type === 'move') {
-      try {
-        board = board.makeMove(sign, [move.x, move.y], {
-          preventSuicide: true,
-          preventOverwrite: true,
-          preventKo: true
-        });
-      } catch {}
-    }
-    sign = sign === 1 ? -1 : 1;
-  }
-  return board;
-}
+export { replayMoves } from '$lib/game/board';
 
 export class GameState {
   boardSize = $state(19);
-  board = $state(GoBoardLib.fromDimensions(19));
+  board = $state(createBoard(19));
   currentSign = $state(1);
   consecutivePasses = $state(0);
   status = $state('waiting');
@@ -126,42 +97,18 @@ export class GameState {
     else this.mySign = null;
 
     if (game.moves && game.moves.length > 0) {
-      this.boardHistory = [GoBoardLib.fromDimensions(this.boardSize)];
-      this.lastMoveHistory = [null];
-      this.shiftMapHistory = [emptyShiftMap(this.boardSize)];
-      let replayBoard = GoBoardLib.fromDimensions(this.boardSize);
-      let replayShiftMap = emptyShiftMap(this.boardSize);
-      let sign = 1;
-      for (const move of game.moves) {
-        if (move.type === 'move') {
-          try {
-            replayBoard = replayBoard.makeMove(sign, [move.x, move.y], {
-              preventSuicide: true,
-              preventOverwrite: true,
-              preventKo: true
-            });
-            replayShiftMap = replayShiftMap.map((row) => [...row]);
-            replayShiftMap[move.y][move.x] = Math.ceil(Math.random() * 8);
-            readjustShifts(replayShiftMap, move.x, move.y);
-          } catch {}
-          this.boardHistory.push(replayBoard);
-          this.lastMoveHistory.push([move.x, move.y]);
-          this.shiftMapHistory.push(replayShiftMap);
-        } else {
-          this.boardHistory.push(replayBoard);
-          this.lastMoveHistory.push(null);
-          this.shiftMapHistory.push(replayShiftMap);
-        }
-        sign = sign === 1 ? -1 : 1;
-      }
-      this.board = replayBoard;
-      this.shiftMap = replayShiftMap;
+      const replay = replayMovesWithHistory(game.moves, this.boardSize);
+      this.board = replay.board;
+      this.shiftMap = replay.shiftMap;
+      this.boardHistory = replay.boards;
+      this.lastMoveHistory = replay.lastMoves;
+      this.shiftMapHistory = replay.shiftMaps;
       this.consecutivePasses = 0;
       this.currentSign = game.moves.length % 2 === 0 ? 1 : -1;
       const lastMoveEntry = game.moves.at(-1);
       if (lastMoveEntry?.type === 'move') this.lastMove = [lastMoveEntry.x, lastMoveEntry.y];
     } else {
-      this.board = GoBoardLib.fromDimensions(this.boardSize);
+      this.board = createBoard(this.boardSize);
       this.boardHistory = [this.board];
       this.lastMoveHistory = [null];
       this.shiftMapHistory = [emptyShiftMap(this.boardSize)];
@@ -228,26 +175,14 @@ export class GameState {
   }
 
   applyMove(x, y, sign) {
-    const vertex = [x, y];
-    const prevSignMap = this.board.signMap;
     try {
-      this.board = this.board.makeMove(sign, vertex, {
-        preventSuicide: true,
-        preventOverwrite: true,
-        preventKo: true
-      });
+      const result = applyMoveWithShifts(this.board, this.shiftMap, sign, x, y);
+      this.board = result.board;
+      this.shiftMap = result.shiftMap;
     } catch {
       return false;
     }
-    this.shiftMap[y][x] = Math.ceil(Math.random() * 8);
-    readjustShifts(this.shiftMap, x, y);
-    for (let ry = 0; ry < this.boardSize; ry++) {
-      for (let rx = 0; rx < this.boardSize; rx++) {
-        if (prevSignMap[ry][rx] !== 0 && this.board.signMap[ry][rx] === 0) {
-          this.shiftMap[ry][rx] = 0;
-        }
-      }
-    }
+    const vertex = [x, y];
     this.animatedVertex = vertex;
     this.lastMove = vertex;
     this.consecutivePasses = 0;

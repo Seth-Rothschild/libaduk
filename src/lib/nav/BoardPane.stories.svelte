@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { defineMeta } from '@storybook/addon-svelte-csf';
   import { expect, fn, userEvent } from 'storybook/test';
-  import { boardState } from '$lib/boardState.svelte.js';
+  import { boardSettings } from './boardSettings.svelte.js';
   import BoardPane from './BoardPane.svelte';
 
   const { Story } = defineMeta({
@@ -32,13 +32,13 @@
 />
 
 <Story
-  name="Toggling coordinates updates boardState"
+  name="Toggling coordinates updates boardSettings"
   play={async ({ canvas }) => {
-    boardState.showCoords = false;
+    boardSettings.showCoords = false;
     const checkbox = canvas.getByRole('checkbox');
     await expect(checkbox).not.toBeChecked();
     await userEvent.click(checkbox);
-    await expect(boardState.showCoords).toBe(true);
+    await expect(boardSettings.showCoords).toBe(true);
     await expect(checkbox).toBeChecked();
   }}
 />

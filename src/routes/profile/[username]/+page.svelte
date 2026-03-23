@@ -1,6 +1,6 @@
 <script>
   import GoBoard from '$lib/game/GoBoard.svelte';
-  import { replayMoves } from '$lib/gameLogic.svelte.js';
+  import { replayMoves } from '$lib/game/board';
 
   let { data } = $props();
 

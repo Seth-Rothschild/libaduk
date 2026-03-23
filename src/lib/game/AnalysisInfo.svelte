@@ -1,5 +1,5 @@
 <script>
-  import { colorName, formatVertex } from '$lib/gameUtils.js';
+  import { colorName, formatVertex } from '$lib/game/board';
 
   let {
     blackCaptures,

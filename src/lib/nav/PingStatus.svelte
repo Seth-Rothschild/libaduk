@@ -1,5 +1,5 @@
 <script>
-  import { pingState } from '$lib/ping.svelte.js';
+  import { pingState } from '$lib/state/ping.svelte.js';
 </script>
 
 <a class="status" href="/lag">

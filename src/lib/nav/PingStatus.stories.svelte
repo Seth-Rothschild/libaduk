@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { defineMeta } from '@storybook/addon-svelte-csf';
   import { expect } from 'storybook/test';
-  import { pingState } from '$lib/ping.svelte.js';
+  import { pingState } from '$lib/state/ping.svelte.js';
   import PingStatus from './PingStatus.svelte';
 
   const { Story } = defineMeta({

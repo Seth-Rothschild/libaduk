@@ -1,6 +1,6 @@
 <script>
   import { goto, invalidateAll } from '$app/navigation';
-  import { setUsername } from '$lib/user.svelte.js';
+  import { setUsername } from '$lib/state/user.svelte.js';
   import { startRegistration } from '@simplewebauthn/browser';
   import SignupForm from '$lib/auth/SignupForm.svelte';
 

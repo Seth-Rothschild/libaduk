@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { defineMeta } from '@storybook/addon-svelte-csf';
   import { expect, fn, userEvent } from 'storybook/test';
-  import { themeState } from '$lib/theme.svelte.js';
+  import { themeState } from './theme.svelte.js';
   import BackgroundPane from './BackgroundPane.svelte';
 
   const { Story } = defineMeta({

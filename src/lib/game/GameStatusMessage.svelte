@@ -1,8 +1,18 @@
 <script>
   import ScoreBreakdown from './ScoreBreakdown.svelte';
-  import { formatCorrDeadline } from '$lib/gameUtils.js';
-
   const ICON_INFO = '\ue060';
+
+  function formatCorrDeadline(deadline) {
+    if (!deadline) return '';
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return 'Overdue';
+    const days = Math.floor(remaining / 86400000);
+    const hours = Math.floor((remaining % 86400000) / 3600000);
+    if (days > 0) return `${days}d ${hours}h remaining`;
+    const minutes = Math.floor((remaining % 3600000) / 60000);
+    if (hours > 0) return `${hours}h ${minutes}m remaining`;
+    return `${minutes}m remaining`;
+  }
 
   function resultLabel(result) {
     if (!result) return null;

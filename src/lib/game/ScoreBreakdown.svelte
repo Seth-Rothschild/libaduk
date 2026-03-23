@@ -1,5 +1,5 @@
 <script>
-  import { scoreVerdict } from '$lib/gameUtils.js';
+  import { scoreVerdict } from '$lib/game/board';
 
   let {
     score,

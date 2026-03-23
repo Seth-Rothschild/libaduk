@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-class BoardState {
+class BoardSettings {
   showCoords = $state(false);
 
   init() {
@@ -15,4 +15,4 @@ class BoardState {
   };
 }
 
-export const boardState = new BoardState();
+export const boardSettings = new BoardSettings();

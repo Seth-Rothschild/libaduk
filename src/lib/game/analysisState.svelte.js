@@ -1,7 +1,7 @@
-import GoBoardLib from '@sabaki/go-board';
+import { createBoard } from '$lib/game/board';
 import influence from '@sabaki/influence';
 import { nameMove } from '@sabaki/boardmatcher';
-import { computeScore, toggleDeadStones, buildScoreBoard, emptyMarkerMap } from '$lib/gameUtils.js';
+import { computeScore, toggleDeadStones, buildScoreBoard, emptyMarkerMap } from '$lib/game/board';
 
 export function makeAnalysisNode(
   board,
@@ -135,7 +135,7 @@ export function serializeTree(root) {
 }
 
 export function deserializeTree(data, size) {
-  const emptyBoard = GoBoardLib.fromDimensions(size);
+  const emptyBoard = createBoard(size);
   return deserializeNode(data, emptyBoard, 1, null, size);
 }
 
@@ -229,13 +229,7 @@ export class AnalysisState {
   constructor(size, komi = 6.5) {
     this.#size = size;
     this.#komi = komi;
-    this.#root = makeAnalysisNode(
-      GoBoardLib.fromDimensions(size),
-      null,
-      emptyMarkerMap(size),
-      1,
-      null
-    );
+    this.#root = makeAnalysisNode(createBoard(size), null, emptyMarkerMap(size), 1, null);
     this.currentNode = this.#root;
   }
 
@@ -253,13 +247,7 @@ export class AnalysisState {
 
   loadMoves(moves) {
     const size = this.#size;
-    const root = makeAnalysisNode(
-      GoBoardLib.fromDimensions(size),
-      null,
-      emptyMarkerMap(size),
-      1,
-      null
-    );
+    const root = makeAnalysisNode(createBoard(size), null, emptyMarkerMap(size), 1, null);
     let node = root;
     for (const move of moves) {
       const nextSign = node.signToPlay === 1 ? -1 : 1;
@@ -322,13 +310,7 @@ export class AnalysisState {
 
   clear() {
     const size = this.#size;
-    this.#root = makeAnalysisNode(
-      GoBoardLib.fromDimensions(size),
-      null,
-      emptyMarkerMap(size),
-      1,
-      null
-    );
+    this.#root = makeAnalysisNode(createBoard(size), null, emptyMarkerMap(size), 1, null);
     this.currentNode = this.#root;
     this.#reset();
   }

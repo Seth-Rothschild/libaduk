@@ -7,10 +7,10 @@
   import '$lib/game/game.css';
   import '$lib/auth/auth.css';
   import './profile/profile.css';
-  import { setUsername, clearUsername } from '$lib/user.svelte.js';
-  import { pingState } from '$lib/ping.svelte.js';
-  import { themeState } from '$lib/theme.svelte.js';
-  import { boardState } from '$lib/boardState.svelte.js';
+  import { setUsername, clearUsername } from '$lib/state/user.svelte.js';
+  import { pingState } from '$lib/state/ping.svelte.js';
+  import { themeState } from '$lib/nav/theme.svelte.js';
+  import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
@@ -24,7 +24,7 @@
 
   onMount(() => {
     themeState.init();
-    boardState.init();
+    boardSettings.init();
     pingState.start();
     return () => pingState.stop();
   });

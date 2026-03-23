@@ -1,6 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import GoBoardLib from '@sabaki/go-board';
+  import { createBoard } from '$lib/game/board';
   import GoBoard from '$lib/game/GoBoard.svelte';
   import PlayerStrip from '$lib/game/PlayerStrip.svelte';
   import NavigationButtons from '$lib/game/NavigationButtons.svelte';
@@ -15,9 +15,17 @@
     getAnalysisMoveName
   } from '$lib/game/analysisState.svelte.js';
   import { page } from '$app/state';
-  import { boardState } from '$lib/boardState.svelte.js';
-  import { clampBoardSize, emptyMarkerMap, computeVertexSize } from '$lib/gameUtils.js';
-  import { exportSgf, parseSgf, sgfNodeToMove, sgfNodeMarkers, sgfNodeComment } from '$lib/sgf.js';
+  import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
+  import { computeVertexSize } from '$lib/game/layout.js';
+  import {
+    clampBoardSize,
+    emptyMarkerMap,
+    exportSgf,
+    parseSgf,
+    sgfNodeToMove,
+    sgfNodeMarkers,
+    sgfNodeComment
+  } from '$lib/game/board';
 
   let { data } = $props();
 
@@ -106,7 +114,7 @@
       return node;
     }
 
-    const newRoot = buildNode(parsed.root, GoBoardLib.fromDimensions(SIZE), 1, null);
+    const newRoot = buildNode(parsed.root, createBoard(SIZE), 1, null);
     if (!newRoot) return;
 
     blackName = parsed.playerBlack || 'Black';
@@ -174,7 +182,7 @@
         animatedVertex={analysis.animatedVertex}
         size={SIZE}
         {vertexSize}
-        showCoords={boardState.showCoords}
+        showCoords={boardSettings.showCoords}
         currentSign={analysis.currentSign}
         markerMap={analysis.markerMap}
         childrenMap={analysis.childrenMap}
