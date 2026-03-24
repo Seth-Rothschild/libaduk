@@ -1,7 +1,13 @@
-import { createBoard } from '$lib/game/board';
+import {
+  createBoard,
+  applySetup,
+  computeScore,
+  toggleDeadStones,
+  buildScoreBoard,
+  emptyMarkerMap
+} from '$lib/game/board';
 import influence from '@sabaki/influence';
 import { nameMove } from '@sabaki/boardmatcher';
-import { computeScore, toggleDeadStones, buildScoreBoard, emptyMarkerMap } from '$lib/game/board';
 
 export function makeAnalysisNode(
   board,
@@ -10,9 +16,10 @@ export function makeAnalysisNode(
   signToPlay,
   parent,
   moveName = null,
-  comment = ''
+  comment = '',
+  setup = []
 ) {
-  return { board, lastMove, markerMap, signToPlay, children: [], parent, moveName, comment };
+  return { board, lastMove, markerMap, signToPlay, children: [], parent, moveName, comment, setup };
 }
 
 export function getAnalysisMoveName(parentBoard, sign, vertex) {
@@ -69,6 +76,7 @@ function serializeNode(node) {
   } else if (node.parent) {
     result.pass = true;
   }
+  if (node.setup && node.setup.length > 0) result.setup = node.setup;
   if (node.comment) result.comment = node.comment;
   if (hasMarkers(node.markerMap)) result.markers = node.markerMap;
   if (node.children.length > 0) {
@@ -94,11 +102,23 @@ function deserializeNode(data, parentBoard, signToPlay, parent, size) {
     }
   }
 
+  const setup = data.setup ?? [];
+  board = applySetup(board, setup);
+
   const nextSign = signToPlay === 1 ? -1 : 1;
   const markers = data.markers ?? emptyMarkerMap(size);
   const moveName = lastMove ? getAnalysisMoveName(parentBoard, signToPlay, lastMove) : null;
   const comment = data.comment ?? '';
-  const node = makeAnalysisNode(board, lastMove, markers, nextSign, parent, moveName, comment);
+  const node = makeAnalysisNode(
+    board,
+    lastMove,
+    markers,
+    nextSign,
+    parent,
+    moveName,
+    comment,
+    setup
+  );
 
   if (data.children) {
     for (const childData of data.children) {
@@ -153,10 +173,24 @@ export class AnalysisState {
   showEstimate = $state(false);
   animatedVertex = $state(null);
 
-  signMap = $derived(this.currentNode?.board.signMap ?? null);
+  signMap = $derived.by(() => {
+    this.#version;
+    return this.currentNode?.board.signMap ?? null;
+  });
   currentSign = $derived(this.currentNode?.signToPlay ?? 1);
-  blackCaptures = $derived(this.currentNode?.board.getCaptures(1) ?? 0);
-  whiteCaptures = $derived(this.currentNode?.board.getCaptures(-1) ?? 0);
+  blackCaptures = $derived.by(() => {
+    this.#version;
+    return this.currentNode?.board.getCaptures(1) ?? 0;
+  });
+  whiteCaptures = $derived.by(() => {
+    this.#version;
+    return this.currentNode?.board.getCaptures(-1) ?? 0;
+  });
+  hoverSign = $derived.by(() => {
+    if (this.tool === 'stone-black') return 1;
+    if (this.tool === 'stone-white') return -1;
+    return this.currentSign;
+  });
 
   markerMap = $derived.by(() => {
     this.#version;
@@ -322,6 +356,10 @@ export class AnalysisState {
     }
     if (this.tool === 'stone') {
       this.#makeMove(x, y);
+    } else if (this.tool === 'stone-black') {
+      this.#placeSetupStone(x, y, 1);
+    } else if (this.tool === 'stone-white') {
+      this.#placeSetupStone(x, y, -1);
     } else {
       this.#toggleMarker(x, y);
     }
@@ -412,6 +450,19 @@ export class AnalysisState {
     this.currentNode.children.push(newNode);
     this.currentNode = newNode;
     this.animatedVertex = vertex;
+    this.#version++;
+  }
+
+  #placeSetupStone(x, y, sign) {
+    const node = this.currentNode;
+    const existingSign = node.board.get([x, y]);
+    const newSign = existingSign === sign ? 0 : sign;
+
+    node.board = applySetup(node.board, [{ x, y, sign: newSign }]);
+
+    const setupWithout = node.setup.filter((s) => s.x !== x || s.y !== y);
+    node.setup = newSign === 0 ? setupWithout : [...setupWithout, { x, y, sign: newSign }];
+
     this.#version++;
   }
 

@@ -16,10 +16,18 @@ export {
 
 export {
   createBoard,
+  applySetup,
   applyMove,
   applyMoveWithShifts,
   replayMoves,
   replayMovesWithHistory
 } from './board.js';
 
-export { exportSgf, parseSgf, sgfNodeToMove, sgfNodeMarkers, sgfNodeComment } from './sgf.js';
+export {
+  exportSgf,
+  parseSgf,
+  sgfNodeToMove,
+  sgfNodeMarkers,
+  sgfNodeComment,
+  sgfNodeSetup
+} from './sgf.js';

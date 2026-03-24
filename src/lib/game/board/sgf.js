@@ -31,6 +31,19 @@ function markerProps(markerMap, size) {
   return props;
 }
 
+function setupProps(setup) {
+  const ab = [];
+  const aw = [];
+  const ae = [];
+  for (const { x, y, sign } of setup) {
+    const coord = vertexToSgf([x, y]);
+    if (sign === 1) ab.push(coord);
+    else if (sign === -1) aw.push(coord);
+    else ae.push(coord);
+  }
+  return { AB: ab, AW: aw, AE: ae };
+}
+
 function stringifyNode(node, size, isRoot, options) {
   let parts = [];
 
@@ -48,6 +61,15 @@ function stringifyNode(node, size, isRoot, options) {
     parts.push(color + '[' + vertexToSgf(node.lastMove) + ']');
   } else {
     parts.push(';');
+  }
+
+  if (node.setup && node.setup.length > 0) {
+    const sp = setupProps(node.setup);
+    for (const key of ['AB', 'AW', 'AE']) {
+      if (sp[key].length > 0) {
+        parts.push(key + sp[key].map((v) => '[' + v + ']').join(''));
+      }
+    }
   }
 
   if (node.comment) {
@@ -251,4 +273,21 @@ export function sgfNodeComment(sgfNode) {
   const values = sgfNode.props.C;
   if (!values || values.length === 0) return '';
   return values[0];
+}
+
+export function sgfNodeSetup(sgfNode, size) {
+  const setup = [];
+  for (const coord of sgfNode.props.AB || []) {
+    const [x, y] = sgfToVertex(coord);
+    if (x >= 0 && x < size && y >= 0 && y < size) setup.push({ x, y, sign: 1 });
+  }
+  for (const coord of sgfNode.props.AW || []) {
+    const [x, y] = sgfToVertex(coord);
+    if (x >= 0 && x < size && y >= 0 && y < size) setup.push({ x, y, sign: -1 });
+  }
+  for (const coord of sgfNode.props.AE || []) {
+    const [x, y] = sgfToVertex(coord);
+    if (x >= 0 && x < size && y >= 0 && y < size) setup.push({ x, y, sign: 0 });
+  }
+  return setup;
 }

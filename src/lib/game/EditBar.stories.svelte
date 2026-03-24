@@ -20,10 +20,10 @@
   args={{ tool: 'stone' }}
   play={async ({ canvas }) => {
     const buttons = canvas.getAllByRole('button');
-    await expect(buttons).toHaveLength(7);
+    await expect(buttons).toHaveLength(9);
     const selected = buttons.filter((b) => b.classList.contains('selected'));
     await expect(selected).toHaveLength(1);
-    await expect(selected[0]).toHaveAttribute('title', 'Place stones');
+    await expect(selected[0]).toHaveAttribute('title', 'Place stones (game order)');
   }}
 />
 
@@ -53,7 +53,9 @@
   name="All tools present"
   args={{ tool: 'stone' }}
   play={async ({ canvas }) => {
-    await expect(canvas.getByTitle('Place stones')).toBeInTheDocument();
+    await expect(canvas.getByTitle('Place stones (game order)')).toBeInTheDocument();
+    await expect(canvas.getByTitle('Place black stones')).toBeInTheDocument();
+    await expect(canvas.getByTitle('Place white stones')).toBeInTheDocument();
     await expect(canvas.getByTitle('Mark X')).toBeInTheDocument();
     await expect(canvas.getByTitle('Mark triangle')).toBeInTheDocument();
     await expect(canvas.getByTitle('Mark square')).toBeInTheDocument();

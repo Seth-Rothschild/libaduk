@@ -22,6 +22,15 @@ function readjustShifts(shiftMap, x, y) {
   }
 }
 
+export function applySetup(board, setup) {
+  if (!setup || setup.length === 0) return board;
+  const newBoard = board.clone();
+  for (const { x, y, sign } of setup) {
+    newBoard.set([x, y], sign);
+  }
+  return newBoard;
+}
+
 export function applyMove(board, sign, x, y) {
   const vertex = [x, y];
   const newBoard = board.makeMove(sign, vertex, {

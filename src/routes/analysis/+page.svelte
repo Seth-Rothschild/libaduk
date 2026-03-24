@@ -20,11 +20,13 @@
   import {
     clampBoardSize,
     emptyMarkerMap,
+    applySetup,
     exportSgf,
     parseSgf,
     sgfNodeToMove,
     sgfNodeMarkers,
-    sgfNodeComment
+    sgfNodeComment,
+    sgfNodeSetup
   } from '$lib/game/board';
 
   let { data } = $props();
@@ -94,6 +96,9 @@
         }
       }
 
+      const setup = sgfNodeSetup(sgfNode, SIZE);
+      newBoard = applySetup(newBoard, setup);
+
       const markers = sgfNodeMarkers(sgfNode, SIZE);
       const comment = sgfNodeComment(sgfNode);
       const node = makeAnalysisNode(
@@ -103,7 +108,8 @@
         nextSign,
         parent,
         moveName,
-        comment
+        comment,
+        setup
       );
 
       for (const childSgf of sgfNode.children) {
@@ -183,7 +189,7 @@
         size={SIZE}
         {vertexSize}
         showCoords={boardSettings.showCoords}
-        currentSign={analysis.currentSign}
+        currentSign={analysis.hoverSign}
         markerMap={analysis.markerMap}
         childrenMap={analysis.childrenMap}
         areaMap={analysis.displayAreaMap}

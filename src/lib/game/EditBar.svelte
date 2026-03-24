@@ -2,7 +2,9 @@
   let { tool, onSetTool } = $props();
 
   const tools = [
-    { id: 'stone', title: 'Place stones' },
+    { id: 'stone', title: 'Place stones (game order)' },
+    { id: 'stone-black', title: 'Place black stones' },
+    { id: 'stone-white', title: 'Place white stones' },
     { id: 'cross', title: 'Mark X' },
     { id: 'triangle', title: 'Mark triangle' },
     { id: 'square', title: 'Mark square' },
@@ -24,6 +26,17 @@
         {#if t.id === 'stone'}
           <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="2" fill="currentColor" />
           <circle cx="13" cy="13" r="6" stroke="currentColor" stroke-width="2" fill="none" />
+        {:else if t.id === 'stone-black'}
+          <circle
+            cx="10"
+            cy="10"
+            r="8"
+            stroke="currentColor"
+            stroke-width="2"
+            fill="currentColor"
+          />
+        {:else if t.id === 'stone-white'}
+          <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" fill="none" />
         {:else if t.id === 'cross'}
           <line x1="2" y1="2" x2="18" y2="18" stroke="currentColor" stroke-width="2" />
           <line x1="18" y1="2" x2="2" y2="18" stroke="currentColor" stroke-width="2" />
