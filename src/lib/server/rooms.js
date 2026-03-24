@@ -166,11 +166,11 @@ export function attachWebSocketServer(httpServer) {
       }
       if (msg.type === 'move' && socket.gameId) {
         const moveEntry = { type: 'move', x: msg.x, y: msg.y };
-        db.appendMove(socket.gameId, moveEntry);
+        await db.appendMove(socket.gameId, moveEntry);
         broadcastToOthers(socket.gameId, socket, { type: 'move', x: msg.x, y: msg.y });
       }
       if (msg.type === 'pass' && socket.gameId) {
-        db.appendMove(socket.gameId, { type: 'pass' });
+        await db.appendMove(socket.gameId, { type: 'pass' });
         broadcastToOthers(socket.gameId, socket, { type: 'pass' });
       }
       if (msg.type === 'approve-score' && socket.gameId) {

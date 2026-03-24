@@ -26,8 +26,13 @@ export async function connectDb() {
 }
 
 export async function clearGames() {
-  const d = await getDb();
-  await d.collection('games').deleteMany({});
+  try {
+    const d = await getDb();
+    await d.collection('games').deleteMany({});
+  } catch (err) {
+    console.error('[db] clearGames failed:', err.message);
+    throw err;
+  }
 }
 
 export async function closeDb() {
@@ -47,41 +52,61 @@ async function getDb() {
 // --- Users ---
 
 export async function getUser(username) {
-  const d = await getDb();
-  const doc = await d.collection('users').findOne({ _id: username.toLowerCase() });
-  if (!doc) return null;
-  return { username: doc.username, createdAt: doc.createdAt };
+  try {
+    const d = await getDb();
+    const doc = await d.collection('users').findOne({ _id: username.toLowerCase() });
+    if (!doc) return null;
+    return { username: doc.username, createdAt: doc.createdAt };
+  } catch (err) {
+    console.error('[db] getUser failed:', err.message);
+    throw err;
+  }
 }
 
 export async function searchUsers(query, limit = 10) {
-  const needle = query.toLowerCase();
-  const d = await getDb();
-  const docs = await d
-    .collection('users')
-    .find({ _id: { $regex: needle } })
-    .limit(limit)
-    .toArray();
-  return docs.map((d) => ({ username: d.username, createdAt: d.createdAt }));
+  try {
+    const needle = query.toLowerCase();
+    const d = await getDb();
+    const docs = await d
+      .collection('users')
+      .find({ _id: { $regex: needle } })
+      .limit(limit)
+      .toArray();
+    return docs.map((d) => ({ username: d.username, createdAt: d.createdAt }));
+  } catch (err) {
+    console.error('[db] searchUsers failed:', err.message);
+    throw err;
+  }
 }
 
 export async function createUser(username) {
-  const key = username.toLowerCase();
-  const d = await getDb();
-  const existing = await d.collection('users').findOne({ _id: key });
-  if (existing) throw new Error('Username already taken');
-  const user = { _id: key, username, createdAt: Date.now() };
-  await d.collection('users').insertOne(user);
-  return { username, createdAt: user.createdAt };
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    const existing = await d.collection('users').findOne({ _id: key });
+    if (existing) throw new Error('Username already taken');
+    const user = { _id: key, username, createdAt: Date.now() };
+    await d.collection('users').insertOne(user);
+    return { username, createdAt: user.createdAt };
+  } catch (err) {
+    console.error('[db] createUser failed:', err.message);
+    throw err;
+  }
 }
 
 // --- Games ---
 
 export async function getGame(id) {
-  const d = await getDb();
-  const doc = await d.collection('games').findOne({ _id: id });
-  if (!doc) return null;
-  const { _id, ...rest } = doc;
-  return { id: _id, ...rest };
+  try {
+    const d = await getDb();
+    const doc = await d.collection('games').findOne({ _id: id });
+    if (!doc) return null;
+    const { _id, ...rest } = doc;
+    return { id: _id, ...rest };
+  } catch (err) {
+    console.error('[db] getGame failed:', err.message);
+    throw err;
+  }
 }
 
 export async function createGame({
@@ -94,224 +119,323 @@ export async function createGame({
   komi = 6.5,
   gameType = 'hook'
 }) {
-  const game = {
-    _id: id,
-    size,
-    blackName,
-    whiteName,
-    creatorColor,
-    gameType,
-    moves: [],
-    status: 'waiting',
-    timeControl,
-    komi,
-    createdAt: Date.now(),
-    endedAt: null,
-    winner: null,
-    result: null,
-    corrActiveColor: null,
-    corrTurnDeadline: null
-  };
-  const d = await getDb();
-  await d.collection('games').insertOne(game);
-  const { _id, ...rest } = game;
-  return { id: _id, ...rest };
+  try {
+    const game = {
+      _id: id,
+      size,
+      blackName,
+      whiteName,
+      creatorColor,
+      gameType,
+      moves: [],
+      status: 'waiting',
+      timeControl,
+      komi,
+      createdAt: Date.now(),
+      endedAt: null,
+      winner: null,
+      result: null,
+      corrActiveColor: null,
+      corrTurnDeadline: null
+    };
+    const d = await getDb();
+    await d.collection('games').insertOne(game);
+    const { _id, ...rest } = game;
+    return { id: _id, ...rest };
+  } catch (err) {
+    console.error('[db] createGame failed:', err.message);
+    throw err;
+  }
 }
 
 export async function updateGame(id, patch) {
-  const d = await getDb();
-  await d.collection('games').updateOne({ _id: id }, { $set: patch });
+  try {
+    const d = await getDb();
+    await d.collection('games').updateOne({ _id: id }, { $set: patch });
+  } catch (err) {
+    console.error('[db] updateGame failed:', err.message);
+    throw err;
+  }
 }
 
 export async function appendMove(id, moveEntry) {
-  const d = await getDb();
-  await d.collection('games').updateOne({ _id: id }, { $push: { moves: moveEntry } });
+  try {
+    const d = await getDb();
+    await d.collection('games').updateOne({ _id: id }, { $push: { moves: moveEntry } });
+  } catch (err) {
+    console.error('[db] appendMove failed:', err.message);
+    throw err;
+  }
 }
 
 export async function findMatchingGame(size, timeControl, excludeUsername = null) {
-  const d = await getDb();
-  const query = {
-    status: 'waiting',
-    size,
-    gameType: 'hook',
-    'timeControl.type': timeControl.type
-  };
-  if (timeControl.type === 'byoyomi') {
-    query['timeControl.initial'] = timeControl.initial;
-    query['timeControl.periods'] = timeControl.periods;
-    query['timeControl.periodTime'] = timeControl.periodTime;
-  } else if (timeControl.type === 'fischer') {
-    query['timeControl.initial'] = timeControl.initial;
-    query['timeControl.increment'] = timeControl.increment;
-  } else if (timeControl.type === 'correspondence') {
-    query['timeControl.days'] = timeControl.days;
+  try {
+    const d = await getDb();
+    const query = {
+      status: 'waiting',
+      size,
+      gameType: 'hook',
+      'timeControl.type': timeControl.type
+    };
+    if (timeControl.type === 'byoyomi') {
+      query['timeControl.initial'] = timeControl.initial;
+      query['timeControl.periods'] = timeControl.periods;
+      query['timeControl.periodTime'] = timeControl.periodTime;
+    } else if (timeControl.type === 'fischer') {
+      query['timeControl.initial'] = timeControl.initial;
+      query['timeControl.increment'] = timeControl.increment;
+    } else if (timeControl.type === 'correspondence') {
+      query['timeControl.days'] = timeControl.days;
+    }
+    if (excludeUsername) {
+      query.blackName = { $ne: excludeUsername };
+      query.whiteName = { $ne: excludeUsername };
+    }
+    const doc = await d.collection('games').findOne(query, { sort: { createdAt: 1 } });
+    if (!doc) return null;
+    return { id: doc._id };
+  } catch (err) {
+    console.error('[db] findMatchingGame failed:', err.message);
+    throw err;
   }
-  if (excludeUsername) {
-    query.blackName = { $ne: excludeUsername };
-    query.whiteName = { $ne: excludeUsername };
-  }
-  const doc = await d.collection('games').findOne(query, { sort: { createdAt: 1 } });
-  if (!doc) return null;
-  return { id: doc._id };
 }
 
 export async function getPendingGames(tcType = null) {
-  const d = await getDb();
-  const query = {
-    status: 'waiting',
-    gameType: { $nin: ['friend', 'local'] },
-    $or: [{ blackName: { $ne: null } }, { whiteName: { $ne: null } }]
-  };
-  if (tcType === 'correspondence') {
-    query['timeControl.type'] = 'correspondence';
-  } else if (tcType === 'live') {
-    query['timeControl.type'] = { $ne: 'correspondence' };
+  try {
+    const d = await getDb();
+    const query = {
+      status: 'waiting',
+      gameType: { $nin: ['friend', 'local'] },
+      $or: [{ blackName: { $ne: null } }, { whiteName: { $ne: null } }]
+    };
+    if (tcType === 'correspondence') {
+      query['timeControl.type'] = 'correspondence';
+    } else if (tcType === 'live') {
+      query['timeControl.type'] = { $ne: 'correspondence' };
+    }
+    const docs = await d.collection('games').find(query).toArray();
+    return docs.map((g) => ({
+      id: g._id,
+      creator: g.blackName || g.whiteName,
+      size: g.size,
+      timeControl: g.timeControl,
+      createdAt: g.createdAt
+    }));
+  } catch (err) {
+    console.error('[db] getPendingGames failed:', err.message);
+    throw err;
   }
-  const docs = await d.collection('games').find(query).toArray();
-  return docs.map((g) => ({
-    id: g._id,
-    creator: g.blackName || g.whiteName,
-    size: g.size,
-    timeControl: g.timeControl,
-    createdAt: g.createdAt
-  }));
 }
 
 export async function getUserGames(username) {
-  const d = await getDb();
-  const docs = await d
-    .collection('games')
-    .find({
-      $or: [{ blackName: username }, { whiteName: username }],
-      status: { $in: ['playing', 'waiting'] }
-    })
-    .toArray();
-  return docs.map((g) => {
-    const myColor = g.blackName === username ? 'black' : 'white';
-    const isCorr = g.timeControl?.type === 'correspondence';
-    return {
-      id: g._id,
-      status: g.status,
-      timeControl: g.timeControl,
-      opponent: g.blackName === username ? g.whiteName : g.blackName,
-      isMyTurn: isCorr ? g.corrActiveColor === myColor : null,
-      corrTurnDeadline: isCorr ? g.corrTurnDeadline : null
-    };
-  });
+  try {
+    const d = await getDb();
+    const docs = await d
+      .collection('games')
+      .find({
+        $or: [{ blackName: username }, { whiteName: username }],
+        status: { $in: ['playing', 'waiting'] }
+      })
+      .toArray();
+    return docs.map((g) => {
+      const myColor = g.blackName === username ? 'black' : 'white';
+      const isCorr = g.timeControl?.type === 'correspondence';
+      return {
+        id: g._id,
+        status: g.status,
+        timeControl: g.timeControl,
+        opponent: g.blackName === username ? g.whiteName : g.blackName,
+        isMyTurn: isCorr ? g.corrActiveColor === myColor : null,
+        corrTurnDeadline: isCorr ? g.corrTurnDeadline : null
+      };
+    });
+  } catch (err) {
+    console.error('[db] getUserGames failed:', err.message);
+    throw err;
+  }
 }
 
 export async function appendChat(gameId, entry) {
-  const d = await getDb();
-  await d.collection('games').updateOne({ _id: gameId }, { $push: { chat: entry } });
+  try {
+    const d = await getDb();
+    await d.collection('games').updateOne({ _id: gameId }, { $push: { chat: entry } });
+  } catch (err) {
+    console.error('[db] appendChat failed:', err.message);
+    throw err;
+  }
 }
 
 export async function getChat(gameId) {
-  const d = await getDb();
-  const doc = await d.collection('games').findOne({ _id: gameId }, { projection: { chat: 1 } });
-  return doc?.chat ?? [];
+  try {
+    const d = await getDb();
+    const doc = await d
+      .collection('games')
+      .findOne({ _id: gameId }, { projection: { chat: 1 } });
+    return doc?.chat ?? [];
+  } catch (err) {
+    console.error('[db] getChat failed:', err.message);
+    throw err;
+  }
 }
 
 export async function setNote(gameId, username, text) {
-  const key = `notes.${username.toLowerCase()}`;
-  const d = await getDb();
-  await d.collection('games').updateOne({ _id: gameId }, { $set: { [key]: text } });
+  try {
+    const key = `notes.${username.toLowerCase()}`;
+    const d = await getDb();
+    await d.collection('games').updateOne({ _id: gameId }, { $set: { [key]: text } });
+  } catch (err) {
+    console.error('[db] setNote failed:', err.message);
+    throw err;
+  }
 }
 
 export async function getNote(gameId, username) {
-  const d = await getDb();
-  const doc = await d.collection('games').findOne({ _id: gameId }, { projection: { notes: 1 } });
-  if (!doc?.notes) return '';
-  return doc.notes[username.toLowerCase()] ?? '';
+  try {
+    const d = await getDb();
+    const doc = await d
+      .collection('games')
+      .findOne({ _id: gameId }, { projection: { notes: 1 } });
+    if (!doc?.notes) return '';
+    return doc.notes[username.toLowerCase()] ?? '';
+  } catch (err) {
+    console.error('[db] getNote failed:', err.message);
+    throw err;
+  }
 }
 
 export async function getAllActiveGames() {
-  const d = await getDb();
-  const docs = await d
-    .collection('games')
-    .find({ status: 'playing', gameType: { $ne: 'friend' } })
-    .toArray();
-  return docs.map((g) => {
-    const { _id, ...rest } = g;
-    return { id: _id, ...rest };
-  });
+  try {
+    const d = await getDb();
+    const docs = await d
+      .collection('games')
+      .find({ status: 'playing', gameType: { $ne: 'friend' } })
+      .toArray();
+    return docs.map((g) => {
+      const { _id, ...rest } = g;
+      return { id: _id, ...rest };
+    });
+  } catch (err) {
+    console.error('[db] getAllActiveGames failed:', err.message);
+    throw err;
+  }
 }
 
 export async function getAllUserGames(username) {
-  const d = await getDb();
-  const docs = await d
-    .collection('games')
-    .find({
-      $or: [{ blackName: username }, { whiteName: username }],
-      status: { $ne: 'aborted' }
-    })
-    .sort({ createdAt: -1 })
-    .toArray();
-  return docs.map((g) => {
-    const { _id, ...rest } = g;
-    return { id: _id, ...rest };
-  });
+  try {
+    const d = await getDb();
+    const docs = await d
+      .collection('games')
+      .find({
+        $or: [{ blackName: username }, { whiteName: username }],
+        status: { $ne: 'aborted' }
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return docs.map((g) => {
+      const { _id, ...rest } = g;
+      return { id: _id, ...rest };
+    });
+  } catch (err) {
+    console.error('[db] getAllUserGames failed:', err.message);
+    throw err;
+  }
 }
 
 // --- WebAuthn Credentials ---
 
 export async function getCredentials(username) {
-  const key = username.toLowerCase();
-  const d = await getDb();
-  const docs = await d.collection('credentials').find({ username: key }).toArray();
-  return docs.map((c) => {
-    const { _id, username: _u, ...rest } = c;
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    const docs = await d.collection('credentials').find({ username: key }).toArray();
+    return docs.map((c) => {
+      const { _id, username: _u, ...rest } = c;
+      return {
+        ...rest,
+        publicKey: new Uint8Array(Buffer.from(rest.publicKey, 'base64url'))
+      };
+    });
+  } catch (err) {
+    console.error('[db] getCredentials failed:', err.message);
+    throw err;
+  }
+}
+
+export async function addCredential(username, credential) {
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    await d.collection('credentials').insertOne({
+      username: key,
+      ...credential,
+      publicKey: Buffer.from(credential.publicKey).toString('base64url')
+    });
+  } catch (err) {
+    console.error('[db] addCredential failed:', err.message);
+    throw err;
+  }
+}
+
+export async function getCredentialById(credentialId) {
+  try {
+    const d = await getDb();
+    const doc = await d.collection('credentials').findOne({ id: credentialId });
+    if (!doc) return null;
+    const { _id, ...rest } = doc;
     return {
       ...rest,
       publicKey: new Uint8Array(Buffer.from(rest.publicKey, 'base64url'))
     };
-  });
-}
-
-export async function addCredential(username, credential) {
-  const key = username.toLowerCase();
-  const d = await getDb();
-  await d.collection('credentials').insertOne({
-    username: key,
-    ...credential,
-    publicKey: Buffer.from(credential.publicKey).toString('base64url')
-  });
-}
-
-export async function getCredentialById(credentialId) {
-  const d = await getDb();
-  const doc = await d.collection('credentials').findOne({ id: credentialId });
-  if (!doc) return null;
-  const { _id, ...rest } = doc;
-  return {
-    ...rest,
-    publicKey: new Uint8Array(Buffer.from(rest.publicKey, 'base64url'))
-  };
+  } catch (err) {
+    console.error('[db] getCredentialById failed:', err.message);
+    throw err;
+  }
 }
 
 export async function updateCredentialCounter(username, credentialId, newCounter) {
-  const key = username.toLowerCase();
-  const d = await getDb();
-  await d
-    .collection('credentials')
-    .updateOne({ username: key, id: credentialId }, { $set: { counter: newCounter } });
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    await d
+      .collection('credentials')
+      .updateOne({ username: key, id: credentialId }, { $set: { counter: newCounter } });
+  } catch (err) {
+    console.error('[db] updateCredentialCounter failed:', err.message);
+    throw err;
+  }
 }
 
 // --- Sessions ---
 
 export async function createSession(token, username) {
-  const d = await getDb();
-  await d.collection('sessions').insertOne({ _id: token, username, createdAt: Date.now() });
+  try {
+    const d = await getDb();
+    await d.collection('sessions').insertOne({ _id: token, username, createdAt: Date.now() });
+  } catch (err) {
+    console.error('[db] createSession failed:', err.message);
+    throw err;
+  }
 }
 
 export async function getSession(token) {
   if (!token) return null;
-  const d = await getDb();
-  const doc = await d.collection('sessions').findOne({ _id: token });
-  if (!doc) return null;
-  return { username: doc.username, createdAt: doc.createdAt };
+  try {
+    const d = await getDb();
+    const doc = await d.collection('sessions').findOne({ _id: token });
+    if (!doc) return null;
+    return { username: doc.username, createdAt: doc.createdAt };
+  } catch (err) {
+    console.error('[db] getSession failed:', err.message);
+    throw err;
+  }
 }
 
 export async function deleteSession(token) {
-  const d = await getDb();
-  await d.collection('sessions').deleteOne({ _id: token });
+  try {
+    const d = await getDb();
+    await d.collection('sessions').deleteOne({ _id: token });
+  } catch (err) {
+    console.error('[db] deleteSession failed:', err.message);
+    throw err;
+  }
 }
