@@ -189,6 +189,11 @@
   color: var(--c-good);
 }
 
+.user-show__header .disconnected {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--c-font-dim);
+}
+
 .user-show .number-menu .to-games.active,
 .user-show #games.number-menu {
   background: var(--c-bg-low) !important;

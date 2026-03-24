@@ -1,8 +1,24 @@
 <script>
+  import { onMount } from 'svelte';
   import GoBoard from '$lib/game/GoBoard.svelte';
   import { replayMoves } from '$lib/game/board';
 
   let { data } = $props();
+
+  let isOnline = $state(false);
+
+  async function checkOnline() {
+    const res = await fetch('/api/players/online');
+    const result = await res.json();
+    const onlineSet = new Set(result.users);
+    isOnline = onlineSet.has(data.profile.username);
+  }
+
+  onMount(() => {
+    checkOnline();
+    const id = setInterval(checkOnline, 10000);
+    return () => clearInterval(id);
+  });
 
   function formatClock(timeControl) {
     if (!timeControl || timeControl.type === 'none') return '∞';
@@ -221,7 +237,7 @@
   <div class="page-menu__content box user-show">
     <div class="box__top user-show__header">
       <h1>
-        <span class="connected" data-icon="&#xe06b"></span>
+        <span class={isOnline ? 'connected' : 'disconnected'} data-icon="&#xe06b"></span>
         {data.profile.username}
       </h1>
     </div>

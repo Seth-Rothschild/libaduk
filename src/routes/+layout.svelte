@@ -7,6 +7,7 @@
   import '$lib/game/game.css';
   import '$lib/auth/auth.css';
   import './profile/profile.css';
+  import './player/player.css';
   import { setUsername, clearUsername } from '$lib/state/user.svelte.js';
   import { pingState } from '$lib/state/ping.svelte.js';
   import { themeState } from '$lib/nav/theme.svelte.js';

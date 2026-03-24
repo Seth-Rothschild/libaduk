@@ -7,6 +7,29 @@ const lobbyClients = global.__lobbyClients;
 if (!global.__gameClients) global.__gameClients = new Map();
 const gameClients = global.__gameClients;
 
+if (!global.__onlinePlayers) global.__onlinePlayers = new Map();
+const onlinePlayers = global.__onlinePlayers;
+
+const ONLINE_TIMEOUT = 15000;
+
+export function getOnlinePlayers() {
+  const now = Date.now();
+  const users = [];
+  const guests = [];
+  for (const [name, entry] of onlinePlayers) {
+    if (now - entry.lastPing > ONLINE_TIMEOUT) {
+      onlinePlayers.delete(name);
+      continue;
+    }
+    if (entry.isAuth) {
+      users.push(name);
+    } else {
+      guests.push(name);
+    }
+  }
+  return { users, guests };
+}
+
 function generateId() {
   return Math.random().toString(36).slice(2, 8);
 }
@@ -148,6 +171,9 @@ export function attachWebSocketServer(httpServer) {
         return;
       }
       if (msg.type === 'ping') {
+        if (msg.name) {
+          onlinePlayers.set(msg.name, { lastPing: Date.now(), isAuth: !!msg.isAuth });
+        }
         send(socket, { type: 'pong', ...getLobbyStats() });
       }
       if (msg.type === 'join' && msg.gameId) {

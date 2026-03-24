@@ -14,6 +14,12 @@
     </div>
   </section>
   <section>
+    <a href="/player">Community</a>
+    <div role="group">
+      <a href="/player">Players</a>
+    </div>
+  </section>
+  <section>
     <a href="/analysis" data-sveltekit-preload-data="off">Tools</a>
     <div role="group">
       <a href="/analysis" data-sveltekit-preload-data="off">Analysis board</a>

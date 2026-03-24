@@ -1,0 +1,205 @@
+/* =============================================================
+   player.css — styles for the /player directory page.
+
+   Outer layout uses .page-menu + .sub-ratings from profile.css.
+   This file styles the content area: online list + leaderboards.
+   ============================================================= */
+
+/* -------------------------------------------------------------
+   Subnav overrides — smaller text, no uppercase, padding so
+   the selected item floats with space around it.
+   ------------------------------------------------------------- */
+
+.page-menu:has(.community) .sub-ratings {
+  padding: 0rem 0.8rem 0 0;
+}
+
+.page-menu:has(.community) .sub-ratings a {
+  border-radius: 6px;
+}
+
+.page-menu:has(.community) .sub-ratings h3 {
+  text-transform: none;
+  font-size: 0.95em;
+}
+
+/* -------------------------------------------------------------
+   .community — content box that shares bg with the active nav
+   tab so they read as one surface. Two-column inner layout:
+   online list + leaderboards.
+   ------------------------------------------------------------- */
+
+.community {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr;
+  background: var(--c-bg-box);
+  border-radius: 6px;
+  padding: 4vh var(---box-padding, 2rem);
+  min-height: 100vh;
+  align-content: start;
+}
+
+@media (min-width: 600px) {
+  .community {
+    grid-template-columns: min-content 1fr;
+  }
+}
+
+/* -------------------------------------------------------------
+   Section headers (Online Players / Leaderboard)
+   ------------------------------------------------------------- */
+
+.community__online > h2,
+.community__leaders > h2 {
+  font-size: 1.7em;
+  margin: 0 0 1.5rem;
+}
+
+/* -------------------------------------------------------------
+   Online players
+   ------------------------------------------------------------- */
+
+.online-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  min-width: 20ch;
+}
+
+.online-list li {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.8rem;
+  white-space: nowrap;
+}
+
+.online-list a {
+  color: var(--c-font);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.online-list a:hover {
+  color: var(--c-link);
+}
+
+.online-list .guest {
+  color: var(--c-font-dim);
+  font-style: italic;
+}
+
+.online-empty {
+  padding: 1.5em;
+  text-align: center;
+  color: var(--c-font-dim);
+}
+
+/* -------------------------------------------------------------
+   Status dots (shared by online list + leaderboard)
+   ------------------------------------------------------------- */
+
+.online-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-good);
+  margin-inline-end: 0.6em;
+  flex-shrink: 0;
+}
+
+.offline-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--c-font-dim);
+  margin-inline-end: 0.6em;
+  flex-shrink: 0;
+}
+
+/* -------------------------------------------------------------
+   Leaderboards grid
+   ------------------------------------------------------------- */
+
+.leaderboards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0;
+}
+
+.leaderboard-card {
+  border: 1px solid hsla(37, 74%, 43%, 0.3);
+}
+
+.leaderboard-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: 1.3em;
+  line-height: 2.2em;
+  letter-spacing: -0.5px;
+  padding-inline-start: 0.8rem;
+  text-transform: uppercase;
+  margin: 0;
+  background: var(--c-warn);
+  color: #fff;
+}
+
+.leaderboard-card h3::before {
+  font-size: 1em;
+}
+
+.leaderboard-card ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: rank;
+}
+
+.leaderboard-card li {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem 0.5rem 0.5rem;
+  counter-increment: rank;
+}
+
+.leaderboard-card li::before {
+  content: counter(rank) '.';
+  min-width: 2ch;
+  margin-inline-end: 0.5em;
+  color: var(--c-font-dim);
+  text-align: right;
+}
+
+.leaderboard-card li:nth-child(even) {
+  background: var(--c-bg-zebra);
+}
+
+.leaderboard-card a {
+  color: var(--c-font);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.leaderboard-card a:hover {
+  color: var(--c-link);
+}
+
+.leaderboard-card .game-count {
+  color: var(--c-font-dim);
+  font-size: 0.9em;
+  margin-inline-start: 1em;
+  white-space: nowrap;
+}
+
+.leaderboards-empty {
+  padding: 2em;
+  text-align: center;
+  color: var(--c-font-dim);
+}

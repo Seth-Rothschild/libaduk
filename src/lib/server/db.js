@@ -268,9 +268,7 @@ export async function appendChat(gameId, entry) {
 export async function getChat(gameId) {
   try {
     const d = await getDb();
-    const doc = await d
-      .collection('games')
-      .findOne({ _id: gameId }, { projection: { chat: 1 } });
+    const doc = await d.collection('games').findOne({ _id: gameId }, { projection: { chat: 1 } });
     return doc?.chat ?? [];
   } catch (err) {
     console.error('[db] getChat failed:', err.message);
@@ -292,9 +290,7 @@ export async function setNote(gameId, username, text) {
 export async function getNote(gameId, username) {
   try {
     const d = await getDb();
-    const doc = await d
-      .collection('games')
-      .findOne({ _id: gameId }, { projection: { notes: 1 } });
+    const doc = await d.collection('games').findOne({ _id: gameId }, { projection: { notes: 1 } });
     if (!doc?.notes) return '';
     return doc.notes[username.toLowerCase()] ?? '';
   } catch (err) {
@@ -339,6 +335,84 @@ export async function getAllUserGames(username) {
     console.error('[db] getAllUserGames failed:', err.message);
     throw err;
   }
+}
+
+// --- Leaderboards ---
+
+const LEADERBOARD_CATEGORIES = [
+  {
+    key: 'bullet',
+    filter: {
+      'timeControl.type': { $in: ['byoyomi', 'fischer'] },
+      'timeControl.initial': { $lte: 180 }
+    }
+  },
+  {
+    key: 'blitz',
+    filter: {
+      'timeControl.type': { $in: ['byoyomi', 'fischer'] },
+      'timeControl.initial': { $gt: 180, $lte: 600 }
+    }
+  },
+  {
+    key: 'rapid',
+    filter: {
+      'timeControl.type': { $in: ['byoyomi', 'fischer'] },
+      'timeControl.initial': { $gt: 600, $lte: 1800 }
+    }
+  },
+  {
+    key: 'classical',
+    filter: {
+      'timeControl.type': { $in: ['byoyomi', 'fischer'] },
+      'timeControl.initial': { $gt: 1800 }
+    }
+  },
+  {
+    key: 'correspondence',
+    filter: { 'timeControl.type': 'correspondence' }
+  }
+];
+
+async function leaderboardForCategory(collection, filter) {
+  const docs = await collection
+    .aggregate([
+      { $match: { status: 'finished', gameType: { $nin: ['friend', 'local'] }, ...filter } },
+      {
+        $project: {
+          players: [{ $ifNull: ['$blackName', null] }, { $ifNull: ['$whiteName', null] }]
+        }
+      },
+      { $unwind: '$players' },
+      { $match: { players: { $ne: null, $not: /^Guest(\d{4})?$/ } } },
+      { $group: { _id: '$players', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+      { $project: { _id: 0, username: '$_id', count: 1 } }
+    ])
+    .toArray();
+  return docs;
+}
+
+export async function getLeaderboards() {
+  const d = await getDb();
+  const collection = d.collection('games');
+
+  const allUsers = await d.collection('users').find({}).toArray();
+  const usernames = allUsers.map((u) => u.username);
+
+  const result = {};
+  for (const category of LEADERBOARD_CATEGORIES) {
+    const withGames = await leaderboardForCategory(collection, category.filter);
+    const seen = new Set(withGames.map((e) => e.username));
+    for (const username of usernames) {
+      if (!seen.has(username)) {
+        withGames.push({ username, count: 0 });
+      }
+    }
+    result[category.key] = withGames.slice(0, 10);
+  }
+  return result;
 }
 
 // --- WebAuthn Credentials ---
