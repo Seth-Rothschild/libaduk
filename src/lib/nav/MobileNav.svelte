@@ -27,6 +27,12 @@
     </div>
   </section>
   <section>
+    <a href="/player" onclick={onClose}>Community</a>
+    <div role="group">
+      <a href="/player" onclick={onClose}>Players</a>
+    </div>
+  </section>
+  <section>
     <a href="/analysis" onclick={onClose}>Tools</a>
     <div role="group">
       <a href="/analysis" onclick={onClose}>Analysis board</a>

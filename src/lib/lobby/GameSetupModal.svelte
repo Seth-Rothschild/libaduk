@@ -140,6 +140,7 @@
         body: JSON.stringify({ size: boardSize, timeControl, color, gameType, creatorName })
       });
       const { gameId } = await res.json();
+      onClose();
       goto(gameType === 'local' ? `/play/${gameId}?local=true` : `/play/${gameId}`);
     } catch {
       loading = false;

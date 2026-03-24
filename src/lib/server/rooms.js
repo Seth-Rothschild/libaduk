@@ -182,11 +182,11 @@ export function attachWebSocketServer(httpServer) {
         socket.playerColor = msg.color ?? null;
         if (socket.playerColor) {
           broadcast(msg.gameId, { type: 'presence', color: socket.playerColor, online: true });
-          const clients = gameClients.get(msg.gameId);
-          for (const other of clients) {
-            if (other !== socket && other.playerColor) {
-              send(socket, { type: 'presence', color: other.playerColor, online: true });
-            }
+        }
+        const clients = gameClients.get(msg.gameId);
+        for (const other of clients) {
+          if (other !== socket && other.playerColor) {
+            send(socket, { type: 'presence', color: other.playerColor, online: true });
           }
         }
       }

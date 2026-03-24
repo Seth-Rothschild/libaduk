@@ -17,10 +17,12 @@
   import { onMount } from 'svelte';
   import SiteHeader from '$lib/nav/SiteHeader.svelte';
   import GameSetupModal from '$lib/lobby/GameSetupModal.svelte';
+  import { getGuestId } from '$lib/state/guestId.js';
 
   let { children, data } = $props();
 
   const username = $derived(data.user?.username ?? '');
+  const displayName = $derived(username || getGuestId());
   let setupModal = $state(null);
 
   onMount(() => {
@@ -54,5 +56,9 @@
 </div>
 
 {#if setupModal}
-  <GameSetupModal gameType={setupModal} onClose={() => (setupModal = null)} />
+  <GameSetupModal
+    gameType={setupModal}
+    creatorName={displayName}
+    onClose={() => (setupModal = null)}
+  />
 {/if}
