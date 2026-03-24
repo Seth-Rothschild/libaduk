@@ -2,6 +2,7 @@
   import PingStatus from './PingStatus.svelte';
   import BackgroundPane from './BackgroundPane.svelte';
   import BoardPane from './BoardPane.svelte';
+  import AiPane from './AiPane.svelte';
 
   let { username, onSignOut } = $props();
 
@@ -45,6 +46,8 @@
       <BackgroundPane onBack={() => (pane = 'main')} />
     {:else if pane === 'board'}
       <BoardPane onBack={() => (pane = 'main')} />
+    {:else if pane === 'ai'}
+      <AiPane onBack={() => (pane = 'main')} />
     {:else}
       {#if signedIn}
         <a class="text" data-icon="&#xe005;" href="/">Settings</a>
@@ -53,6 +56,7 @@
       <button class="text" data-icon="&#xe061;" onclick={() => (pane = 'background')}
         >Background</button
       >
+      <button class="text" data-icon="&#xe07e;" onclick={() => (pane = 'ai')}>Computer AI</button>
       {#if signedIn}
         <button class="text signout" data-icon="&#xe055;" onclick={signOut}>Sign out</button>
       {/if}

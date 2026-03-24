@@ -12,6 +12,8 @@ Large parts of both code and inspiration have been taken from [lila](https://git
 
 The game board, board logic, and board feel are heavily inspired by [Sabaki](https://github.com/SabakiHQ) and uses Sabaki components where possible.
 
+The client-side AI uses KataGo ONNX models served by [Kaya](https://github.com/kaya-go/kaya), running in-browser via ONNX Runtime Web.
+
 ![](./screenshots/gameplay.png)
 
 ## Roadmap and Anti-Roadmap

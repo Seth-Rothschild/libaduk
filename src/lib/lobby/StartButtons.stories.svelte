@@ -21,7 +21,7 @@
   play={async ({ canvas }) => {
     await expect(canvas.getByRole('button', { name: 'Create a game' })).toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: 'Challenge a friend' })).toBeInTheDocument();
-    await expect(canvas.getByRole('button', { name: 'Play locally' })).toBeInTheDocument();
+    await expect(canvas.getByRole('button', { name: 'Play against computer' })).toBeInTheDocument();
   }}
 />
 
@@ -51,9 +51,9 @@
 />
 
 <Story
-  name="Play locally"
+  name="Play against computer"
   play={async ({ args, canvas }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Play locally' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Play against computer' }));
     await expect(args.onPlayLocally).toHaveBeenCalledOnce();
   }}
 />

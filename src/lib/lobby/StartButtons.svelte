@@ -25,7 +25,7 @@
     class="button button-metal lobby__start__button lobby__start__button--ai"
     onclick={() => onPlayLocally?.()}
   >
-    Play locally
+    Play against computer
   </button>
 
   <div class="lobby__counters">

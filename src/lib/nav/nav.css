@@ -451,6 +451,20 @@ body > header {
   text-decoration: none;
 }
 
+.site-buttons .dropdown .attribution a {
+  display: inline;
+  padding: 0;
+  width: auto;
+  white-space: normal;
+  overflow: visible;
+  color: var(--c-primary, #88f);
+}
+
+.site-buttons .dropdown .attribution a:hover {
+  background: none;
+  color: var(--c-primary, #88f);
+}
+
 .site-buttons .dropdown a:not(.status):hover,
 .site-buttons .dropdown button:not(.theme-btn):hover {
   background: var(--c-dasher);

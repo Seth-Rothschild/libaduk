@@ -778,6 +778,79 @@ html.light .lpool {
   height: 56px;
 }
 
+/* -------------------------------------------------------------
+   group.radio — segmented radio button control (ported from lila _radio.scss)
+   ------------------------------------------------------------- */
+
+group.radio {
+  display: flex;
+  flex-wrap: wrap;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid var(--c-border);
+}
+
+group.radio div {
+  flex: 1 1 auto;
+  position: relative;
+}
+
+group.radio input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+group.radio label {
+  background: linear-gradient(to bottom, var(--c-metal-top), var(--c-metal-bottom));
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  height: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+  border-inline-end: 1px solid var(--c-border);
+  user-select: none;
+}
+
+group.radio div:last-child label {
+  border-inline-end: 0;
+}
+
+@media (hover: hover) {
+  group.radio label:hover {
+    background: linear-gradient(to bottom, var(--c-metal-top-hover), var(--c-metal-bottom-hover));
+    text-shadow: 0 1px 0 var(--c-font-shadow);
+  }
+}
+
+group.radio input:checked + label {
+  background: var(--c-accent);
+  color: white;
+  text-shadow: none;
+}
+
+group.radio input:focus-visible + label {
+  outline: 2px solid var(--c-primary);
+  outline-offset: -2px;
+}
+
+group.radio.ai-strength {
+  width: 100%;
+}
+
+/* -------------------------------------------------------------
+   end group.radio
+   ------------------------------------------------------------- */
+
 .game-setup .disabled {
   opacity: 0.4;
   cursor: default !important;

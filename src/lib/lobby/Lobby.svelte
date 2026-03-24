@@ -128,7 +128,7 @@
       gamesInPlay={pingState.lobbyStats.gamesInPlay}
       onCreateGame={() => (setupModal = 'hook')}
       onChallengeFriend={() => (setupModal = 'friend')}
-      onPlayLocally={() => goto('/analysis')}
+      onPlayLocally={() => (setupModal = 'ai')}
     />
   </div>
 
