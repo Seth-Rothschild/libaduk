@@ -9,6 +9,7 @@
     "start": "node server.js",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
+    "postinstall": "cp node_modules/onnxruntime-web/dist/*.wasm node_modules/onnxruntime-web/dist/*.mjs static/wasm/",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
     "test:unit": "vitest",
