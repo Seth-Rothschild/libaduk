@@ -17,7 +17,7 @@
 <Story
   name="Default"
   play={async ({ canvasElement }) => {
-    await expect(canvasElement.querySelector('h1')?.textContent).toBe('Sign in');
+    await expect(canvasElement.querySelector('.auth-tabs .active')?.textContent).toBe('Sign In');
     await expect(canvasElement.querySelector('button')).not.toBeNull();
     await expect(canvasElement.querySelector('a[href="/signup"]')).not.toBeNull();
   }}

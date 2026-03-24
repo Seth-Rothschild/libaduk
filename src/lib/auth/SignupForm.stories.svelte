@@ -17,7 +17,7 @@
 <Story
   name="Default"
   play={async ({ canvasElement }) => {
-    await expect(canvasElement.querySelector('h1')?.textContent).toBe('Sign up');
+    await expect(canvasElement.querySelector('.auth-tabs .active')?.textContent).toBe('Register');
     await expect(canvasElement.querySelector('input#form3-username')).not.toBeNull();
     await expect(canvasElement.querySelector('a[href="/login"]')).not.toBeNull();
   }}

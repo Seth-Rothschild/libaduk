@@ -142,6 +142,10 @@
   margin-bottom: 0;
 }
 
+.passkey-info a {
+  text-decoration: underline;
+}
+
 /* -------------------------------------------------------------
    .form-group — vertical spacing between form fields
    ------------------------------------------------------------- */

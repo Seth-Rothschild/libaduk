@@ -16,18 +16,19 @@ The game board, board logic, and board feel are heavily inspired by [Sabaki](htt
 
 ## Roadmap and Anti-Roadmap
 
-Right now I'm not interested in replacing OGS or further partitioning the Go community. This code exists to demonstrate _how_ the Lichess UI can be used for Go. 
+Right now I'm not interested in replacing OGS or further partitioning the Go community. This code exists to demonstrate _how_ the Lichess UI can be used for Go.
 
-If *you* are interested in deploying this or forking it to suit some other need, I'd be happy to help. It is easy to imagine using this code as an OGS frontend or using the backend to connect existing desktop apps. 
+If _you_ are interested in deploying this or forking it to suit some other need, I'd be happy to help. It is easy to imagine using this code as an OGS frontend or using the backend to connect existing desktop apps.
 
 The features I'm most interested in right now are:
-- **Puzzles** - Lichess puzzles and puzzle UI are one of the highlights of the site. Having a free and open source "Puzzle of the day" with a nice UI would be a win for the go community. 
+
+- **Puzzles** - Lichess puzzles and puzzle UI are one of the highlights of the site. Having a free and open source "Puzzle of the day" with a nice UI would be a win for the go community.
 - **Clientside AI** - It would be really nice to be able to play a quick game. These dependencies right now seem a bit heavy and complex but might be worth the effort.
 - **More Go Basics** - This code should be mostly functional for casual play. I just wanted a place where I could play online and review the code afterwards with humans. However, there are some basic features (e.g. handicaps, visible rankings) that are not yet implemented.
 
 The following are not currently planned:
-- **Game verification/Anti-cheat** - Right now gamestate is only verified by the clientside code and assumes everyone is a good citizen. In the unlikely event the users become a problem on [libaduk.com](libaduk.com) the code will remain open source but I'll just shut the site off and leave it for someone else to deploy.
 
+- **Game verification/Anti-cheat** - Right now gamestate is only verified by the clientside code and assumes everyone is a good citizen. In the unlikely event the users become a problem on [libaduk.com](libaduk.com) the code will remain open source but I'll just shut the site off and leave it for someone else to deploy.
 
 ## Development
 
