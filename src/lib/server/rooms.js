@@ -45,26 +45,40 @@ export async function createRoom(
   timeControl = { type: 'none' },
   color,
   gameType = 'hook',
-  creatorName = null
+  creatorName = null,
+  extra = {}
 ) {
   const local = gameType === 'local';
+  const isAi = gameType === 'ai';
   const id = await uniqueId();
   const creatorColor =
     color === 'random' ? (Math.random() > 0.5 ? 'black' : 'white') : (color ?? 'black');
-  const blackName = creatorColor === 'black' && creatorName ? creatorName : null;
-  const whiteName = creatorColor === 'white' && creatorName ? creatorName : null;
+
+  let blackName = creatorColor === 'black' && creatorName ? creatorName : null;
+  let whiteName = creatorColor === 'white' && creatorName ? creatorName : null;
+
+  if (isAi) {
+    const aiLabel = `AI (strength ${extra.aiDifficulty ?? 5})`;
+    if (creatorColor === 'black') {
+      whiteName = aiLabel;
+    } else {
+      blackName = aiLabel;
+    }
+  }
 
   await db.createGame({
     id,
     size,
     blackName,
     whiteName,
-    blackIsAuth: !!blackName,
-    whiteIsAuth: !!whiteName,
+    blackIsAuth: !!blackName && !isAi,
+    whiteIsAuth: !!whiteName && !isAi,
     creatorColor,
     timeControl,
     local,
-    gameType
+    gameType,
+    status: isAi ? 'playing' : 'waiting',
+    aiDifficulty: extra.aiDifficulty ?? null
   });
 
   return { id };
@@ -253,7 +267,10 @@ export function attachWebSocketServer(httpServer) {
       }
       if (gameId && !gameClients.has(gameId)) {
         const game = await db.getGame(gameId);
-        if (game && game.status === 'waiting' && game.gameType === 'hook') {
+        const isAbandoned =
+          (game.status === 'waiting' && game.gameType === 'hook') ||
+          (game.gameType === 'ai' && game.status !== 'finished');
+        if (game && isAbandoned) {
           await db.updateGame(gameId, { status: 'cancelled', endedAt: Date.now() });
         }
       }

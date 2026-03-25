@@ -117,7 +117,9 @@ export async function createGame({
   creatorColor = 'black',
   timeControl = { type: 'none' },
   komi = 6.5,
-  gameType = 'hook'
+  gameType = 'hook',
+  status = 'waiting',
+  aiDifficulty = null
 }) {
   try {
     const game = {
@@ -128,9 +130,10 @@ export async function createGame({
       creatorColor,
       gameType,
       moves: [],
-      status: 'waiting',
+      status,
       timeControl,
       komi,
+      aiDifficulty,
       createdAt: Date.now(),
       endedAt: null,
       winner: null,
@@ -205,7 +208,7 @@ export async function getPendingGames(tcType = null) {
     const d = await getDb();
     const query = {
       status: 'waiting',
-      gameType: { $nin: ['friend', 'local'] },
+      gameType: { $nin: ['friend', 'local', 'ai'] },
       $or: [{ blackName: { $ne: null } }, { whiteName: { $ne: null } }]
     };
     if (tcType === 'correspondence') {
@@ -384,7 +387,7 @@ async function leaderboardForCategory(collection, filter) {
         }
       },
       { $unwind: '$players' },
-      { $match: { players: { $ne: null, $not: /^Guest(\d{4})?$/ } } },
+      { $match: { players: { $ne: null, $not: /^(Guest(\d{4})?|AI \()/ } } },
       { $group: { _id: '$players', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 },

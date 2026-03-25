@@ -135,19 +135,17 @@
   }
 
   async function submit() {
-    if (isAi) {
-      onClose();
-      const params = new URLSearchParams({ size: boardSize, color, difficulty: aiDifficulty });
-      goto(`/play/ai?${params}`);
-      return;
-    }
     loading = true;
     try {
       const timeControl = buildTimeControl();
+      const body = { size: boardSize, timeControl, color, gameType, creatorName };
+      if (isAi) {
+        body.aiDifficulty = aiDifficulty;
+      }
       const res = await fetch('/api/game', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ size: boardSize, timeControl, color, gameType, creatorName })
+        body: JSON.stringify(body)
       });
       const { gameId } = await res.json();
       onClose();
@@ -218,178 +216,173 @@
       {/if}
 
       <!-- Time control -->
-      {#if !isAi}
-        <div class="config-group time-control-tabs">
-          <div class="tabs-horiz">
-            <button class:active={timeMode === 'byoyomi'} onclick={() => switchTimeMode('byoyomi')}>
-              Byo-yomi
-            </button>
-            <button
-              class:active={timeMode === 'realtime'}
-              onclick={() => switchTimeMode('realtime')}
-            >
-              Fischer
-            </button>
-            <button
-              class:active={timeMode === 'correspondence'}
-              onclick={() => switchTimeMode('correspondence')}
-            >
-              Correspondence
-            </button>
-            <button
-              class:active={timeMode === 'unlimited'}
-              onclick={() => switchTimeMode('unlimited')}
-            >
-              Unlimited
-            </button>
-          </div>
+      <div class="config-group time-control-tabs">
+        <div class="tabs-horiz">
+          <button class:active={timeMode === 'byoyomi'} onclick={() => switchTimeMode('byoyomi')}>
+            Byo-yomi
+          </button>
+          <button class:active={timeMode === 'realtime'} onclick={() => switchTimeMode('realtime')}>
+            Fischer
+          </button>
+          <button
+            class:active={timeMode === 'correspondence'}
+            onclick={() => switchTimeMode('correspondence')}
+          >
+            Correspondence
+          </button>
+          <button
+            class:active={timeMode === 'unlimited'}
+            onclick={() => switchTimeMode('unlimited')}
+          >
+            Unlimited
+          </button>
+        </div>
 
-          {#if timeMode === 'byoyomi'}
-            <div class="time-panel">
-              <div class="sliders">
-                <div class="slider-row">
-                  <label class="slider-label" for="byo-min">Minutes per side</label>
-                  <input
-                    id="byo-min"
-                    class="range"
-                    type="range"
-                    min="0"
-                    max="60"
-                    value={byoMin}
-                    oninput={(e) => (byoMin = +e.target.value)}
-                  />
-                  <span class="val-box">{byoMin}</span>
-                </div>
-                <div class="slider-row">
-                  <label class="slider-label" for="byo-periods">Byo-yomi periods</label>
-                  <input
-                    id="byo-periods"
-                    class="range"
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={byoPeriods}
-                    oninput={(e) => (byoPeriods = +e.target.value)}
-                  />
-                  <span class="val-box">{byoPeriods}</span>
-                </div>
-                <div class="slider-row">
-                  <label class="slider-label" for="byo-sec">Period time (seconds)</label>
-                  <input
-                    id="byo-sec"
-                    class="range"
-                    type="range"
-                    min="5"
-                    max="120"
-                    step="5"
-                    value={byoSec}
-                    oninput={(e) => (byoSec = +e.target.value)}
-                  />
-                  <span class="val-box">{byoSec}s</span>
-                </div>
-              </div>
-              <div class="presets">
-                {#each byoyomiPresets as p}
-                  <button
-                    class="preset-btn"
-                    class:active={byoMin === p.min && byoPeriods === p.periods && byoSec === p.sec}
-                    onclick={() => {
-                      byoMin = p.min;
-                      byoPeriods = p.periods;
-                      byoSec = p.sec;
-                    }}
-                  >
-                    {p.label}
-                  </button>
-                {/each}
-              </div>
-            </div>
-          {:else if timeMode === 'realtime'}
-            <div class="time-panel">
-              <div class="sliders-grid">
-                <div class="slider-container">
-                  <div class="label-row">
-                    <label for="fischer-min">Minutes per side</label>
-                    <span class="val-box">{fischerMin}</span>
-                  </div>
-                  <input
-                    id="fischer-min"
-                    class="range"
-                    type="range"
-                    min="1"
-                    max="60"
-                    value={fischerMin}
-                    oninput={(e) => (fischerMin = +e.target.value)}
-                  />
-                </div>
-                <div class="slider-separator">+</div>
-                <div class="slider-container">
-                  <div class="label-row">
-                    <span class="val-box">{fischerInc}s</span>
-                    <label for="fischer-inc">Increment (seconds)</label>
-                  </div>
-                  <input
-                    id="fischer-inc"
-                    class="range"
-                    type="range"
-                    min="0"
-                    max="60"
-                    value={fischerInc}
-                    oninput={(e) => (fischerInc = +e.target.value)}
-                  />
-                </div>
-              </div>
-              <div class="presets">
-                {#each fischerPresets as p}
-                  <button
-                    class="preset-btn"
-                    class:active={fischerMin === p.min && fischerInc === p.inc}
-                    onclick={() => {
-                      fischerMin = p.min;
-                      fischerInc = p.inc;
-                    }}
-                  >
-                    {p.label}
-                  </button>
-                {/each}
-              </div>
-            </div>
-          {:else if timeMode === 'correspondence'}
-            <div class="time-panel">
-              <div class="slider-container">
-                <div class="label-row">
-                  <label for="corr-days">Days per turn</label>
-                  <span class="val-box">{corrLabel(corrDays)}</span>
-                </div>
+        {#if timeMode === 'byoyomi'}
+          <div class="time-panel">
+            <div class="sliders">
+              <div class="slider-row">
+                <label class="slider-label" for="byo-min">Minutes per side</label>
                 <input
-                  id="corr-days"
+                  id="byo-min"
+                  class="range"
+                  type="range"
+                  min="0"
+                  max="60"
+                  value={byoMin}
+                  oninput={(e) => (byoMin = +e.target.value)}
+                />
+                <span class="val-box">{byoMin}</span>
+              </div>
+              <div class="slider-row">
+                <label class="slider-label" for="byo-periods">Byo-yomi periods</label>
+                <input
+                  id="byo-periods"
                   class="range"
                   type="range"
                   min="1"
-                  max="14"
-                  value={corrDays}
-                  oninput={(e) => (corrDays = +e.target.value)}
+                  max="10"
+                  value={byoPeriods}
+                  oninput={(e) => (byoPeriods = +e.target.value)}
+                />
+                <span class="val-box">{byoPeriods}</span>
+              </div>
+              <div class="slider-row">
+                <label class="slider-label" for="byo-sec">Period time (seconds)</label>
+                <input
+                  id="byo-sec"
+                  class="range"
+                  type="range"
+                  min="5"
+                  max="120"
+                  step="5"
+                  value={byoSec}
+                  oninput={(e) => (byoSec = +e.target.value)}
+                />
+                <span class="val-box">{byoSec}s</span>
+              </div>
+            </div>
+            <div class="presets">
+              {#each byoyomiPresets as p}
+                <button
+                  class="preset-btn"
+                  class:active={byoMin === p.min && byoPeriods === p.periods && byoSec === p.sec}
+                  onclick={() => {
+                    byoMin = p.min;
+                    byoPeriods = p.periods;
+                    byoSec = p.sec;
+                  }}
+                >
+                  {p.label}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {:else if timeMode === 'realtime'}
+          <div class="time-panel">
+            <div class="sliders-grid">
+              <div class="slider-container">
+                <div class="label-row">
+                  <label for="fischer-min">Minutes per side</label>
+                  <span class="val-box">{fischerMin}</span>
+                </div>
+                <input
+                  id="fischer-min"
+                  class="range"
+                  type="range"
+                  min="1"
+                  max="60"
+                  value={fischerMin}
+                  oninput={(e) => (fischerMin = +e.target.value)}
                 />
               </div>
-              <div class="presets">
-                {#each CORR_PRESETS as days}
-                  <button
-                    class="preset-btn"
-                    class:active={corrDays === days}
-                    onclick={() => (corrDays = days)}
-                  >
-                    {corrLabel(days)}
-                  </button>
-                {/each}
+              <div class="slider-separator">+</div>
+              <div class="slider-container">
+                <div class="label-row">
+                  <span class="val-box">{fischerInc}s</span>
+                  <label for="fischer-inc">Increment (seconds)</label>
+                </div>
+                <input
+                  id="fischer-inc"
+                  class="range"
+                  type="range"
+                  min="0"
+                  max="60"
+                  value={fischerInc}
+                  oninput={(e) => (fischerInc = +e.target.value)}
+                />
               </div>
             </div>
-          {:else}
-            <div class="time-panel">
-              <p class="unlimited-label">No time limit</p>
+            <div class="presets">
+              {#each fischerPresets as p}
+                <button
+                  class="preset-btn"
+                  class:active={fischerMin === p.min && fischerInc === p.inc}
+                  onclick={() => {
+                    fischerMin = p.min;
+                    fischerInc = p.inc;
+                  }}
+                >
+                  {p.label}
+                </button>
+              {/each}
             </div>
-          {/if}
-        </div>
-      {/if}
+          </div>
+        {:else if timeMode === 'correspondence'}
+          <div class="time-panel">
+            <div class="slider-container">
+              <div class="label-row">
+                <label for="corr-days">Days per turn</label>
+                <span class="val-box">{corrLabel(corrDays)}</span>
+              </div>
+              <input
+                id="corr-days"
+                class="range"
+                type="range"
+                min="1"
+                max="14"
+                value={corrDays}
+                oninput={(e) => (corrDays = +e.target.value)}
+              />
+            </div>
+            <div class="presets">
+              {#each CORR_PRESETS as days}
+                <button
+                  class="preset-btn"
+                  class:active={corrDays === days}
+                  onclick={() => (corrDays = days)}
+                >
+                  {corrLabel(days)}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {:else}
+          <div class="time-panel">
+            <p class="unlimited-label">No time limit</p>
+          </div>
+        {/if}
+      </div>
 
       <!-- Color picker -->
       <div class="config-group">

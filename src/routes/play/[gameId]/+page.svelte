@@ -32,6 +32,8 @@
     toggleDeadStones,
     scoreVerdictShort
   } from '$lib/game/board';
+  import { initEngine, generateMove, hasModel, isReady, dispose } from '$lib/ai/engine.js';
+  import ModelManager from '$lib/ai/ModelManager.svelte';
 
   let { data } = $props();
   const username = $derived(data.user?.username ?? '');
@@ -50,6 +52,14 @@
   let blackOnline = $state(false);
   let whiteOnline = $state(false);
   let clockPausedAt = $state(null);
+
+  const isAI = $derived(data.game.gameType === 'ai');
+  const aiDifficulty = $derived(data.game.aiDifficulty ?? 5);
+  let aiThinking = $state(false);
+  let aiMoveHistory = $state([]);
+  let showModelPrompt = $state(false);
+  let engineError = $state(null);
+  let engineLoading = $state(false);
 
   function handleChatSend(text) {
     chatMessages.push({ user: displayName, text });
@@ -92,6 +102,7 @@
     !isSpectator &&
       gs.status === 'playing' &&
       gs.timedOutColor === null &&
+      !aiThinking &&
       (isLocal || gs.currentSign === mySign) &&
       (!isCorrGame || gs.corrState?.activeColor === myColor)
   );
@@ -135,7 +146,7 @@
   const oppClockData = $derived(gs.clockState?.[oppColor] ?? previewClockData);
 
   function activePlayerOnline() {
-    if (isLocal) return true;
+    if (isLocal || isAI) return true;
     const activeColor = gs.clockState?.activeColor;
     if (activeColor === 'black') return blackOnline;
     if (activeColor === 'white') return whiteOnline;
@@ -162,6 +173,113 @@
 
   const areaMap = $derived(gs.status === 'scoring' ? influence.areaMap(scoreBoard.signMap) : null);
   const score = $derived(areaMap ? computeScore(areaMap, gs.boardSize, KOMI) : null);
+
+  // --- AI move logic ---
+
+  const aiSign = $derived(isAI ? (mySign === 1 ? -1 : 1) : null);
+  const aiColor = $derived(isAI ? colorName(aiSign) : null);
+
+  function buildAiMoveHistory() {
+    const moves = data.game.moves ?? [];
+    return moves.map((m, i) => {
+      const color = i % 2 === 0 ? 1 : -1;
+      if (m.type === 'pass') return { color, x: -1, y: -1 };
+      return { color, x: m.x, y: m.y };
+    });
+  }
+
+  async function triggerAiMove() {
+    if (!isAI || !isReady() || aiThinking) return;
+    if (gs.status !== 'playing') return;
+    if (gs.currentSign !== aiSign) return;
+
+    aiThinking = true;
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    try {
+      const result = await generateMove(
+        gs.board.signMap,
+        aiSign,
+        KOMI,
+        aiMoveHistory,
+        aiDifficulty
+      );
+      if (gs.status !== 'playing') return;
+
+      if (result.move === 'pass') {
+        applyAiPass();
+      } else {
+        const moveResult = gs.board.analyzeMove(aiSign, [result.x, result.y]);
+        if (moveResult.overwrite || moveResult.suicide || moveResult.ko) {
+          applyAiPass();
+        } else {
+          gs.applyMove(result.x, result.y, aiSign);
+          gs.tickClock();
+          aiMoveHistory.push({ color: aiSign, x: result.x, y: result.y });
+          gameSocket.send({ type: 'move', x: result.x, y: result.y });
+        }
+      }
+    } catch (err) {
+      console.error('[AI] Move generation failed:', err);
+    }
+    aiThinking = false;
+  }
+
+  function applyAiPass() {
+    gs.consecutivePasses++;
+    gs.lastMove = null;
+    gs.animatedVertex = null;
+    gs.currentSign = gs.currentSign === 1 ? -1 : 1;
+    gs.recordPass();
+    gs.tickClock();
+    aiMoveHistory.push({ color: aiSign, x: -1, y: -1 });
+    gameSocket.send({ type: 'pass' });
+    if (gs.consecutivePasses >= 2) {
+      gs.status = 'scoring';
+      gs.deadStones = [];
+      gs.blackApproved = false;
+      gs.whiteApproved = false;
+    }
+  }
+
+  async function initAiEngine() {
+    if (isSpectator || !isAI) return;
+    engineLoading = true;
+    engineError = null;
+    const found = await hasModel();
+    if (!found) {
+      showModelPrompt = true;
+      engineLoading = false;
+      return;
+    }
+    try {
+      await initEngine();
+      engineLoading = false;
+      aiMoveHistory = buildAiMoveHistory();
+      if (gs.status === 'playing' && gs.currentSign === aiSign) {
+        triggerAiMove();
+      }
+    } catch (e) {
+      engineError = e.message;
+      engineLoading = false;
+    }
+  }
+
+  async function onModelSaved() {
+    showModelPrompt = false;
+    engineLoading = true;
+    engineError = null;
+    try {
+      await initEngine();
+      engineLoading = false;
+      aiMoveHistory = buildAiMoveHistory();
+      if (gs.status === 'playing' && gs.currentSign === aiSign) {
+        triggerAiMove();
+      }
+    } catch (err) {
+      engineError = err.message;
+      engineLoading = false;
+    }
+  }
 
   // --- Analysis mode ---
 
@@ -241,6 +359,10 @@
       if (!isLocal) {
         gameSocket.send({ type: 'move', x, y });
       }
+      if (isAI) {
+        aiMoveHistory.push({ color: movingSign, x, y });
+        triggerAiMove();
+      }
     } else if (gs.status === 'scoring') {
       gs.deadStones = toggleDeadStones(gs.board, gs.deadStones, x, y);
       gs.blackApproved = false;
@@ -253,6 +375,12 @@
     applyPass();
     if (!isLocal) {
       gameSocket.send({ type: 'pass' });
+    }
+    if (isAI) {
+      aiMoveHistory.push({ color: mySign, x: -1, y: -1 });
+      if (gs.consecutivePasses < 2) {
+        triggerAiMove();
+      }
     }
   }
 
@@ -308,6 +436,10 @@
   function approveScore() {
     if (myColor === 'black') gs.blackApproved = true;
     else gs.whiteApproved = true;
+    if (isAI) {
+      gs.blackApproved = true;
+      gs.whiteApproved = true;
+    }
     if (!isLocal) {
       gameSocket.send({ type: 'approve-score', color: myColor });
     }
@@ -333,7 +465,7 @@
   }
 
   const opponentOnline = $derived(
-    isLocal ? null : oppColor === 'black' ? blackOnline : whiteOnline
+    isLocal || isAI ? null : oppColor === 'black' ? blackOnline : whiteOnline
   );
 
   function resolvePlayerName(targetColor) {
@@ -482,6 +614,10 @@
       });
       gameSocket.join(currentGameId, data.viewerColor ?? null);
 
+      if (data.game.gameType === 'ai') {
+        initAiEngine();
+      }
+
       document.addEventListener('keydown', handleKeydown);
     });
 
@@ -489,9 +625,24 @@
       document.removeEventListener('keydown', handleKeydown);
       gameSocket.onMessage(null);
       gameSocket.leave();
+      if (data.game.gameType === 'ai') {
+        dispose();
+      }
     };
   });
 </script>
+
+{#if showModelPrompt}
+  <dialog class="ai-model-dialog" open>
+    <h2>AI Model Required</h2>
+    <p>To play against the AI, download a KataGo ONNX model.</p>
+    <ModelManager onSaved={onModelSaved} />
+  </dialog>
+{/if}
+
+{#if engineError}
+  <div class="ai-error">{engineError}</div>
+{/if}
 
 <div class="round">
   <aside class="round__side">
@@ -574,10 +725,12 @@
 
     <PlayerStrip
       color={topStripColor}
-      name={resolveStripName(topStripColor)}
+      name={isAI && aiThinking && topStripColor === aiColor
+        ? resolveStripName(topStripColor) + ' (thinking...)'
+        : resolveStripName(topStripColor)}
       captures={opponentCaptures}
       position="top"
-      online={isLocal ? null : topStripColor === 'black' ? blackOnline : whiteOnline}
+      online={isLocal || isAI ? null : topStripColor === 'black' ? blackOnline : whiteOnline}
     />
 
     <div class="rmoves">
@@ -591,6 +744,10 @@
       {:else}
         {#if gs.isViewingHistory}
           <div class="history-indicator">Move {gs.currentViewPly} of {gs.totalPly}</div>
+        {:else if isAI && engineLoading}
+          <div class="ai-status">Loading AI engine...</div>
+        {:else if isAI && aiThinking}
+          <div class="ai-status">AI is thinking...</div>
         {/if}
         <GameStatusMessage
           status={gs.status}
@@ -676,7 +833,7 @@
       name={resolveStripName(bottomStripColor)}
       captures={myCaptures}
       position="bottom"
-      online={isLocal ? null : bottomStripColor === 'black' ? blackOnline : whiteOnline}
+      online={isLocal || isAI ? null : bottomStripColor === 'black' ? blackOnline : whiteOnline}
     />
 
     {#if !isCorrGame}
