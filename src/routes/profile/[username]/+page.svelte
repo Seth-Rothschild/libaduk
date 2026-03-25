@@ -60,7 +60,7 @@
   function resultText(game) {
     if (game.status === 'playing') return 'Playing';
     if (game.status === 'waiting') return 'Waiting';
-    if (game.status === 'aborted') return 'Aborted';
+    if (game.status === 'cancelled') return 'Cancelled';
     if (game.status === 'abandoned') return 'Abandoned';
     if (!game.result) return '';
 

@@ -33,7 +33,7 @@
   ];
 
   const isGameOver = $derived(
-    gameStatus === 'gameover' || gameStatus === 'aborted' || gameStatus === 'abandoned'
+    gameStatus === 'gameover' || gameStatus === 'cancelled' || gameStatus === 'abandoned'
   );
   const activePresets = $derived(isGameOver ? END_PRESETS : START_PRESETS);
   const presetsVisible = $derived(

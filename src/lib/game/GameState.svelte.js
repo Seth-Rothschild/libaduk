@@ -167,8 +167,8 @@ export class GameState {
       this.winnerResult = game.result ?? null;
     } else if (game.status === 'abandoned') {
       this.status = 'abandoned';
-    } else if (game.status === 'aborted') {
-      this.status = 'aborted';
+    } else if (game.status === 'cancelled') {
+      this.status = 'cancelled';
     } else {
       this.status = game.status ?? 'waiting';
     }

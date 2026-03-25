@@ -271,8 +271,8 @@
     }
   }
 
-  function abort() {
-    gameSocket.send({ type: 'gameover', winner: null, result: 'Aborted' });
+  function cancel() {
+    gameSocket.send({ type: 'cancel' });
   }
 
   function serializeClockState() {
@@ -459,6 +459,9 @@
           gs.winner = msg.winner === 'black' ? 1 : -1;
           gs.winnerResult = msg.result ?? null;
         }
+        if (msg.type === 'cancel') {
+          gs.status = 'cancelled';
+        }
         if (msg.type === 'analysis-enter') {
           enterAnalysisFromTree(msg.tree);
         }
@@ -635,7 +638,7 @@
         onPass={pass}
         onResign={resign}
         onForceResign={forceResign}
-        onAbort={abort}
+        onCancel={cancel}
         onApproveScore={approveScore}
         onApproveBlack={() => {
           gs.blackApproved = true;

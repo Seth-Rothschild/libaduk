@@ -102,8 +102,8 @@
       {isSpectator ? 'A player has left the game.' : 'Your opponent has left the game.'}
     </div>
   </div>
-{:else if status === 'aborted'}
+{:else if status === 'cancelled'}
   <div class="message" data-icon={ICON_INFO}>
-    <div>This game was aborted.</div>
+    <div>This game was cancelled.</div>
   </div>
 {/if}

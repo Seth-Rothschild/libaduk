@@ -314,7 +314,7 @@
         opponentOnline={null}
         onPass={pass}
         onResign={resign}
-        onAbort={() => {}}
+        onCancel={() => {}}
         onApproveScore={approveScore}
         onApproveBlack={() => {
           gs.blackApproved = true;

@@ -224,6 +224,13 @@ export function attachWebSocketServer(httpServer) {
       if (msg.type === 'analysis-tree' && socket.gameId) {
         await db.updateGame(socket.gameId, { analysisTree: msg.tree });
       }
+      if (msg.type === 'cancel' && socket.gameId) {
+        const game = await db.getGame(socket.gameId);
+        if (game && game.status === 'waiting') {
+          await db.updateGame(socket.gameId, { status: 'cancelled', endedAt: Date.now() });
+          broadcast(socket.gameId, { type: 'cancel' });
+        }
+      }
       if (msg.type === 'gameover' && socket.gameId) {
         const game = await db.getGame(socket.gameId);
         if (game && game.status !== 'finished') {

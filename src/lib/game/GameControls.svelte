@@ -12,7 +12,7 @@
     onPass,
     onResign,
     onForceResign,
-    onAbort,
+    onCancel,
     onApproveScore,
     onApproveBlack,
     onApproveWhite,
@@ -22,7 +22,7 @@
 </script>
 
 {#if !isSpectator && status === 'waiting'}
-  <button class="button button-red" onclick={onAbort}>Cancel Game</button>
+  <button class="button button-red" onclick={onCancel}>Cancel Game</button>
 {:else if !isSpectator && status === 'playing'}
   <button class="button button-metal" onclick={onPass} disabled={!isMyTurn}>Pass</button>
   {#if opponentOnline === false}

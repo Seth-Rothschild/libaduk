@@ -72,7 +72,7 @@
   {#if status === 'abandoned'}
     <section class="status">{isSpectator ? 'A player left.' : 'Opponent left.'}</section>
   {/if}
-  {#if status === 'aborted'}
-    <section class="status">Game aborted.</section>
+  {#if status === 'cancelled'}
+    <section class="status">Game cancelled.</section>
   {/if}
 </div>

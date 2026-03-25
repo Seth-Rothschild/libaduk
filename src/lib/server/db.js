@@ -323,7 +323,7 @@ export async function getAllUserGames(username) {
       .collection('games')
       .find({
         $or: [{ blackName: username }, { whiteName: username }],
-        status: { $ne: 'aborted' }
+        status: { $ne: 'cancelled' }
       })
       .sort({ createdAt: -1 })
       .toArray();
