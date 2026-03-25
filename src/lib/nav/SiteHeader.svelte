@@ -54,4 +54,5 @@
   onClose={() => (navOpen = false)}
   onCreateGame={() => onOpenSetup('hook')}
   onChallengeAFriend={() => onOpenSetup('friend')}
+  onPlayLocally={() => onOpenSetup('ai')}
 />

@@ -1,5 +1,5 @@
 <script>
-  let { open, onClose, onCreateGame, onChallengeAFriend } = $props();
+  let { open, onClose, onCreateGame, onChallengeAFriend, onPlayLocally } = $props();
 
   const handleCreateGame = () => {
     onClose();
@@ -8,6 +8,10 @@
   const handleChallengeAFriend = () => {
     onClose();
     onChallengeAFriend();
+  };
+  const handlePlayLocally = () => {
+    onClose();
+    onPlayLocally();
   };
 </script>
 
@@ -24,6 +28,7 @@
     <div role="group">
       <button onclick={handleCreateGame}>Create a game</button>
       <button onclick={handleChallengeAFriend}>Challenge a friend</button>
+      <button onclick={handlePlayLocally}>Play against computer</button>
     </div>
   </section>
   <section>
