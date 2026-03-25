@@ -39,7 +39,7 @@
   const username = $derived(data.user?.username ?? '');
   const displayName = $derived(username || getGuestId());
 
-  const KOMI = 6.5;
+  const KOMI = $derived(data.game.komi ?? 6.5);
 
   const gameId = $derived(page.params.gameId);
   const isLocal = $derived(data.game.gameType === 'local');
@@ -291,12 +291,13 @@
   let savedAnalysisTree = data.game.analysisTree ?? null;
 
   function enterAnalysisFromTree(tree) {
-    analysis = new AnalysisState(gs.boardSize);
+    analysis = new AnalysisState(gs.boardSize, KOMI);
     analysis.loadTree(tree);
   }
 
   function enterAnalysisFromMoves() {
-    analysis = new AnalysisState(gs.boardSize);
+    analysis = new AnalysisState(gs.boardSize, KOMI);
+    const handicapStones = data.game.handicapStones ?? [];
     const moves = [];
     for (let i = 1; i < gs.lastMoveHistory.length; i++) {
       const vertex = gs.lastMoveHistory[i];
@@ -306,7 +307,7 @@
         moves.push({ type: 'pass' });
       }
     }
-    analysis.loadMoves(moves);
+    analysis.loadMoves(moves, handicapStones);
   }
 
   function enterAnalysis() {

@@ -9,6 +9,13 @@
   let color = $state('random');
   let loading = $state(false);
   let aiDifficulty = $state(4);
+  let handicap = $state(0);
+  let komi = $state(6.5);
+
+  function onHandicapChange(stones) {
+    handicap = stones;
+    komi = stones > 0 ? 0.5 : 6.5;
+  }
 
   const isAi = $derived(gameType === 'ai');
 
@@ -138,7 +145,7 @@
     loading = true;
     try {
       const timeControl = buildTimeControl();
-      const body = { size: boardSize, timeControl, color, gameType, creatorName };
+      const body = { size: boardSize, timeControl, color, gameType, creatorName, komi, handicap };
       if (isAi) {
         body.aiDifficulty = aiDifficulty;
       }
@@ -193,27 +200,6 @@
           {/each}
         </div>
       </div>
-
-      {#if isAi}
-        <div class="config-group">
-          <div class="label" style="text-align: center;">Strength</div>
-          <group class="radio ai-strength">
-            {#each [1, 2, 3, 4, 5, 6, 7, 8] as level}
-              <div>
-                <input
-                  id="sf_level_{level}"
-                  name="level"
-                  type="radio"
-                  value={level}
-                  checked={aiDifficulty === level}
-                  onchange={() => (aiDifficulty = level)}
-                />
-                <label for="sf_level_{level}">{level}</label>
-              </div>
-            {/each}
-          </group>
-        </div>
-      {/if}
 
       <!-- Time control -->
       <div class="config-group time-control-tabs">
@@ -382,6 +368,45 @@
             <p class="unlimited-label">No time limit</p>
           </div>
         {/if}
+      </div>
+      {#if isAi}
+        <div class="config-group">
+          <div class="label" style="text-align: center;">Strength</div>
+          <group class="radio ai-strength">
+            {#each [1, 2, 3, 4, 5, 6, 7, 8] as level}
+              <div>
+                <input
+                  id="sf_level_{level}"
+                  name="level"
+                  type="radio"
+                  value={level}
+                  checked={aiDifficulty === level}
+                  onchange={() => (aiDifficulty = level)}
+                />
+                <label for="sf_level_{level}">{level}</label>
+              </div>
+            {/each}
+          </group>
+        </div>
+      {/if}
+      <!-- Handicap -->
+      <div class="config-group">
+        <div class="label" style="text-align: center;">Handicap</div>
+        <group class="radio ai-strength">
+          {#each [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as stones}
+            <div>
+              <input
+                id="hc_{stones}"
+                name="handicap"
+                type="radio"
+                value={stones}
+                checked={handicap === stones}
+                onchange={() => onHandicapChange(stones)}
+              />
+              <label for="hc_{stones}">{stones}</label>
+            </div>
+          {/each}
+        </group>
       </div>
 
       <!-- Color picker -->

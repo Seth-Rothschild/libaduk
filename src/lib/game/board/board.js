@@ -62,9 +62,9 @@ export function applyMoveWithShifts(board, shiftMap, sign, x, y) {
   return { board: newBoard, shiftMap: newShiftMap };
 }
 
-export function replayMoves(moves, size) {
-  let board = GoBoardLib.fromDimensions(size);
-  let sign = 1;
+export function replayMoves(moves, size, initialBoard = null) {
+  let board = initialBoard ?? GoBoardLib.fromDimensions(size);
+  let sign = initialBoard ? -1 : 1;
   for (const move of moves) {
     if (move.type === 'move') {
       try {
@@ -80,13 +80,13 @@ export function replayMoves(moves, size) {
   return board;
 }
 
-export function replayMovesWithHistory(moves, size) {
-  let board = GoBoardLib.fromDimensions(size);
+export function replayMovesWithHistory(moves, size, initialBoard = null) {
+  let board = initialBoard ?? GoBoardLib.fromDimensions(size);
   const boards = [board];
   const lastMoves = [null];
   let shiftMap = emptyShiftMap(size);
   const shiftMaps = [shiftMap];
-  let sign = 1;
+  let sign = initialBoard ? -1 : 1;
 
   for (const move of moves) {
     if (move.type === 'move') {

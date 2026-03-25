@@ -105,7 +105,8 @@ function deserializeNode(data, parentBoard, signToPlay, parent, size) {
   const setup = data.setup ?? [];
   board = applySetup(board, setup);
 
-  const nextSign = signToPlay === 1 ? -1 : 1;
+  const turnAdvanced = !!lastMove || parent !== null;
+  const nextSign = turnAdvanced ? (signToPlay === 1 ? -1 : 1) : signToPlay;
   const markers = data.markers ?? emptyMarkerMap(size);
   const moveName = lastMove ? getAnalysisMoveName(parentBoard, signToPlay, lastMove) : null;
   const comment = data.comment ?? '';
@@ -156,7 +157,9 @@ export function serializeTree(root) {
 
 export function deserializeTree(data, size) {
   const emptyBoard = createBoard(size);
-  return deserializeNode(data, emptyBoard, 1, null, size);
+  const rootHasHandicap = (data.setup ?? []).some((s) => s.sign === 1);
+  const initialSign = rootHasHandicap ? -1 : 1;
+  return deserializeNode(data, emptyBoard, initialSign, null, size);
 }
 
 export class AnalysisState {
@@ -279,9 +282,24 @@ export class AnalysisState {
     return this.#root;
   }
 
-  loadMoves(moves) {
+  loadMoves(moves, handicapStones = []) {
     const size = this.#size;
-    const root = makeAnalysisNode(createBoard(size), null, emptyMarkerMap(size), 1, null);
+    const hasHandicap = handicapStones.length >= 2;
+    const stoneSetup = handicapStones.map(({ x, y }) => ({ x, y, sign: 1 }));
+    const initialBoard = hasHandicap
+      ? applySetup(createBoard(size), stoneSetup)
+      : createBoard(size);
+    const initialSign = hasHandicap ? -1 : 1;
+    const root = makeAnalysisNode(
+      initialBoard,
+      null,
+      emptyMarkerMap(size),
+      initialSign,
+      null,
+      null,
+      '',
+      stoneSetup
+    );
     let node = root;
     for (const move of moves) {
       const nextSign = node.signToPlay === 1 ? -1 : 1;

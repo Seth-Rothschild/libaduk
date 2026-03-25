@@ -3,7 +3,8 @@ export {
   formatVertex,
   clampBoardSize,
   emptyMarkerMap,
-  emptyShiftMap
+  emptyShiftMap,
+  handicapPoints
 } from './helpers.js';
 
 export {

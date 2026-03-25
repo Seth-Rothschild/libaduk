@@ -117,6 +117,8 @@ export async function createGame({
   creatorColor = 'black',
   timeControl = { type: 'none' },
   komi = 6.5,
+  handicap = 0,
+  handicapStones = [],
   gameType = 'hook',
   status = 'waiting',
   aiDifficulty = null
@@ -133,6 +135,8 @@ export async function createGame({
       status,
       timeControl,
       komi,
+      handicap,
+      handicapStones,
       aiDifficulty,
       createdAt: Date.now(),
       endedAt: null,

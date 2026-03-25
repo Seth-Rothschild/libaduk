@@ -35,10 +35,12 @@
   const defaultSize = gameData ? gameData.size : Number(page.url.searchParams.get('size') ?? 19);
   const SIZE = clampBoardSize(defaultSize);
 
-  const analysis = new AnalysisState(SIZE);
+  const komi = gameData?.komi ?? 6.5;
+  const analysis = new AnalysisState(SIZE, komi);
 
-  if (gameData?.moves.length > 0) {
-    analysis.loadMoves(gameData.moves);
+  const handicapStones = gameData?.handicapStones ?? [];
+  if (gameData && (gameData.moves.length > 0 || handicapStones.length > 0)) {
+    analysis.loadMoves(gameData.moves, handicapStones);
   }
 
   let blackName = $state(gameData?.blackName ?? 'Black');

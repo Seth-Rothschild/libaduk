@@ -1,5 +1,6 @@
 import {
   createBoard,
+  applySetup,
   applyMoveWithShifts,
   replayMovesWithHistory,
   emptyShiftMap
@@ -96,17 +97,29 @@ export class GameState {
     else if (viewerColor === 'white') this.mySign = -1;
     else this.mySign = null;
 
+    const stones = game.handicapStones ?? [];
+    const hasHandicap = stones.length > 0;
+    const stoneSetup = stones.map(({ x, y }) => ({ x, y, sign: 1 }));
+    const initialBoard = hasHandicap ? applySetup(createBoard(this.boardSize), stoneSetup) : null;
+
     if (game.moves && game.moves.length > 0) {
-      const replay = replayMovesWithHistory(game.moves, this.boardSize);
+      const replay = replayMovesWithHistory(game.moves, this.boardSize, initialBoard);
       this.board = replay.board;
       this.shiftMap = replay.shiftMap;
       this.boardHistory = replay.boards;
       this.lastMoveHistory = replay.lastMoves;
       this.shiftMapHistory = replay.shiftMaps;
       this.consecutivePasses = 0;
-      this.currentSign = game.moves.length % 2 === 0 ? 1 : -1;
+      const whiteFirst = hasHandicap;
+      this.currentSign = game.moves.length % 2 === 0 ? (whiteFirst ? -1 : 1) : whiteFirst ? 1 : -1;
       const lastMoveEntry = game.moves.at(-1);
       if (lastMoveEntry?.type === 'move') this.lastMove = [lastMoveEntry.x, lastMoveEntry.y];
+    } else if (hasHandicap) {
+      this.board = initialBoard;
+      this.boardHistory = [initialBoard];
+      this.lastMoveHistory = [null];
+      this.shiftMapHistory = [emptyShiftMap(this.boardSize)];
+      this.currentSign = -1;
     } else {
       this.board = createBoard(this.boardSize);
       this.boardHistory = [this.board];
@@ -135,7 +148,7 @@ export class GameState {
         periodMs
       };
       const moves = game.moves ?? [];
-      const activeColor = moves.length % 2 === 0 ? 'black' : 'white';
+      const activeColor = moves.length % 2 === (hasHandicap ? 1 : 0) ? 'black' : 'white';
       this.clockState = {
         black: { ...clockEntry },
         white: { ...clockEntry },

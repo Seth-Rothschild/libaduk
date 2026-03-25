@@ -1,5 +1,6 @@
 import { WebSocketServer } from 'ws';
 import * as db from './db.js';
+import { handicapPoints } from '../game/board/helpers.js';
 
 if (!global.__lobbyClients) global.__lobbyClients = new Set();
 const lobbyClients = global.__lobbyClients;
@@ -78,7 +79,10 @@ export async function createRoom(
     local,
     gameType,
     status: isAi ? 'playing' : 'waiting',
-    aiDifficulty: extra.aiDifficulty ?? null
+    aiDifficulty: extra.aiDifficulty ?? null,
+    komi: extra.komi ?? 6.5,
+    handicap: extra.handicap ?? 0,
+    handicapStones: handicapPoints(size, extra.handicap ?? 0)
   });
 
   return { id };

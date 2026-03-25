@@ -11,6 +11,10 @@ export async function POST({ request, locals }) {
     : 'hook';
   const creatorName = locals.user?.username ?? body.creatorName ?? null;
   const aiDifficulty = gameType === 'ai' ? Number(body.aiDifficulty) || 5 : null;
+  const handicap =
+    Number.isInteger(body.handicap) && body.handicap >= 0 && body.handicap <= 9 ? body.handicap : 0;
+  const komi =
+    typeof body.komi === 'number' && isFinite(body.komi) ? body.komi : handicap > 0 ? 0.5 : 6.5;
 
   if (gameType === 'hook') {
     const match = await findMatchingGame(size, timeControl, creatorName);
@@ -22,6 +26,10 @@ export async function POST({ request, locals }) {
     }
   }
 
-  const room = await createRoom(size, timeControl, color, gameType, creatorName, { aiDifficulty });
+  const room = await createRoom(size, timeControl, color, gameType, creatorName, {
+    aiDifficulty,
+    komi,
+    handicap
+  });
   return json({ gameId: room.id });
 }
