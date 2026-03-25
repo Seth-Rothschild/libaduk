@@ -243,13 +243,19 @@ export function attachWebSocketServer(httpServer) {
         }
       }
     });
-    socket.on('close', () => {
+    socket.on('close', async () => {
       lobbyClients.delete(socket);
       const gameId = socket.gameId;
       const color = socket.playerColor;
       removeFromGame(socket);
       if (gameId && color) {
         broadcast(gameId, { type: 'presence', color, online: false });
+      }
+      if (gameId && !gameClients.has(gameId)) {
+        const game = await db.getGame(gameId);
+        if (game && game.status === 'waiting' && game.gameType === 'hook') {
+          await db.updateGame(gameId, { status: 'cancelled', endedAt: Date.now() });
+        }
       }
     });
   });
