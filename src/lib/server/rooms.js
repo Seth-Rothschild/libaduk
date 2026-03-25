@@ -114,8 +114,9 @@ export async function getUserGames(username) {
 }
 
 export function getLobbyStats() {
+  const { users, guests } = getOnlinePlayers();
   return {
-    playersOnline: lobbyClients.size,
+    playersOnline: users.length + guests.length,
     gamesInPlay: 0
   };
 }
