@@ -25,8 +25,7 @@ If _you_ are interested in deploying this or forking it to suit some other need,
 The features I'm most interested in right now are:
 
 - **Puzzles** - Lichess puzzles and puzzle UI are one of the highlights of the site. Having a free and open source "Puzzle of the day" with a nice UI would be a win for the go community.
-- **Clientside AI** - It would be really nice to be able to play a quick game. These dependencies right now seem a bit heavy and complex but might be worth the effort.
-- **More Go Basics** - This code should be mostly functional for casual play. I just wanted a place where I could play online and review the code afterwards with humans. However, there are some basic features (e.g. handicaps, visible rankings) that are not yet implemented.
+- **More Go Basics** - This code should be mostly functional for casual play. I just wanted a place where I could play online and review the code afterwards with humans. However, there are some basic features (e.g. visible rankings) that are not yet implemented.
 
 The following are not currently planned:
 
