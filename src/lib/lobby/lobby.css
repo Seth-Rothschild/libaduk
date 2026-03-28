@@ -15,7 +15,7 @@
 .lobby {
   grid-area: main;
   display: grid;
-  grid-template-areas: 'app' 'table' 'side' 'about';
+  grid-template-areas: 'app' 'table' 'side' 'puzzle' 'about';
   gap: var(---block-gap, 10px);
 }
 
@@ -23,9 +23,10 @@
   .lobby {
     grid-template-columns: repeat(2, 1fr);
     grid-template-areas:
-      'app   app'
-      'side  table'
-      'about about';
+      'app    app'
+      'side   table'
+      'side   puzzle'
+      'about  about';
   }
 }
 
@@ -33,36 +34,69 @@
   .lobby {
     grid-template-columns: 34% 1fr;
     grid-template-areas:
-      'table app'
-      'side  app'
-      'about about';
+      'table  app'
+      'puzzle app'
+      'side   app'
+      'about  about';
   }
 }
 
 @media (min-width: 1280px) {
   .lobby {
     grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: 1fr auto auto;
     grid-template-areas:
-      'side  app   app   table'
-      'about about about about';
-  }
-
-  .lobby__table {
-    align-self: center;
+      'side  app    app   table'
+      'side  app    app   puzzle'
+      'about about  about about';
   }
 }
 
 .lobby__side {
   grid-area: side;
+  display: flex;
+  flex-direction: column;
+  gap: var(---block-gap, 10px);
 }
 .lobby__app {
   grid-area: app;
 }
 .lobby__table {
   grid-area: table;
+  display: flex;
+  flex-direction: column;
 }
 .lobby__about {
   grid-area: about;
+}
+
+/* -------------------------------------------------------------
+   .lobby__puzzle — daily puzzle miniboard link
+   ------------------------------------------------------------- */
+
+.lobby__puzzle {
+  grid-area: puzzle;
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: var(--c-font);
+  overflow: hidden;
+}
+
+.lobby__puzzle .text {
+  padding: 0.15em 0.3em;
+  color: var(--c-font-dim);
+  font-size: 0.9em;
+}
+
+.lobby__puzzle .text:first-child {
+  font-weight: bold;
+  color: var(--c-font);
+}
+
+.lobby__puzzle__board {
+  aspect-ratio: 1;
+  overflow: hidden;
 }
 
 /* -------------------------------------------------------------

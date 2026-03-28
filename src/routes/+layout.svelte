@@ -38,7 +38,9 @@
   });
 
   const isGamePage = $derived(
-    $page.route.id?.startsWith('/play/') || $page.route.id?.startsWith('/analysis')
+    $page.route.id?.startsWith('/play/') ||
+      $page.route.id?.startsWith('/analysis') ||
+      $page.route.id?.startsWith('/puzzle')
   );
 
   const openSetup = async (type) => {

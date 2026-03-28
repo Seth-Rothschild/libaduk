@@ -8,6 +8,7 @@
   import HookTable from './HookTable.svelte';
   import ActiveGamesPanel from './ActiveGamesPanel.svelte';
   import StartButtons from './StartButtons.svelte';
+  import LobbyPuzzle from './LobbyPuzzle.svelte';
   import { LIVE_POOLS } from './pools.js';
   import { pingState } from '$lib/state/ping.svelte.js';
   import { getGuestId } from '$lib/state/guestId.js';
@@ -120,7 +121,9 @@
     </div>
   </div>
 
-  <ActiveGamesPanel games={liveGames} />
+  <div class="lobby__side">
+    <ActiveGamesPanel games={liveGames} />
+  </div>
 
   <div class="lobby__table">
     <StartButtons
@@ -131,6 +134,10 @@
       onPlayLocally={() => (setupModal = 'ai')}
     />
   </div>
+
+  {#if data.dailyPuzzle}
+    <LobbyPuzzle puzzle={data.dailyPuzzle} />
+  {/if}
 
   {#if setupModal}
     <GameSetupModal

@@ -5,6 +5,14 @@ export function createBoard(size) {
   return GoBoardLib.fromDimensions(size);
 }
 
+export function placeStones(board, stones) {
+  const signMap = board.signMap.map((row) => [...row]);
+  for (const stone of stones) {
+    signMap[stone.y][stone.x] = stone.sign;
+  }
+  return new GoBoardLib(signMap);
+}
+
 function readjustShifts(shiftMap, x, y) {
   const direction = shiftMap[y]?.[x];
   if (!direction) return;

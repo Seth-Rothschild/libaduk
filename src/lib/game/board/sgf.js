@@ -165,7 +165,8 @@ function parseTokens(tokens) {
             values.push(tokens[pos].value);
             pos++;
           }
-          node.props[propName] = values;
+          const existing = node.props[propName];
+          node.props[propName] = existing ? existing.concat(values) : values;
         }
         nodes.push(node);
       } else if (tokens[pos].type === '(') {
@@ -217,6 +218,19 @@ export function parseSgf(sgfText) {
   const playerWhite = root.props.PW ? root.props.PW[0] : null;
 
   return { root, size, playerBlack, playerWhite };
+}
+
+export function sgfSetupStones(sgfNode) {
+  const stones = [];
+  for (const coord of sgfNode.props.AB || []) {
+    const [x, y] = sgfToVertex(coord);
+    stones.push({ sign: 1, x, y });
+  }
+  for (const coord of sgfNode.props.AW || []) {
+    const [x, y] = sgfToVertex(coord);
+    stones.push({ sign: -1, x, y });
+  }
+  return stones;
 }
 
 export function sgfNodeToMove(sgfNode) {

@@ -19,6 +19,7 @@ export async function connectDb() {
     await db.collection('games').createIndex({ whiteName: 1 });
     await db.collection('credentials').createIndex({ username: 1 });
     await db.collection('credentials').createIndex({ id: 1 });
+    await db.collection('puzzles').createIndex({ index: 1 }, { unique: true });
     console.log(`Connected to MongoDB at ${MONGO_URL}/${DB_NAME}`);
     return db;
   })();
@@ -482,6 +483,118 @@ export async function updateCredentialCounter(username, credentialId, newCounter
       .updateOne({ username: key, id: credentialId }, { $set: { counter: newCounter } });
   } catch (err) {
     console.error('[db] updateCredentialCounter failed:', err.message);
+    throw err;
+  }
+}
+
+// --- Puzzles ---
+
+function dailyPuzzleIndex(totalPuzzles) {
+  const today = new Date();
+  const year = today.getUTCFullYear();
+  const month = today.getUTCMonth();
+  const day = today.getUTCDate();
+  const daysSinceEpoch = Math.floor(Date.UTC(year, month, day) / 86400000);
+  return daysSinceEpoch % totalPuzzles;
+}
+
+export async function getPuzzle(id) {
+  try {
+    const d = await getDb();
+    const doc = await d.collection('puzzles').findOne({ _id: id });
+    if (!doc) return null;
+    const votesUp = doc.votesUp ?? 0;
+    const votesDown = doc.votesDown ?? 0;
+    const totalVotes = votesUp + votesDown;
+    const likes = votesUp;
+    return {
+      id: doc._id,
+      sgf: doc.sgf,
+      size: doc.size,
+      rating: doc.rating,
+      plays: doc.plays,
+      likes,
+      totalVotes
+    };
+  } catch (err) {
+    console.error('[db] getPuzzle failed:', err.message);
+    throw err;
+  }
+}
+
+export async function getDailyPuzzle() {
+  try {
+    const d = await getDb();
+    const total = await d.collection('puzzles').countDocuments();
+    if (total === 0) return null;
+    const index = dailyPuzzleIndex(total);
+    const doc = await d.collection('puzzles').findOne({ index });
+    if (!doc) return null;
+    return { id: doc._id, sgf: doc.sgf, size: doc.size, rating: doc.rating, plays: doc.plays };
+  } catch (err) {
+    console.error('[db] getDailyPuzzle failed:', err.message);
+    throw err;
+  }
+}
+
+export async function getRandomPuzzle() {
+  try {
+    const d = await getDb();
+    const docs = await d
+      .collection('puzzles')
+      .aggregate([{ $sample: { size: 1 } }])
+      .toArray();
+    if (docs.length === 0) return null;
+    const doc = docs[0];
+    return { id: doc._id, sgf: doc.sgf, size: doc.size, rating: doc.rating, plays: doc.plays };
+  } catch (err) {
+    console.error('[db] getRandomPuzzle failed:', err.message);
+    throw err;
+  }
+}
+
+export async function incrementPuzzlePlays(puzzleId) {
+  try {
+    const d = await getDb();
+    await d.collection('puzzles').updateOne({ _id: puzzleId }, { $inc: { plays: 1 } });
+  } catch (err) {
+    console.error('[db] incrementPuzzlePlays failed:', err.message);
+    throw err;
+  }
+}
+
+export async function recordPuzzleVote(puzzleId, vote) {
+  try {
+    const field = vote === 'up' ? 'votesUp' : 'votesDown';
+    const d = await getDb();
+    await d.collection('puzzles').updateOne({ _id: puzzleId }, { $inc: { [field]: 1 } });
+  } catch (err) {
+    console.error('[db] recordPuzzleVote failed:', err.message);
+    throw err;
+  }
+}
+
+export async function markPuzzleCompleted(username, puzzleId) {
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    await d
+      .collection('puzzleCompletions')
+      .updateOne({ _id: key }, { $addToSet: { completed: puzzleId } }, { upsert: true });
+  } catch (err) {
+    console.error('[db] markPuzzleCompleted failed:', err.message);
+    throw err;
+  }
+}
+
+export async function getUserPuzzleCompletions(username) {
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    const doc = await d.collection('puzzleCompletions').findOne({ _id: key });
+    return doc?.completed ?? [];
+  } catch (err) {
+    console.error('[db] getUserPuzzleCompletions failed:', err.message);
     throw err;
   }
 }

@@ -1194,3 +1194,783 @@ html.light .color-icon.white::before {
   font-size: 0.85em;
   padding: 0.3em 0;
 }
+
+/* =============================================================
+   Puzzle page — layout, side, tools, feedback, session, controls
+   Ported from Lichess puzzle UI (lila/ui/puzzle/css/)
+   ============================================================= */
+
+/* -------------------------------------------------------------
+   .puzzle — page grid
+   col1 (default): stacked — board, controls, tools, session, side
+   col2 (≥500px):  board+session left, tools+controls right
+   col3 (≥800px):  side | board+session | tools+controls
+   ------------------------------------------------------------- */
+
+.puzzle {
+  grid-area: main;
+  display: grid;
+  row-gap: var(---block-gap, 10px);
+  grid-template-columns: minmax(0, 1fr) var(---block-gap, 10px) minmax(200px, 400px);
+  max-width: 1450px;
+  margin: 0 auto;
+  grid-template-rows: fit-content(0);
+  grid-template-areas:
+    'board   . tools'
+    'session . controls'
+    'side    side side';
+  height: calc(100vh - var(---site-header-height, 40px) - 3rem);
+}
+
+.puzzle .puzzle__moves {
+  display: block;
+}
+
+@media (min-width: 1250px) {
+  .puzzle {
+    grid-template-columns:
+      minmax(200px, 280px) var(---block-gap, 10px)
+      minmax(0, 1fr) var(---block-gap, 10px) minmax(200px, 400px);
+    grid-template-areas:
+      'side . board   . tools'
+      'side . session . controls'
+      'side . .       . .';
+  }
+}
+
+/* Grid area assignments */
+
+.puzzle__side {
+  grid-area: side;
+}
+
+.puzzle__board {
+  grid-area: board;
+}
+
+.puzzle__tools {
+  grid-area: tools;
+}
+
+.puzzle__controls {
+  grid-area: controls;
+}
+
+.puzzle__session {
+  grid-area: session;
+  align-self: start;
+}
+
+/* -------------------------------------------------------------
+   .puzzle__board — board container
+   ------------------------------------------------------------- */
+
+.puzzle__board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  aspect-ratio: 1;
+  max-height: calc(100vh - var(---site-header-height, 40px) - 3rem);
+}
+
+/* -------------------------------------------------------------
+   .puzzle__tools — right column (move list + feedback)
+   ------------------------------------------------------------- */
+
+.puzzle__tools {
+  display: flex;
+  flex-direction: column;
+  background: var(--c-bg-box);
+  border-radius: 6px;
+  overflow: hidden;
+  max-width: 400px;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.15),
+    0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Move list area inside tools */
+
+.puzzle__moves {
+  flex: 2 1 auto;
+  overflow: auto;
+  border-bottom: 1px solid var(--c-border);
+  display: none;
+  min-height: 3em;
+}
+
+/* -------------------------------------------------------------
+   .puzzle__controls — jump buttons (first/prev/next/last)
+   ------------------------------------------------------------- */
+
+.puzzle__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.5rem;
+  background: var(--c-bg-zebra);
+  border-radius: 6px;
+}
+
+.puzzle__controls .jumps {
+  display: flex;
+  flex: 1 1 auto;
+}
+
+.puzzle__controls .fbt {
+  flex: 1 1 25%;
+  text-align: center;
+  font-size: 0.9em;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--c-font);
+  padding: 0;
+  height: 2.5rem;
+}
+
+.puzzle__controls .fbt:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.puzzle__controls .fbt:not(:disabled):hover {
+  background: var(--c-bg-low);
+}
+
+.puzzle__controls .fbt.glowing {
+  color: var(--c-font-clear, var(--c-font));
+}
+
+/* -------------------------------------------------------------
+   .puzzle__session — row of success/failure dots
+   ------------------------------------------------------------- */
+
+.puzzle__session {
+  display: flex;
+  flex-flow: row wrap-reverse;
+  margin-top: -0.4em;
+}
+
+.puzzle__session a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 2.3em;
+  height: 1.6em;
+  margin: 0.4em 0.5em 0 0;
+  color: #fff;
+  opacity: 0.85;
+  font-size: 0.85em;
+  font-weight: bold;
+  border-radius: 3px;
+  text-decoration: none;
+}
+
+.puzzle__session a.result-true {
+  background: var(--c-good);
+}
+
+.puzzle__session a.result-false {
+  background: var(--c-bad);
+}
+
+.puzzle__session a.result-empty::before {
+  content: '✓';
+  font-size: 0.9em;
+}
+
+.puzzle__session a.result-false.result-empty::before {
+  content: '✗';
+}
+
+.puzzle__session a.current {
+  background: var(--c-brag, var(--c-accent));
+}
+
+.puzzle__session a.session-new {
+  background: var(--c-link, var(--c-primary));
+}
+
+.puzzle__session a:hover {
+  opacity: 1;
+}
+
+/* -------------------------------------------------------------
+   .puzzle__side — left sidebar cards
+   ------------------------------------------------------------- */
+
+.puzzle__side {
+  display: grid;
+  gap: var(---block-gap, 10px);
+  grid-template-areas: 'user' 'theme' 'metas' 'config';
+}
+
+@media (max-width: 1249px) {
+  .puzzle__side {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'metas  user'
+      'metas  theme'
+      'config theme';
+    grid-template-rows: min-content min-content min-content;
+  }
+}
+
+@media (min-width: 1250px) {
+  .puzzle__side {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'metas' 'user' 'theme' 'config';
+    grid-template-rows: min-content min-content min-content min-content;
+    align-content: start;
+    min-width: 200px;
+    max-width: 280px;
+  }
+}
+
+/* Puzzle metadata box (ID, rating, play count, game source) */
+
+.puzzle__side__metas {
+  grid-area: metas;
+  background: var(--c-bg-box);
+  border-radius: 6px;
+  padding: 2vmin;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.15),
+    0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.puzzle__side__metas p {
+  margin: 0;
+}
+
+.puzzle__side__metas .infos {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.puzzle__side__metas .infos.puzzle {
+  padding-bottom: 1.2vh;
+  border-bottom: 1px solid var(--c-border);
+  margin-bottom: 1.2vh;
+  max-height: 5rem;
+}
+
+.puzzle__side__metas .infos__angle-img {
+  height: 3.5rem;
+  width: 3.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.puzzle__side__metas .infos a {
+  color: var(--c-link, var(--c-primary));
+}
+
+.puzzle__side__metas .players {
+  margin-top: 0.3rem;
+  font-size: 90%;
+}
+
+.puzzle__id {
+  font-size: 0.85em;
+  color: var(--c-font-dim);
+  margin: 0;
+}
+
+/* User rating box */
+
+.puzzle__side__user {
+  grid-area: user;
+  background: var(--c-bg-box);
+  border-radius: 6px;
+  padding: 2vmin;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.15),
+    0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.puzzle__side__user__rating strong {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.5em;
+}
+
+.puzzle__side__user .rp {
+  font-size: 1.3rem;
+  margin-inline-start: 1ch;
+}
+
+.puzzle__side__user .rp.up {
+  color: var(--c-good);
+}
+
+.puzzle__side__user .rp.down {
+  color: var(--c-bad);
+}
+
+/* Theme box */
+
+.puzzle__side__theme {
+  grid-area: theme;
+  background: var(--c-bg-box);
+  border-radius: 6px;
+  padding: 2vmin;
+  font-size: 0.9em;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.15),
+    0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.puzzle__side__theme--daily {
+  outline: 3px solid var(--c-primary);
+}
+
+.puzzle__side__theme--daily a {
+  margin: 0;
+  text-align: center;
+}
+
+.puzzle__side__theme__back {
+  display: block;
+  font-size: 1.5em;
+  margin-bottom: 0.8rem;
+  text-decoration: none;
+  color: var(--c-font);
+}
+
+.puzzle__side__theme__back:hover {
+  color: var(--c-link, var(--c-primary));
+}
+
+/* Config box */
+
+.puzzle__side__config {
+  grid-area: config;
+  align-self: start;
+  background: var(--c-bg-box);
+  border-radius: 6px;
+  padding: 2vmin;
+  overflow: hidden;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.15),
+    0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.puzzle__side__config label {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  font-size: 0.9em;
+  color: var(--c-font-dim);
+  cursor: pointer;
+  user-select: none;
+  padding: 0.3em 0;
+}
+
+.puzzle__side__config label span:first-child {
+  flex: 1;
+}
+
+/* -------------------------------------------------------------
+   .puzzle__feedback — feedback panel inside tools column
+   ------------------------------------------------------------- */
+
+.puzzle__feedback {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  background: var(--c-bg-zebra);
+  justify-content: center;
+}
+
+.puzzle__feedback:not(.after) {
+  padding: 2em;
+}
+
+.puzzle__feedback .player {
+  display: flex;
+  align-items: center;
+}
+
+.puzzle__feedback .no-square {
+  flex: 0 0 64px;
+  height: 64px;
+  margin-inline-end: 10px;
+}
+
+.puzzle__feedback .puzzle__icon {
+  flex: 0 0 64px;
+  height: 64px;
+  margin-inline-end: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.puzzle__feedback .puzzle__icon.icon {
+  font-size: 50px;
+  line-height: 64px;
+  text-align: center;
+}
+
+.puzzle__feedback.good .icon {
+  color: var(--c-good);
+}
+
+.puzzle__feedback.fail .icon {
+  color: var(--c-bad);
+}
+
+.puzzle__feedback .instruction > * {
+  display: block;
+}
+
+.puzzle__feedback .instruction strong {
+  font-size: 1.5em;
+}
+
+.puzzle__feedback .instruction em {
+  color: var(--c-font-dim);
+  margin-top: 0.3em;
+  font-style: normal;
+}
+
+/* View solution / get hint links */
+
+.puzzle__feedback .view_solution {
+  margin-top: 1.5em;
+  display: flex;
+  justify-content: center;
+  gap: 0.6em;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.puzzle__feedback .view_solution.show {
+  visibility: visible;
+  opacity: 0.8;
+  transition: opacity 1.5s ease;
+}
+
+.puzzle__feedback .view_solution button {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--c-link, var(--c-primary));
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9em;
+  padding: 0.4em 1em;
+}
+
+.puzzle__feedback .view_solution button:hover {
+  border-color: var(--c-border);
+  color: var(--c-link, var(--c-primary));
+}
+
+/* Stone icon (used in feedback and side panel) */
+
+.go-stone-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.go-stone-icon-black {
+  background-image: url('/images/go/stone_1.svg');
+}
+
+.go-stone-icon-white {
+  background-image: url('/images/go/stone_-1.svg');
+}
+
+/* After / success state */
+
+.puzzle__feedback.after {
+  flex-flow: column;
+  align-items: stretch;
+}
+
+.puzzle__feedback.after .complete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 50%;
+  font-size: 1.3em;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+
+.puzzle__feedback.after .puzzle__more {
+  display: flex;
+  border-top: 1px solid var(--c-border);
+  padding: 1em 2em;
+  justify-content: space-between;
+}
+
+.puzzle__feedback.after .puzzle__more a {
+  color: var(--c-font);
+  text-decoration: none;
+}
+
+.puzzle__feedback.after .puzzle__more a:hover {
+  color: var(--c-link, var(--c-primary));
+}
+
+.puzzle__feedback.after .puzzle__more button {
+  background: none;
+  border: none;
+  color: var(--c-font);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.puzzle__feedback.after .puzzle__more button:hover {
+  color: var(--c-link, var(--c-primary));
+}
+
+/* Vote buttons (after puzzle complete) */
+
+.puzzle__vote {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1em 2em;
+}
+
+.puzzle__vote__help {
+  text-align: center;
+  margin-bottom: 0.8em;
+  color: var(--c-font-dim);
+  font-size: 0.95em;
+}
+
+.puzzle__vote__help p {
+  margin: 0;
+}
+
+.puzzle__vote__buttons {
+  display: flex;
+  width: 100%;
+  justify-content: space-around;
+}
+
+.puzzle__vote__buttons .vote {
+  font-family: 'lichess';
+  font-size: 3em;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 0;
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 150ms ease,
+    background 150ms ease,
+    border-color 150ms ease;
+  line-height: 1;
+}
+
+.puzzle__vote__buttons .vote:hover {
+  transform: scale(1.15);
+}
+
+.puzzle__vote__buttons .vote-up::before {
+  content: '\e046';
+}
+
+.puzzle__vote__buttons .vote-up {
+  color: var(--c-good);
+}
+
+.puzzle__vote__buttons .vote-up:hover {
+  border-color: var(--c-good);
+  background: rgba(136, 176, 75, 0.15);
+}
+
+.puzzle__vote__buttons .vote-down::before {
+  content: '\e046';
+  display: inline-block;
+  transform: rotate(0.5turn);
+}
+
+.puzzle__vote__buttons .vote-down {
+  color: var(--c-bad);
+}
+
+.puzzle__vote__buttons .vote-down:hover {
+  border-color: var(--c-bad);
+  background: rgba(191, 64, 64, 0.15);
+}
+
+/* Game info data-icon (rabbit, etc.) */
+
+.puzzle__side__metas .infos[data-icon] {
+  position: relative;
+  padding-left: 3.5em;
+}
+
+.puzzle__side__metas .infos[data-icon]::before {
+  content: attr(data-icon);
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'lichess';
+  font-size: 2.2em;
+  width: 1.5em;
+  text-align: center;
+}
+
+.puzzle__side__metas .user-link {
+  color: var(--c-font);
+  text-decoration: none;
+}
+
+.puzzle__side__metas .user-link:hover {
+  color: var(--c-link, var(--c-primary));
+}
+
+/* -------------------------------------------------------------
+   .tview2 — move list (ported from Lichess tview2)
+   ------------------------------------------------------------- */
+
+.tview2 {
+  padding: 0.6em;
+  font-size: 0.95em;
+  line-height: 1.8;
+}
+
+.tview2 index {
+  display: inline-block;
+  color: var(--c-font-dimmer, var(--c-font-dim));
+  font-size: 0.85em;
+  min-width: 2ch;
+  text-align: right;
+  margin-right: 0.3em;
+}
+
+.tview2 move {
+  display: inline-block;
+  padding: 0 0.4em;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.tview2 move:hover {
+  background: var(--c-bg-low);
+}
+
+.tview2 move.active {
+  background: var(--c-primary);
+  color: #fff;
+}
+
+.tview2-column index {
+  display: block;
+  float: left;
+  clear: left;
+  margin-top: 0.15em;
+}
+
+/* -------------------------------------------------------------
+   Puzzle difficulty selector
+   ------------------------------------------------------------- */
+
+.puzzle__side__config__difficulty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  margin-top: 0.6em;
+  padding-top: 0.6em;
+  border-top: 1px solid var(--c-border);
+}
+
+.puzzle__side__config__difficulty label {
+  font-size: 0.85em;
+  color: var(--c-font-dim);
+}
+
+.puzzle__difficulty__selector {
+  background: var(--c-bg-input, var(--c-bg-high));
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  color: var(--c-font);
+  font: inherit;
+  font-size: 0.9em;
+  padding: 0.3em 0.5em;
+  cursor: pointer;
+}
+
+/* Rated toggle (Lichess cmn-toggle style) */
+
+.cmn-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  font-size: 0.95em;
+  cursor: pointer;
+  user-select: none;
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid var(--c-border);
+  margin-bottom: 0.5em;
+}
+
+.cmn-toggle-wrap .cmn-toggle {
+  display: inline-flex;
+  position: relative;
+}
+
+.cmn-toggle-wrap input[type='checkbox'] {
+  appearance: none;
+  width: 2.4em;
+  height: 1.3em;
+  background: var(--c-font-dim);
+  border-radius: 0.65em;
+  position: relative;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.cmn-toggle-wrap input[type='checkbox']::after {
+  content: '';
+  position: absolute;
+  top: 0.15em;
+  left: 0.15em;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 150ms ease;
+}
+
+.cmn-toggle-wrap input[type='checkbox']:checked {
+  background: var(--c-good);
+}
+
+.cmn-toggle-wrap input[type='checkbox']:checked::after {
+  transform: translateX(1.1em);
+}
+
+/* Casual rating text */
+
+.puzzle__side__user__rating__casual {
+  font-size: 0.8em;
+  color: var(--c-font-dim);
+  line-height: 1.4;
+  margin-top: 0.4em;
+}
