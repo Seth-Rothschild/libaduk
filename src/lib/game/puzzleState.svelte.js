@@ -53,6 +53,9 @@ export class PuzzleState {
   #setupMoves;
   #shiftMap;
   #initialShiftMap;
+  #boardHistory = [];
+  #shiftHistory = [];
+  #lastMoveHistory = [];
 
   board = $state.raw(null);
   lastMove = $state(null);
@@ -62,10 +65,13 @@ export class PuzzleState {
   hadFailure = $state(false);
   shiftMap = $state(null);
   animatedVertex = $state(null);
+  viewIndex = $state(-1);
 
   signMap = $derived(this.board?.signMap ?? null);
   colorToPlay = $derived(this.#playerSign === -1 ? 'White' : 'Black');
   moveRows = $derived(buildMoveRows(this.playedMoves));
+  canPrev = $derived(this.viewIndex > 0);
+  canNext = $derived(this.viewIndex < this.#boardHistory.length - 1);
 
   constructor(sgfText) {
     const parsed = parseSgf(sgfText);
@@ -98,6 +104,11 @@ export class PuzzleState {
         color: s.sign === 1 ? 'black' : 'white'
       }));
     this.playedMoves = [...this.#setupMoves];
+
+    this.#boardHistory = [this.#board];
+    this.#shiftHistory = [this.#shiftMap.map((row) => [...row])];
+    this.#lastMoveHistory = [null];
+    this.viewIndex = 0;
   }
 
   get size() {
@@ -115,6 +126,9 @@ export class PuzzleState {
 
   onVertexClick(x, y) {
     if (this.feedback === 'after') return;
+    if (this.viewIndex < this.#boardHistory.length - 1) {
+      this.goLast();
+    }
 
     const expected = this.#solutionMoves[this.#solutionIndex];
     if (!expected) return;
@@ -138,6 +152,7 @@ export class PuzzleState {
     this.lastMove = [x, y];
     this.playedMoves = [...this.playedMoves, { label, color }];
     this.#solutionIndex++;
+    this.#pushHistory(this.#board, this.#shiftMap, [x, y]);
 
     const isLastMove = this.#solutionIndex >= this.#solutionMoves.length;
 
@@ -189,6 +204,10 @@ export class PuzzleState {
     const moves = [...this.#setupMoves];
     let last = null;
 
+    this.#boardHistory = [this.#initialBoard];
+    this.#shiftHistory = [this.#initialShiftMap.map((row) => [...row])];
+    this.#lastMoveHistory = [null];
+
     for (const move of this.#solutionMoves) {
       const result = applyMoveWithShifts(board, shifts, move.sign, move.x, move.y);
       board = result.board;
@@ -197,6 +216,9 @@ export class PuzzleState {
       const color = move.sign === 1 ? 'black' : 'white';
       moves.push({ label, color });
       last = [move.x, move.y];
+      this.#boardHistory.push(board);
+      this.#shiftHistory.push(shifts.map((row) => [...row]));
+      this.#lastMoveHistory.push([move.x, move.y]);
     }
 
     this.#board = board;
@@ -207,6 +229,7 @@ export class PuzzleState {
     this.animatedVertex = null;
     this.playedMoves = moves;
     this.#solutionIndex = this.#solutionMoves.length;
+    this.viewIndex = this.#boardHistory.length - 1;
     this.feedback = 'after';
   }
 
@@ -220,6 +243,10 @@ export class PuzzleState {
     this.animatedVertex = null;
     this.playedMoves = [...this.#setupMoves];
     this.feedback = 'init';
+    this.#boardHistory = [this.#initialBoard];
+    this.#shiftHistory = [this.#shiftMap.map((row) => [...row])];
+    this.#lastMoveHistory = [null];
+    this.viewIndex = 0;
   }
 
   #playOpponentResponse() {
@@ -245,7 +272,51 @@ export class PuzzleState {
       this.lastMove = [response.x, response.y];
       this.playedMoves = [...this.playedMoves, { label, color }];
       this.#solutionIndex++;
+      this.#pushHistory(this.#board, this.#shiftMap, [response.x, response.y]);
       this.feedback = 'init';
     }, 500);
+  }
+
+  #pushHistory(board, shiftMap, lastMove) {
+    this.#boardHistory.push(board);
+    this.#shiftHistory.push(shiftMap.map((row) => [...row]));
+    this.#lastMoveHistory.push(lastMove);
+    this.viewIndex = this.#boardHistory.length - 1;
+  }
+
+  goFirst() {
+    this.viewIndex = 0;
+    this.#showHistoryAt(0);
+  }
+
+  goPrev() {
+    if (!this.canPrev) return;
+    this.viewIndex--;
+    this.#showHistoryAt(this.viewIndex);
+  }
+
+  goNext() {
+    if (!this.canNext) return;
+    this.viewIndex++;
+    this.#showHistoryAt(this.viewIndex);
+  }
+
+  goLast() {
+    this.viewIndex = this.#boardHistory.length - 1;
+    this.#showHistoryAt(this.viewIndex);
+  }
+
+  #showHistoryAt(index) {
+    this.board = this.#boardHistory[index];
+    this.shiftMap = this.#shiftHistory[index];
+    this.lastMove = this.#lastMoveHistory[index];
+    this.animatedVertex = null;
+  }
+
+  getHint() {
+    const expected = this.#solutionMoves[this.#solutionIndex];
+    if (!expected) return;
+    this.goLast();
+    this.onVertexClick(expected.x, expected.y);
   }
 }

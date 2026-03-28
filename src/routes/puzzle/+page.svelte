@@ -12,6 +12,7 @@
   } from '$lib/game/puzzleSession.svelte.js';
   import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
   import { computeVertexSize } from '$lib/game/layout.js';
+  import { onMount } from 'svelte';
 
   let { data } = $props();
 
@@ -72,6 +73,27 @@
       goToNextPuzzle();
     }
   });
+
+  function handleKeydown(e) {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      puzzle.goPrev();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      puzzle.goNext();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      puzzle.goFirst();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      puzzle.goLast();
+    }
+  }
+
+  onMount(() => {
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
+  });
 </script>
 
 <main class="puzzle puzzle-play">
@@ -83,7 +105,7 @@
         <img class="infos__angle-img" src="/images/go/stone_-1.svg" alt="Puzzle Themes" />
         <div>
           <p>Puzzle <a href="/puzzle/{data.puzzle.id}">#{data.puzzle.id}</a></p>
-          <p>Rating: <strong>{data.puzzle.likes}/{data.puzzle.totalVotes}</strong></p>
+          <p>Rating: <strong>{data.puzzle.totalVotes > 0 ? Math.trunc(data.puzzle.likes / data.puzzle.totalVotes * 100) : 0}% ({data.puzzle.likes}/{data.puzzle.totalVotes})</strong></p>
           <p>Played <strong>{data.puzzle.plays.toLocaleString()}</strong> times</p>
         </div>
       </div>
@@ -210,6 +232,7 @@
       colorToPlay={puzzle.colorToPlay}
       onRetry={() => puzzle.retry()}
       onViewSolution={() => puzzle.viewSolution()}
+      onGetHint={() => puzzle.getHint()}
       onVoteUp={() => handleVote('up')}
       onVoteDown={() => handleVote('down')}
       onNextPuzzle={() => handleNextPuzzle()}
@@ -219,10 +242,10 @@
   <!-- BOTTOM-RIGHT: navigation buttons -->
   <div class="puzzle__controls analyse-controls">
     <div class="jumps">
-      <button class="fbt" disabled data-act="first">⏮</button>
-      <button class="fbt" disabled data-act="prev">◀</button>
-      <button class="fbt" disabled data-act="next">▶</button>
-      <button class="fbt" data-act="last" class:glowing={puzzle.feedback === 'init'}>⏭</button>
+      <button class="fbt" disabled={!puzzle.canPrev} data-act="first" onclick={() => puzzle.goFirst()}>⏮</button>
+      <button class="fbt" disabled={!puzzle.canPrev} data-act="prev" onclick={() => puzzle.goPrev()}>◀</button>
+      <button class="fbt" disabled={!puzzle.canNext} data-act="next" onclick={() => puzzle.goNext()}>▶</button>
+      <button class="fbt" disabled={!puzzle.canNext} data-act="last" onclick={() => puzzle.goLast()}>⏭</button>
     </div>
   </div>
 
