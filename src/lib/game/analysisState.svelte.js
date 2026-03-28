@@ -79,13 +79,10 @@ function serializeNode(node) {
   if (node.setup && node.setup.length > 0) result.setup = node.setup;
   if (node.comment) result.comment = node.comment;
   if (hasMarkers(node.markerMap)) result.markers = node.markerMap;
-  if (node.children.length > 0) {
-    result.children = node.children.map(serializeNode);
-  }
   return result;
 }
 
-function deserializeNode(data, parentBoard, signToPlay, parent, size) {
+function deserializeNodeNested(data, parentBoard, signToPlay, parent, size) {
   let board = parentBoard;
   let lastMove = null;
 
@@ -123,12 +120,75 @@ function deserializeNode(data, parentBoard, signToPlay, parent, size) {
 
   if (data.children) {
     for (const childData of data.children) {
-      const childNode = deserializeNode(childData, board, nextSign, node, size);
+      const childNode = deserializeNodeNested(childData, board, nextSign, node, size);
       if (childNode) node.children.push(childNode);
     }
   }
 
   return node;
+}
+
+function deserializeFlat(entries, size) {
+  const emptyBoard = createBoard(size);
+  const rootData = entries[0];
+  const rootHasHandicap = (rootData.setup ?? []).some((s) => s.sign === 1);
+  const initialSign = rootHasHandicap ? -1 : 1;
+
+  const nodes = [];
+  const boards = [];
+  const signs = [];
+
+  for (const entry of entries) {
+    const parentIndex = entry.parent ?? null;
+    const parentNode = parentIndex !== null ? nodes[parentIndex] : null;
+    const parentBoard = parentIndex !== null ? boards[parentIndex] : emptyBoard;
+    const signToPlay = parentIndex !== null ? signs[parentIndex] : initialSign;
+
+    let board = parentBoard;
+    let lastMove = null;
+
+    if (entry.move) {
+      lastMove = entry.move;
+      try {
+        board = parentBoard.makeMove(signToPlay, lastMove, {
+          preventSuicide: true,
+          preventOverwrite: true,
+          preventKo: true
+        });
+      } catch {
+        nodes.push(null);
+        boards.push(parentBoard);
+        signs.push(signToPlay);
+        continue;
+      }
+    }
+
+    const setup = entry.setup ?? [];
+    board = applySetup(board, setup);
+
+    const turnAdvanced = !!lastMove || parentNode !== null;
+    const nextSign = turnAdvanced ? (signToPlay === 1 ? -1 : 1) : signToPlay;
+    const markers = entry.markers ?? emptyMarkerMap(size);
+    const moveName = lastMove ? getAnalysisMoveName(parentBoard, signToPlay, lastMove) : null;
+    const comment = entry.comment ?? '';
+    const node = makeAnalysisNode(
+      board,
+      lastMove,
+      markers,
+      nextSign,
+      parentNode,
+      moveName,
+      comment,
+      setup
+    );
+
+    if (parentNode) parentNode.children.push(node);
+    nodes.push(node);
+    boards.push(board);
+    signs.push(nextSign);
+  }
+
+  return nodes[0];
 }
 
 export function getNodePath(node) {
@@ -152,14 +212,29 @@ export function followNodePath(root, path) {
 }
 
 export function serializeTree(root) {
-  return serializeNode(root);
+  const nodes = [];
+  const queue = [{ node: root, parentIndex: null }];
+  while (queue.length > 0) {
+    const { node, parentIndex } = queue.shift();
+    const index = nodes.length;
+    const entry = serializeNode(node);
+    if (parentIndex !== null) entry.parent = parentIndex;
+    nodes.push(entry);
+    for (const child of node.children) {
+      queue.push({ node: child, parentIndex: index });
+    }
+  }
+  return nodes;
 }
 
 export function deserializeTree(data, size) {
+  if (Array.isArray(data)) {
+    return deserializeFlat(data, size);
+  }
   const emptyBoard = createBoard(size);
   const rootHasHandicap = (data.setup ?? []).some((s) => s.sign === 1);
   const initialSign = rootHasHandicap ? -1 : 1;
-  return deserializeNode(data, emptyBoard, initialSign, null, size);
+  return deserializeNodeNested(data, emptyBoard, initialSign, null, size);
 }
 
 export class AnalysisState {
