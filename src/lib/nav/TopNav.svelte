@@ -20,6 +20,13 @@
     </div>
   </section>
   <section>
+    <a href="/puzzle">Puzzles</a>
+    <div role="group">
+      <a href="/puzzle">Random puzzle</a>
+      <a href="/puzzle/daily">Puzzle of the day</a>
+    </div>
+  </section>
+  <section>
     <a href="/analysis" data-sveltekit-preload-data="off">Tools</a>
     <div role="group">
       <a href="/analysis" data-sveltekit-preload-data="off">Analysis board</a>

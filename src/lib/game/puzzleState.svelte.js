@@ -1,4 +1,12 @@
-import { createBoard, placeStones, parseSgf, sgfNodeSetup, sgfNodeToMove } from '$lib/game/board';
+import {
+  createBoard,
+  placeStones,
+  parseSgf,
+  sgfNodeSetup,
+  sgfNodeToMove,
+  applyMoveWithShifts
+} from '$lib/game/board';
+import { emptyShiftMap } from '$lib/game/board/helpers.js';
 
 function extractSolutionMoves(sgfNode) {
   const moves = [];
@@ -43,6 +51,8 @@ export class PuzzleState {
   #size;
   #playerSign;
   #setupMoves;
+  #shiftMap;
+  #initialShiftMap;
 
   board = $state.raw(null);
   lastMove = $state(null);
@@ -50,6 +60,8 @@ export class PuzzleState {
   rating = $state(1500);
   playedMoves = $state([]);
   hadFailure = $state(false);
+  shiftMap = $state(null);
+  animatedVertex = $state(null);
 
   signMap = $derived(this.board?.signMap ?? null);
   colorToPlay = $derived(this.#playerSign === -1 ? 'White' : 'Black');
@@ -68,6 +80,16 @@ export class PuzzleState {
     this.#solutionMoves = extractSolutionMoves(parsed.root);
     this.#board = this.#initialBoard;
     this.board = this.#board;
+
+    const initialShifts = emptyShiftMap(parsed.size);
+    for (const stone of setupStones) {
+      if (stone.sign !== 0) {
+        initialShifts[stone.y][stone.x] = Math.ceil(Math.random() * 8);
+      }
+    }
+    this.#initialShiftMap = initialShifts;
+    this.#shiftMap = initialShifts.map((row) => [...row]);
+    this.shiftMap = this.#shiftMap;
 
     this.#setupMoves = setupStones
       .filter((s) => s.sign !== 0)
@@ -100,20 +122,19 @@ export class PuzzleState {
     const isCorrect = x === expected.x && y === expected.y;
 
     if (!isCorrect) {
-      this.feedback = 'fail';
-      this.hadFailure = true;
+      this.#showWrongMove(x, y);
       return;
     }
 
     const label = vertexToLabel(x, y, this.#size);
     const color = expected.sign === 1 ? 'black' : 'white';
 
-    this.#board = this.#board.makeMove(expected.sign, [x, y], {
-      preventSuicide: true,
-      preventOverwrite: true,
-      preventKo: true
-    });
+    const result = applyMoveWithShifts(this.#board, this.#shiftMap, expected.sign, x, y);
+    this.#board = result.board;
+    this.#shiftMap = result.shiftMap;
     this.board = this.#board;
+    this.shiftMap = this.#shiftMap;
+    this.animatedVertex = [x, y];
     this.lastMove = [x, y];
     this.playedMoves = [...this.playedMoves, { label, color }];
     this.#solutionIndex++;
@@ -129,18 +150,49 @@ export class PuzzleState {
     this.#playOpponentResponse();
   }
 
+  #showWrongMove(x, y) {
+    const sign = this.currentSign;
+    const savedBoard = this.#board;
+    const savedShiftMap = this.#shiftMap;
+    const savedLastMove = this.lastMove;
+
+    try {
+      const result = applyMoveWithShifts(this.#board, this.#shiftMap, sign, x, y);
+      this.#board = result.board;
+      this.#shiftMap = result.shiftMap;
+      this.board = this.#board;
+      this.shiftMap = this.#shiftMap;
+      this.animatedVertex = [x, y];
+      this.lastMove = [x, y];
+    } catch {
+      this.feedback = 'fail';
+      this.hadFailure = true;
+      return;
+    }
+
+    setTimeout(() => {
+      this.#board = savedBoard;
+      this.#shiftMap = savedShiftMap;
+      this.board = savedBoard;
+      this.shiftMap = savedShiftMap;
+      this.lastMove = savedLastMove;
+      this.animatedVertex = null;
+      this.feedback = 'fail';
+      this.hadFailure = true;
+    }, 400);
+  }
+
   viewSolution() {
     this.#board = this.#initialBoard;
     let board = this.#board;
+    let shifts = this.#initialShiftMap.map((row) => [...row]);
     const moves = [...this.#setupMoves];
     let last = null;
 
     for (const move of this.#solutionMoves) {
-      board = board.makeMove(move.sign, [move.x, move.y], {
-        preventSuicide: true,
-        preventOverwrite: true,
-        preventKo: true
-      });
+      const result = applyMoveWithShifts(board, shifts, move.sign, move.x, move.y);
+      board = result.board;
+      shifts = result.shiftMap;
       const label = vertexToLabel(move.x, move.y, this.#size);
       const color = move.sign === 1 ? 'black' : 'white';
       moves.push({ label, color });
@@ -148,8 +200,11 @@ export class PuzzleState {
     }
 
     this.#board = board;
+    this.#shiftMap = shifts;
     this.board = board;
+    this.shiftMap = shifts;
     this.lastMove = last;
+    this.animatedVertex = null;
     this.playedMoves = moves;
     this.#solutionIndex = this.#solutionMoves.length;
     this.feedback = 'after';
@@ -158,8 +213,11 @@ export class PuzzleState {
   retry() {
     this.#solutionIndex = 0;
     this.#board = this.#initialBoard;
+    this.#shiftMap = this.#initialShiftMap.map((row) => [...row]);
     this.board = this.#board;
+    this.shiftMap = this.#shiftMap;
     this.lastMove = null;
+    this.animatedVertex = null;
     this.playedMoves = [...this.#setupMoves];
     this.feedback = 'init';
   }
@@ -172,12 +230,18 @@ export class PuzzleState {
       const label = vertexToLabel(response.x, response.y, this.#size);
       const color = response.sign === 1 ? 'black' : 'white';
 
-      this.#board = this.#board.makeMove(response.sign, [response.x, response.y], {
-        preventSuicide: true,
-        preventOverwrite: true,
-        preventKo: true
-      });
+      const result = applyMoveWithShifts(
+        this.#board,
+        this.#shiftMap,
+        response.sign,
+        response.x,
+        response.y
+      );
+      this.#board = result.board;
+      this.#shiftMap = result.shiftMap;
       this.board = this.#board;
+      this.shiftMap = this.#shiftMap;
+      this.animatedVertex = [response.x, response.y];
       this.lastMove = [response.x, response.y];
       this.playedMoves = [...this.playedMoves, { label, color }];
       this.#solutionIndex++;

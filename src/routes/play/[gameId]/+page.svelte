@@ -696,7 +696,7 @@
         <GoBoard
           {signMap}
           lastMove={gs.viewLastMove}
-          shiftMap={gs.viewShiftMap}
+          shiftMap={boardSettings.fuzzyPlacement ? gs.viewShiftMap : null}
           animatedVertex={gs.isViewingHistory ? null : gs.animatedVertex}
           size={gs.boardSize}
           {vertexSize}

@@ -14,4 +14,12 @@
     />
     Coordinates
   </label>
+  <label class="board-setting-toggle">
+    <input
+      type="checkbox"
+      checked={boardSettings.fuzzyPlacement}
+      onchange={boardSettings.toggleFuzzyPlacement}
+    />
+    Fuzzy placement
+  </label>
 </div>

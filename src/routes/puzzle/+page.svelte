@@ -155,6 +155,8 @@
     <GoBoard
       signMap={puzzle.signMap}
       lastMove={puzzle.lastMove}
+      shiftMap={boardSettings.fuzzyPlacement ? puzzle.shiftMap : null}
+      animatedVertex={puzzle.animatedVertex}
       size={puzzle.size}
       {vertexSize}
       showCoords={boardSettings.showCoords}

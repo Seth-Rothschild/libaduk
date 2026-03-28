@@ -38,6 +38,13 @@
     </div>
   </section>
   <section>
+    <a href="/puzzle" onclick={onClose}>Puzzles</a>
+    <div role="group">
+      <a href="/puzzle" onclick={onClose}>Random puzzle</a>
+      <a href="/puzzle/daily" onclick={onClose}>Puzzle of the day</a>
+    </div>
+  </section>
+  <section>
     <a href="/analysis" onclick={onClose}>Tools</a>
     <div role="group">
       <a href="/analysis" onclick={onClose}>Analysis board</a>

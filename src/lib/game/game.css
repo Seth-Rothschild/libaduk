@@ -1211,19 +1211,35 @@ html.light .color-icon.white::before {
   grid-area: main;
   display: grid;
   row-gap: var(---block-gap, 10px);
-  grid-template-columns: minmax(0, 1fr) var(---block-gap, 10px) minmax(200px, 400px);
+  grid-template-columns: 1fr;
   max-width: 1450px;
   margin: 0 auto;
-  grid-template-rows: fit-content(0);
   grid-template-areas:
-    'board   . tools'
-    'session . controls'
-    'side    side side';
-  height: calc(100vh - var(---site-header-height, 40px) - 3rem);
+    'board'
+    'session'
+    'tools'
+    'controls'
+    'side';
 }
 
 .puzzle .puzzle__moves {
-  display: block;
+  display: none;
+}
+
+@media (min-width: 600px) {
+  .puzzle {
+    grid-template-columns: minmax(0, 1fr) var(---block-gap, 10px) minmax(0, 400px);
+    grid-template-rows: fit-content(0);
+    grid-template-areas:
+      'board   . tools'
+      'session . controls'
+      'side    side side';
+    height: calc(100vh - var(---site-header-height, 40px) - 3rem);
+  }
+
+  .puzzle .puzzle__moves {
+    display: block;
+  }
 }
 
 @media (min-width: 1250px) {
@@ -1271,7 +1287,13 @@ html.light .color-icon.white::before {
   justify-content: center;
   min-width: 0;
   aspect-ratio: 1;
-  max-height: calc(100vh - var(---site-header-height, 40px) - 3rem);
+  max-height: calc(100vh - var(---site-header-height, 40px) - 10rem);
+}
+
+@media (min-width: 600px) {
+  .puzzle__board {
+    max-height: calc(100vh - var(---site-header-height, 40px) - 3rem);
+  }
 }
 
 /* -------------------------------------------------------------
@@ -1284,10 +1306,15 @@ html.light .color-icon.white::before {
   background: var(--c-bg-box);
   border-radius: 6px;
   overflow: hidden;
-  max-width: 400px;
   box-shadow:
     0 2px 5px rgba(0, 0, 0, 0.15),
     0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 600px) {
+  .puzzle__tools {
+    max-width: 400px;
+  }
 }
 
 /* Move list area inside tools */
@@ -1407,7 +1434,7 @@ html.light .color-icon.white::before {
   grid-template-areas: 'user' 'theme' 'metas' 'config';
 }
 
-@media (max-width: 1249px) {
+@media (min-width: 600px) and (max-width: 1249px) {
   .puzzle__side {
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
@@ -1708,7 +1735,6 @@ html.light .color-icon.white::before {
   font-weight: bold;
   white-space: nowrap;
 }
-
 
 .puzzle__feedback.after .puzzle__more {
   display: flex;
