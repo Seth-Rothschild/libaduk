@@ -24,43 +24,60 @@
 </script>
 
 {#if signedIn}
-  <a id="user_tag" href="/profile/{username}" class="link">{username}</a>
+  <div class="dasher" class:shown={open}>
+    <button id="user_tag" class="link" onclick={toggle}>{username}</button>
+    <div class="dropdown">
+      {#if pane === 'background'}
+        <BackgroundPane onBack={() => (pane = 'main')} />
+      {:else if pane === 'board'}
+        <BoardPane onBack={() => (pane = 'main')} />
+      {:else if pane === 'ai'}
+        <AiPane onBack={() => (pane = 'main')} />
+      {:else}
+        <a class="text profile-link" href="/profile/{username}">
+          <span class="online-dot"></span>
+          Profile
+        </a>
+        <button class="text signout" data-icon="&#xe005;" onclick={signOut}>Sign out</button>
+        <hr />
+        <button class="text" data-icon="&#xe028;" onclick={() => (pane = 'board')}>Board</button>
+        <button class="text" data-icon="&#xe061;" onclick={() => (pane = 'background')}
+          >Background</button
+        >
+        <button class="text" data-icon="&#xe07e;" onclick={() => (pane = 'ai')}>Computer AI</button>
+        <hr />
+        <PingStatus />
+      {/if}
+    </div>
+  </div>
 {:else}
   <div class="signin-or-signup">
     <a href="/signup" class="button button-metal signup">Register</a>
     <a href="/login" class="button button-metal">Sign in</a>
   </div>
-{/if}
-
-<div class="dasher" class:shown={open}>
-  <button
-    class="toggle link"
-    class:anon={!signedIn}
-    data-icon="&#xe005;"
-    aria-label="Settings"
-    title="Settings"
-    onclick={toggle}
-  ></button>
-  <div class="dropdown">
-    {#if pane === 'background'}
-      <BackgroundPane onBack={() => (pane = 'main')} />
-    {:else if pane === 'board'}
-      <BoardPane onBack={() => (pane = 'main')} />
-    {:else if pane === 'ai'}
-      <AiPane onBack={() => (pane = 'main')} />
-    {:else}
-      {#if signedIn}
-        <a class="text" data-icon="&#xe005;" href="/">Settings</a>
+  <div class="dasher" class:shown={open}>
+    <button
+      class="toggle link anon"
+      data-icon="&#xe005;"
+      aria-label="Settings"
+      title="Settings"
+      onclick={toggle}
+    ></button>
+    <div class="dropdown">
+      {#if pane === 'background'}
+        <BackgroundPane onBack={() => (pane = 'main')} />
+      {:else if pane === 'board'}
+        <BoardPane onBack={() => (pane = 'main')} />
+      {:else if pane === 'ai'}
+        <AiPane onBack={() => (pane = 'main')} />
+      {:else}
+        <button class="text" data-icon="&#xe028;" onclick={() => (pane = 'board')}>Board</button>
+        <button class="text" data-icon="&#xe061;" onclick={() => (pane = 'background')}
+          >Background</button
+        >
+        <button class="text" data-icon="&#xe07e;" onclick={() => (pane = 'ai')}>Computer AI</button>
       {/if}
-      <button class="text" data-icon="&#xe028;" onclick={() => (pane = 'board')}>Board</button>
-      <button class="text" data-icon="&#xe061;" onclick={() => (pane = 'background')}
-        >Background</button
-      >
-      <button class="text" data-icon="&#xe07e;" onclick={() => (pane = 'ai')}>Computer AI</button>
-      {#if signedIn}
-        <button class="text signout" data-icon="&#xe055;" onclick={signOut}>Sign out</button>
-      {/if}
-    {/if}
-    <PingStatus />
+      <PingStatus />
+    </div>
   </div>
-</div>
+{/if}

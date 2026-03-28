@@ -483,9 +483,9 @@ body > header {
 .site-buttons .dropdown a.status {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  border-top: 1px solid var(--c-border);
   color: var(--c-font-dim);
   font-size: 0.85em;
   text-decoration: none;
@@ -495,6 +495,33 @@ body > header {
   display: flex;
   align-items: baseline;
   gap: 0.2em;
+  font-weight: 300;
+  font-size: 14px;
+}
+
+.site-buttons .dropdown hr {
+  border: none;
+  border-top: 1px solid var(--c-border);
+  margin: 4px 0;
+}
+
+.site-buttons .dropdown .profile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.site-buttons .dropdown .profile-link::before {
+  content: none;
+}
+
+.online-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(88, 62%, 48%);
+  flex-shrink: 0;
 }
 
 .site-buttons .dasher {
@@ -535,6 +562,10 @@ body > header {
   white-space: nowrap;
   gap: 0.5rem;
   text-decoration: none;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
 }
 
 #user_tag::after {
@@ -689,8 +720,8 @@ body.clinput #clinput input {
 
 signal {
   display: inline-block;
-  height: 1em;
-  width: 1.5em;
+  height: 1.3em;
+  width: 1.8em;
   overflow: hidden;
   white-space: nowrap;
 }
