@@ -105,7 +105,13 @@
         <img class="infos__angle-img" src="/images/go/stone_-1.svg" alt="Puzzle Themes" />
         <div>
           <p>Puzzle <a href="/puzzle/{data.puzzle.id}">#{data.puzzle.id}</a></p>
-          <p>Rating: <strong>{data.puzzle.totalVotes > 0 ? Math.trunc(data.puzzle.likes / data.puzzle.totalVotes * 100) : 0}% ({data.puzzle.likes}/{data.puzzle.totalVotes})</strong></p>
+          <p>
+            Rating: <strong
+              >{data.puzzle.totalVotes > 0
+                ? Math.trunc((data.puzzle.likes / data.puzzle.totalVotes) * 100)
+                : 0}% ({data.puzzle.likes}/{data.puzzle.totalVotes})</strong
+            >
+          </p>
           <p>Played <strong>{data.puzzle.plays.toLocaleString()}</strong> times</p>
         </div>
       </div>
@@ -242,10 +248,21 @@
   <!-- BOTTOM-RIGHT: navigation buttons -->
   <div class="puzzle__controls analyse-controls">
     <div class="jumps">
-      <button class="fbt" disabled={!puzzle.canPrev} data-act="first" onclick={() => puzzle.goFirst()}>⏮</button>
-      <button class="fbt" disabled={!puzzle.canPrev} data-act="prev" onclick={() => puzzle.goPrev()}>◀</button>
-      <button class="fbt" disabled={!puzzle.canNext} data-act="next" onclick={() => puzzle.goNext()}>▶</button>
-      <button class="fbt" disabled={!puzzle.canNext} data-act="last" onclick={() => puzzle.goLast()}>⏭</button>
+      <button
+        class="fbt"
+        disabled={!puzzle.canPrev}
+        data-act="first"
+        onclick={() => puzzle.goFirst()}>⏮</button
+      >
+      <button class="fbt" disabled={!puzzle.canPrev} data-act="prev" onclick={() => puzzle.goPrev()}
+        >◀</button
+      >
+      <button class="fbt" disabled={!puzzle.canNext} data-act="next" onclick={() => puzzle.goNext()}
+        >▶</button
+      >
+      <button class="fbt" disabled={!puzzle.canNext} data-act="last" onclick={() => puzzle.goLast()}
+        >⏭</button
+      >
     </div>
   </div>
 
