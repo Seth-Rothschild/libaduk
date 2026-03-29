@@ -61,10 +61,10 @@
       'user-top'
       'board'
       'user-bot'
+      'buttons'
       'moves'
       'graph'
-      'controls'
-      'buttons';
+      'controls';
   }
 
   .round__app .rmoves {

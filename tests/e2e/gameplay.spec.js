@@ -423,3 +423,39 @@ test('force resignation when opponent leaves', async ({ browser }) => {
   await expect(visitor.locator('.message')).toContainText('White wins');
   await expect(visitor.locator('.message')).toContainText('by Resignation');
 });
+
+test('on mobile, navigation buttons appear above moves list in analysis', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 400, height: 700 } });
+  const black = await context.newPage();
+
+  const contextTwo = await browser.newContext({ viewport: { width: 400, height: 700 } });
+  const white = await contextTwo.newPage();
+
+  await black.goto('/');
+  await expect.poll(() => black.evaluate(() => localStorage.getItem('guest-id'))).toBeTruthy();
+  await black.locator('.lobby__start__button--friend').click();
+
+  const modal = black.locator('dialog.game-setup');
+  await expect(modal).toBeVisible();
+  await modal.locator('.size-choice', { hasText: '9×9' }).click();
+  await modal.locator('button', { hasText: 'Unlimited' }).click();
+  await modal.locator('.color-choice .black').click();
+  await modal.locator('.lobby__start__button--friend').click();
+  await black.waitForURL(/\/play\//);
+  const gameUrl = black.url();
+
+  await white.goto(gameUrl);
+  const joinModal = white.locator('dialog.join-game-modal');
+  await expect(joinModal).toBeVisible();
+  await joinModal.locator('button', { hasText: 'Join game' }).click();
+  await expect(joinModal).not.toBeVisible();
+
+  await playMovesAndResign(black, white);
+
+  await black.locator('button', { hasText: 'Analysis board' }).click();
+  await expect(black.locator('.analysis-moves')).toBeVisible();
+
+  const navBox = await black.locator('.rbuttons').boundingBox();
+  const movesBox = await black.locator('.rmoves').boundingBox();
+  expect(navBox.y + navBox.height).toBeLessThanOrEqual(movesBox.y);
+});
