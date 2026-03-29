@@ -20,6 +20,7 @@
   import GameMeta from '$lib/game/GameMeta.svelte';
   import GameStatusMessage from '$lib/game/GameStatusMessage.svelte';
   import GameControls from '$lib/game/GameControls.svelte';
+  import AnalysisControls from '$lib/game/AnalysisControls.svelte';
   import AnalysisMoves from '$lib/game/AnalysisMoves.svelte';
   import EditBar from '$lib/game/EditBar.svelte';
   import GameGraph from '$lib/game/GameGraph.svelte';
@@ -689,6 +690,8 @@
           currentSign={analysis.currentSign}
           childrenMap={analysis.childrenMap}
           markerMap={analysis.markerMap}
+          areaMap={analysis.displayAreaMap}
+          deadStones={analysis.displayDeadStones}
           onVertexClick={(x, y) => onAnalysisVertexClick(x, y)}
         />
         <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
@@ -783,30 +786,43 @@
     {/if}
 
     <div class="rcontrols">
-      <GameControls
-        status={gs.status}
-        {isSpectator}
-        {isMyTurn}
-        {isLocal}
-        {myColor}
-        {analysisMode}
-        blackApproved={gs.blackApproved}
-        whiteApproved={gs.whiteApproved}
-        {opponentOnline}
-        onPass={pass}
-        onResign={resign}
-        onForceResign={forceResign}
-        onCancel={cancel}
-        onApproveScore={approveScore}
-        onApproveBlack={() => {
-          gs.blackApproved = true;
-        }}
-        onApproveWhite={() => {
-          gs.whiteApproved = true;
-        }}
-        onAnalysis={enterAnalysis}
-        onExitAnalysis={exitAnalysis}
-      />
+      {#if analysisMode}
+        <AnalysisControls
+          status={analysis.status}
+          score={analysis.score}
+          estimatedScore={analysis.estimatedScore}
+          showEstimate={analysis.showEstimate}
+          onStartScoring={() => analysis.startScoring()}
+          onStopScoring={() => analysis.stopScoring()}
+          onToggleEstimate={() => (analysis.showEstimate = !analysis.showEstimate)}
+          onExit={exitAnalysis}
+        />
+      {:else}
+        <GameControls
+          status={gs.status}
+          {isSpectator}
+          {isMyTurn}
+          {isLocal}
+          {myColor}
+          {analysisMode}
+          blackApproved={gs.blackApproved}
+          whiteApproved={gs.whiteApproved}
+          {opponentOnline}
+          onPass={pass}
+          onResign={resign}
+          onForceResign={forceResign}
+          onCancel={cancel}
+          onApproveScore={approveScore}
+          onApproveBlack={() => {
+            gs.blackApproved = true;
+          }}
+          onApproveWhite={() => {
+            gs.whiteApproved = true;
+          }}
+          onAnalysis={enterAnalysis}
+          onExitAnalysis={exitAnalysis}
+        />
+      {/if}
     </div>
 
     {#if analysisMode}

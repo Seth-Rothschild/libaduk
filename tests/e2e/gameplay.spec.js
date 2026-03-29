@@ -278,6 +278,18 @@ test('clicking move in analysis move list syncs to other player', async ({ brows
   await expect(black.locator('[data-x="5"][data-y="5"] .go-stone')).not.toBeVisible();
 });
 
+test('analysis mode after game shows score and estimate buttons', async ({ browser }) => {
+  const { black, white } = await createAndJoinGame(browser);
+  await playMovesAndResign(black, white);
+
+  await black.locator('button', { hasText: 'Analysis board' }).click();
+  await expect(black.locator('.analysis-moves')).toBeVisible();
+
+  await expect(black.locator('button', { hasText: 'Score' })).toBeVisible();
+  await expect(black.locator('button', { hasText: 'Estimate' })).toBeVisible();
+  await expect(black.locator('button', { hasText: 'Back to game' })).toBeVisible();
+});
+
 test('closing analysis exits both players and refresh does not re-enter', async ({ browser }) => {
   const { black, white, gameUrl } = await createAndJoinGame(browser);
   await playMovesAndResign(black, white);
