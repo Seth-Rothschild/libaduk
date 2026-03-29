@@ -73,7 +73,15 @@ export class PuzzleState {
   canPrev = $derived(this.viewIndex > 0);
   canNext = $derived(this.viewIndex < this.#boardHistory.length - 1);
 
-  constructor(sgfText) {
+  #onFeedback;
+
+  #setFeedback(value) {
+    this.feedback = value;
+    if (this.#onFeedback) this.#onFeedback(value);
+  }
+
+  constructor(sgfText, { onFeedback } = {}) {
+    this.#onFeedback = onFeedback;
     const parsed = parseSgf(sgfText);
     this.#size = parsed.size;
 
@@ -157,11 +165,11 @@ export class PuzzleState {
     const isLastMove = this.#solutionIndex >= this.#solutionMoves.length;
 
     if (isLastMove) {
-      this.feedback = 'after';
+      this.#setFeedback('after');
       return;
     }
 
-    this.feedback = 'good';
+    this.#setFeedback('good');
     this.#playOpponentResponse();
   }
 
@@ -180,7 +188,7 @@ export class PuzzleState {
       this.animatedVertex = [x, y];
       this.lastMove = [x, y];
     } catch {
-      this.feedback = 'fail';
+      this.#setFeedback('fail');
       this.hadFailure = true;
       return;
     }
@@ -192,7 +200,7 @@ export class PuzzleState {
       this.shiftMap = savedShiftMap;
       this.lastMove = savedLastMove;
       this.animatedVertex = null;
-      this.feedback = 'fail';
+      this.#setFeedback('fail');
       this.hadFailure = true;
     }, 400);
   }
@@ -230,7 +238,7 @@ export class PuzzleState {
     this.playedMoves = moves;
     this.#solutionIndex = this.#solutionMoves.length;
     this.viewIndex = this.#boardHistory.length - 1;
-    this.feedback = 'after';
+    this.#setFeedback('after');
   }
 
   retry() {
@@ -242,7 +250,7 @@ export class PuzzleState {
     this.lastMove = null;
     this.animatedVertex = null;
     this.playedMoves = [...this.#setupMoves];
-    this.feedback = 'init';
+    this.#setFeedback('init');
     this.#boardHistory = [this.#initialBoard];
     this.#shiftHistory = [this.#shiftMap.map((row) => [...row])];
     this.#lastMoveHistory = [null];
@@ -273,7 +281,7 @@ export class PuzzleState {
       this.playedMoves = [...this.playedMoves, { label, color }];
       this.#solutionIndex++;
       this.#pushHistory(this.#board, this.#shiftMap, [response.x, response.y]);
-      this.feedback = 'init';
+      this.#setFeedback('init');
     }, 500);
   }
 

@@ -25,9 +25,7 @@
   name="Signed in"
   args={{ username: 'alice' }}
   play={async ({ canvas }) => {
-    const userLink = canvas.getByRole('link', { name: 'alice' });
-    await expect(userLink).toBeInTheDocument();
-    await expect(userLink).toHaveAttribute('href', '/profile/alice');
+    await expect(canvas.getByRole('button', { name: 'alice' })).toBeInTheDocument();
   }}
 />
 
@@ -35,8 +33,7 @@
   name="Settings toggle opens dropdown"
   args={{ username: 'alice' }}
   play={async ({ canvas }) => {
-    const toggle = canvas.getByRole('button', { name: 'Settings' });
-    await userEvent.click(toggle);
+    await userEvent.click(canvas.getByRole('button', { name: 'alice' }));
     await expect(canvas.getByRole('button', { name: 'Board' })).toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: 'Background' })).toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
@@ -57,7 +54,7 @@
   name="Navigate to Board pane"
   args={{ username: 'alice' }}
   play={async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Settings' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'alice' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Board' }));
     await expect(canvas.getByText('Coordinates')).toBeInTheDocument();
   }}
@@ -67,7 +64,7 @@
   name="Navigate to Background pane"
   args={{ username: 'alice' }}
   play={async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Settings' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'alice' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Background' }));
     await expect(canvas.getByText('Light')).toBeInTheDocument();
     await expect(canvas.getByText('Dark')).toBeInTheDocument();
@@ -78,7 +75,7 @@
   name="Back from Board returns to main"
   args={{ username: 'alice' }}
   play={async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Settings' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'alice' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Board' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Board' }));
     await expect(canvas.getByRole('button', { name: 'Background' })).toBeInTheDocument();
@@ -89,7 +86,7 @@
   name="Sign out fires callback"
   args={{ username: 'alice' }}
   play={async ({ args, canvas }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Settings' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'alice' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Sign out' }));
     await expect(args.onSignOut).toHaveBeenCalledOnce();
   }}

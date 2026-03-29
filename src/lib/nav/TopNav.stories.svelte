@@ -42,10 +42,40 @@
 />
 
 <Story
+  name="Community section"
+  play={async ({ canvasElement }) => {
+    const communityLink = canvasElement.querySelector('a[href="/player"]');
+    await expect(communityLink).not.toBeNull();
+    const playersLink = canvasElement.querySelector('div[role="group"] a[href="/player"]');
+    await expect(playersLink).not.toBeNull();
+    await expect(playersLink.textContent).toBe('Players');
+  }}
+/>
+
+<Story
+  name="Puzzles section"
+  play={async ({ canvasElement }) => {
+    const randomLink = canvasElement.querySelector('a[href="/puzzle"]');
+    await expect(randomLink).not.toBeNull();
+    const dailyLink = canvasElement.querySelector('a[href="/puzzle/daily"]');
+    await expect(dailyLink).not.toBeNull();
+    await expect(dailyLink.textContent).toBe('Puzzle of the day');
+  }}
+/>
+
+<Story
   name="Analysis board link"
   play={async ({ canvasElement }) => {
     const link = canvasElement.querySelector('a[href="/analysis"]');
     await expect(link).not.toBeNull();
-    await expect(link.getAttribute('href')).toBe('/analysis');
+  }}
+/>
+
+<Story
+  name="Home link"
+  play={async ({ canvasElement }) => {
+    const homeLink = canvasElement.querySelector('a[href="/"]');
+    await expect(homeLink).not.toBeNull();
+    await expect(homeLink.textContent).toContain('libaduk.com');
   }}
 />

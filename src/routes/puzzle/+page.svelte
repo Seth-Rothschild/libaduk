@@ -16,7 +16,15 @@
 
   let { data } = $props();
 
-  const puzzle = new PuzzleState(data.puzzle.sgf);
+  const puzzle = new PuzzleState(data.puzzle.sgf, {
+    onFeedback(feedback) {
+      if (feedback === 'after') {
+        resolveChip(data.puzzle.id, !puzzle.hadFailure);
+      } else if (feedback === 'fail') {
+        resolveChip(data.puzzle.id, false);
+      }
+    }
+  });
 
   startChip(data.puzzle.id);
 
@@ -27,14 +35,6 @@
   );
 
   const chips = $derived(getChips());
-
-  $effect(() => {
-    if (puzzle.feedback === 'after') {
-      resolveChip(data.puzzle.id, !puzzle.hadFailure);
-    } else if (puzzle.feedback === 'fail') {
-      resolveChip(data.puzzle.id, false);
-    }
-  });
 
   const autoNext = $derived(getAutoNext());
   let completed = $state(false);

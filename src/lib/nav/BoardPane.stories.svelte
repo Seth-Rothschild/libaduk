@@ -17,8 +17,9 @@
   name="Default"
   play={async ({ canvas }) => {
     await expect(canvas.getByText('Coordinates')).toBeInTheDocument();
-    const checkbox = canvas.getByRole('checkbox');
-    await expect(checkbox).toBeInTheDocument();
+    await expect(canvas.getByText('Fuzzy placement')).toBeInTheDocument();
+    const checkboxes = canvas.getAllByRole('checkbox');
+    await expect(checkboxes).toHaveLength(2);
   }}
 />
 
@@ -35,10 +36,24 @@
   name="Toggling coordinates updates boardSettings"
   play={async ({ canvas }) => {
     boardSettings.showCoords = false;
-    const checkbox = canvas.getByRole('checkbox');
+    const coordsLabel = canvas.getByText('Coordinates');
+    const checkbox = coordsLabel.closest('label').querySelector('input');
     await expect(checkbox).not.toBeChecked();
     await userEvent.click(checkbox);
     await expect(boardSettings.showCoords).toBe(true);
     await expect(checkbox).toBeChecked();
+  }}
+/>
+
+<Story
+  name="Toggling fuzzy placement updates boardSettings"
+  play={async ({ canvas }) => {
+    boardSettings.fuzzyPlacement = true;
+    const fuzzyLabel = canvas.getByText('Fuzzy placement');
+    const checkbox = fuzzyLabel.closest('label').querySelector('input');
+    await expect(checkbox).toBeChecked();
+    await userEvent.click(checkbox);
+    await expect(boardSettings.fuzzyPlacement).toBe(false);
+    await expect(checkbox).not.toBeChecked();
   }}
 />
