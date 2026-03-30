@@ -635,7 +635,7 @@
 </script>
 
 {#if showModelPrompt}
-  <dialog class="ai-model-dialog" open>
+  <dialog class="ai-model-dialog" open oncancel={(e) => e.preventDefault()}>
     <h2>AI Model Required</h2>
     <p>To play against the AI, download a KataGo ONNX model.</p>
     <ModelManager onSaved={onModelSaved} />

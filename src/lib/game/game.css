@@ -2000,3 +2000,38 @@ html.light .color-icon.white::before {
   line-height: 1.4;
   margin-top: 0.4em;
 }
+
+/* AI Model Dialog */
+
+.ai-model-dialog {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10000;
+  border: none;
+  border-radius: 8px;
+  background: var(--c-bg-box);
+  color: var(--c-font);
+  padding: 1.5em;
+  min-width: 320px;
+  max-width: 500px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.ai-model-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.ai-model-dialog h2 {
+  margin: 0 0 0.8em 0;
+  font-size: 1.3em;
+  font-weight: 600;
+}
+
+.ai-model-dialog p {
+  margin: 0 0 1.2em 0;
+  font-size: 0.95em;
+  color: var(--c-font-dim);
+  line-height: 1.5;
+}
