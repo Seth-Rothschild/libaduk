@@ -57,9 +57,27 @@ export async function getUser(username) {
     const d = await getDb();
     const doc = await d.collection('users').findOne({ _id: username.toLowerCase() });
     if (!doc) return null;
-    return { username: doc.username, createdAt: doc.createdAt };
+    return {
+      username: doc.username,
+      createdAt: doc.createdAt,
+      biography: doc.biography ?? '',
+      realName: doc.realName ?? '',
+      ranking: doc.ranking ?? '',
+      ogs: doc.ogs ?? null
+    };
   } catch (err) {
     console.error('[db] getUser failed:', err.message);
+    throw err;
+  }
+}
+
+export async function updateUserProfile(username, { biography, realName, ranking }) {
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    await d.collection('users').updateOne({ _id: key }, { $set: { biography, realName, ranking } });
+  } catch (err) {
+    console.error('[db] updateUserProfile failed:', err.message);
     throw err;
   }
 }
@@ -91,6 +109,30 @@ export async function createUser(username) {
     return { username, createdAt: user.createdAt };
   } catch (err) {
     console.error('[db] createUser failed:', err.message);
+    throw err;
+  }
+}
+
+export async function linkOgs(username, { id, ogsUsername }) {
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    await d
+      .collection('users')
+      .updateOne({ _id: key }, { $set: { ogs: { id, username: ogsUsername } } });
+  } catch (err) {
+    console.error('[db] linkOgs failed:', err.message);
+    throw err;
+  }
+}
+
+export async function unlinkOgs(username) {
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    await d.collection('users').updateOne({ _id: key }, { $unset: { ogs: '' } });
+  } catch (err) {
+    console.error('[db] unlinkOgs failed:', err.message);
     throw err;
   }
 }
@@ -450,7 +492,8 @@ export async function addCredential(username, credential) {
     await d.collection('credentials').insertOne({
       username: key,
       ...credential,
-      publicKey: Buffer.from(credential.publicKey).toString('base64url')
+      publicKey: Buffer.from(credential.publicKey).toString('base64url'),
+      createdAt: Date.now()
     });
   } catch (err) {
     console.error('[db] addCredential failed:', err.message);
@@ -483,6 +526,22 @@ export async function updateCredentialCounter(username, credentialId, newCounter
       .updateOne({ username: key, id: credentialId }, { $set: { counter: newCounter } });
   } catch (err) {
     console.error('[db] updateCredentialCounter failed:', err.message);
+    throw err;
+  }
+}
+
+export async function getCredentialsSummary(username) {
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    const docs = await d.collection('credentials').find({ username: key }).toArray();
+    return docs.map((c) => ({
+      id: c.id,
+      transports: c.transports ?? [],
+      createdAt: c.createdAt ?? null
+    }));
+  } catch (err) {
+    console.error('[db] getCredentialsSummary failed:', err.message);
     throw err;
   }
 }

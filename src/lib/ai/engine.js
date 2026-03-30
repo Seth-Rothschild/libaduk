@@ -3,7 +3,23 @@ import * as ort from 'onnxruntime-web';
 const MODEL_DB_NAME = 'libaduk-ai';
 const MODEL_STORE = 'models';
 const MODEL_KEY = 'katago';
+const SETTINGS_KEY = 'libaduk-ai-settings';
 const LETTERS = 'ABCDEFGHJKLMNOPQRST';
+
+const DEFAULT_SETTINGS = { threads: navigator.hardwareConcurrency ?? 1 };
+
+export function loadEngineSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+export function saveEngineSettings(settings) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...DEFAULT_SETTINGS, ...settings }));
+}
 
 let session = null;
 let initialized = false;
@@ -50,7 +66,7 @@ export async function initEngine() {
     throw new Error('No model loaded. Please upload a KataGo ONNX model first.');
   }
 
-  ort.env.wasm.numThreads = 1;
+  ort.env.wasm.numThreads = loadEngineSettings().threads;
   ort.env.wasm.simd = true;
   ort.env.wasm.wasmPaths = '/wasm/';
 

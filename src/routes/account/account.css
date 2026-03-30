@@ -1,0 +1,138 @@
+/* =============================================================
+   account.css — layout and nav for account/preferences pages
+   ============================================================= */
+
+.account .side {
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  margin-right: 10px;
+}
+
+.account .side a.text {
+  display: block;
+  padding: 0.7rem 2vw 0.7rem 0.8rem;
+  border-radius: 6px;
+  color: var(--c-font-page);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 150ms ease;
+}
+
+.account .side a.text:hover {
+  background: var(--m-bg-page_bg--mix-50);
+}
+
+.account .side a.text.active {
+  background: var(--c-bg-box);
+  color: var(--c-font);
+  font-weight: bold;
+}
+
+.account .side .sep {
+  height: 2em;
+}
+
+.account .page-menu__content.box.box-pad {
+  padding: 4vh 50px;
+}
+
+.account .box__top h1 {
+  margin: 0 0 4vh;
+  font-size: 38px;
+  color: var(--c-accent);
+}
+
+.account .form-group {
+  margin-bottom: 1.4rem;
+}
+
+.account .form-label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 0.35rem;
+}
+
+.account .form-control {
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  background: var(--c-bg-input);
+  color: var(--c-font);
+  font-size: 1rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.account .form-control:focus {
+  outline: 2px solid var(--c-primary);
+  outline-offset: -1px;
+}
+
+.account textarea.form-control {
+  resize: vertical;
+}
+
+.account .form-error {
+  color: var(--c-bad);
+  margin: 0.5rem 0;
+}
+
+.account .form-success {
+  color: var(--c-good);
+  margin: 0.5rem 0;
+}
+
+/* Security page */
+
+.account .security-section h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+}
+
+.account .section-desc {
+  color: var(--c-font-dimmer);
+  margin: 0 0 1.2rem;
+  max-width: 560px;
+}
+
+.account .no-passkeys {
+  color: var(--c-font-dimmer);
+  margin: 0 0 1rem;
+}
+
+.account .passkey-list {
+  list-style: none;
+  margin: 0 0 1.2rem;
+  padding: 0;
+}
+
+.account .passkey-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  max-width: 480px;
+}
+
+.account .passkey-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.account .passkey-type {
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.account .passkey-date {
+  font-size: 0.82rem;
+  color: var(--c-font-dimmer);
+}
