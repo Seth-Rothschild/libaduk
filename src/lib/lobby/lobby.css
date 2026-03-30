@@ -402,7 +402,8 @@ html.light .lpool {
 
 .lobby__counters {
   display: flex;
-  gap: 1.5em;
+  flex-direction: column;
+  gap: 0.3em;
   padding: 0.6em 1em;
   font-size: 0.9em;
   color: var(--c-font-dim);
@@ -411,6 +412,15 @@ html.light .lpool {
 
 .lobby__counter strong {
   color: var(--c-font);
+}
+
+a.lobby__counter {
+  color: var(--c-font-dim);
+  text-decoration: none;
+}
+
+a.lobby__counter:hover {
+  color: var(--c-link);
 }
 
 /* -------------------------------------------------------------

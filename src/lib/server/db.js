@@ -599,6 +599,69 @@ export async function getUserPuzzleCompletions(username) {
   }
 }
 
+// --- Site Stats ---
+
+export async function getSiteStats() {
+  const d = await getDb();
+  const now = Date.now();
+  const oneDayAgo = now - 24 * 60 * 60 * 1000;
+
+  const [
+    totalPlayers,
+    completedGames,
+    completedGamesHvH,
+    completedGamesHvAI,
+    puzzlePlaysAgg,
+    totalPuzzles,
+    recentPlayers,
+    recentGames,
+    recentCompletedGame
+  ] = await Promise.all([
+    d.collection('users').countDocuments(),
+    d.collection('games').countDocuments({ status: 'finished' }),
+    d.collection('games').countDocuments({ status: 'finished', aiDifficulty: null }),
+    d.collection('games').countDocuments({ status: 'finished', aiDifficulty: { $ne: null } }),
+    d
+      .collection('puzzles')
+      .aggregate([{ $group: { _id: null, total: { $sum: '$plays' } } }])
+      .toArray(),
+    d.collection('puzzles').countDocuments(),
+    d.collection('users').countDocuments({ createdAt: { $gte: oneDayAgo } }),
+    d.collection('games').countDocuments({ status: 'finished', endedAt: { $gte: oneDayAgo } }),
+    d.collection('games').findOne(
+      { status: 'finished' },
+      {
+        sort: { endedAt: -1 },
+        projection: { _id: 1, blackName: 1, whiteName: 1, result: 1, endedAt: 1 }
+      }
+    )
+  ]);
+
+  const completedPuzzles = puzzlePlaysAgg[0]?.total ?? 0;
+
+  const recentGame = recentCompletedGame
+    ? {
+        id: recentCompletedGame._id,
+        blackName: recentCompletedGame.blackName,
+        whiteName: recentCompletedGame.whiteName,
+        result: recentCompletedGame.result,
+        endedAt: recentCompletedGame.endedAt
+      }
+    : null;
+
+  return {
+    totalPlayers,
+    completedGames,
+    completedGamesHvH,
+    completedGamesHvAI,
+    completedPuzzles,
+    totalPuzzles,
+    recentPlayers,
+    recentGames,
+    recentGame
+  };
+}
+
 // --- Sessions ---
 
 export async function createSession(token, username) {

@@ -44,6 +44,11 @@
   .community {
     grid-template-columns: min-content 1fr;
   }
+
+  .community__leaders {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
 }
 
 /* -------------------------------------------------------------
@@ -51,6 +56,7 @@
    ------------------------------------------------------------- */
 
 .community__online > h2,
+.community__stats > h2,
 .community__leaders > h2 {
   font-size: 1.7em;
   margin: 0 0 1.5rem;
@@ -202,4 +208,49 @@
   padding: 2em;
   text-align: center;
   color: var(--c-font-dim);
+}
+
+/* -------------------------------------------------------------
+   Site stats
+   ------------------------------------------------------------- */
+
+.stats-section {
+  margin-bottom: 1.5rem;
+}
+
+.stats-section h3 {
+  font-size: 1em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--c-font-dim);
+  margin: 0 0 0.6rem;
+}
+
+.stats-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.stats-list a {
+  color: var(--c-link);
+  text-decoration: none;
+}
+
+.stats-list a:hover {
+  text-decoration: underline;
+}
+
+.stats-sublist {
+  list-style: none;
+  padding: 0;
+  margin: 0.3rem 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: var(--c-font-dim);
+  font-size: 0.9em;
 }

@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import SiteStats from './SiteStats.svelte';
 
   let { data } = $props();
 
@@ -13,6 +14,7 @@
 
   let onlineUsers = $state([]);
   let onlineGuests = $state([]);
+  let stats = $state(null);
 
   async function refreshOnline() {
     const res = await fetch('/api/players/online');
@@ -21,8 +23,14 @@
     onlineGuests = result.guests;
   }
 
+  async function refreshStats() {
+    const res = await fetch('/api/stats');
+    stats = await res.json();
+  }
+
   onMount(() => {
     refreshOnline();
+    refreshStats();
     const id = setInterval(refreshOnline, 10000);
     return () => clearInterval(id);
   });
@@ -70,6 +78,10 @@
         <div class="online-empty">No one online right now.</div>
       {/if}
     </div>
+
+    {#if stats}
+      <SiteStats {stats} />
+    {/if}
 
     <div class="community__leaders">
       <h2>Leaderboard</h2>

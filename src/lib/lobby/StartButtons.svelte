@@ -29,11 +29,11 @@
   </button>
 
   <div class="lobby__counters">
-    <span class="lobby__counter">
+    <a class="lobby__counter" href="/player">
       <strong>{playersOnline}</strong> players online
-    </span>
-    <span class="lobby__counter">
+    </a>
+    <a class="lobby__counter" href="/player">
       <strong>{gamesInPlay}</strong> games in play
-    </span>
+    </a>
   </div>
 </div>
