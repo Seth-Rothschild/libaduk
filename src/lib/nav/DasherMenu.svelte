@@ -38,7 +38,7 @@
           <span class="online-dot"></span>
           Profile
         </a>
-        <button class="text signout" data-icon="&#xe005;" onclick={signOut}>Sign out</button>
+        <button class="text signout" data-icon="&#xe055;" onclick={signOut}>Sign out</button>
         <hr />
         <button class="text" data-icon="&#xe028;" onclick={() => (pane = 'board')}>Board</button>
         <button class="text" data-icon="&#xe061;" onclick={() => (pane = 'background')}
