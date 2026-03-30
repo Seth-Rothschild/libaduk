@@ -438,11 +438,14 @@ a.lobby__counter:hover {
 }
 
 .lobby__about a {
-  margin-inline-end: 1.2em;
   white-space: nowrap;
   color: var(--c-font-page);
   text-decoration: none;
   transition: color 150ms ease;
+}
+
+.lobby__about a:not(:last-child) {
+  margin-inline-end: 1.2em;
 }
 
 .lobby__about a:hover {

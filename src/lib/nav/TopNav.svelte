@@ -14,16 +14,16 @@
     </div>
   </section>
   <section>
-    <a href="/player">Community</a>
-    <div role="group">
-      <a href="/player">Players</a>
-    </div>
-  </section>
-  <section>
     <a href="/puzzle">Puzzles</a>
     <div role="group">
       <a href="/puzzle">Random puzzle</a>
       <a href="/puzzle/daily">Puzzle of the day</a>
+    </div>
+  </section>
+  <section>
+    <a href="/player">Community</a>
+    <div role="group">
+      <a href="/player">Players</a>
     </div>
   </section>
   <section>
