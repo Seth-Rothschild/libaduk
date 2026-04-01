@@ -410,15 +410,19 @@
       const movingSign = mySign;
       const moveResult = gs.board.analyzeMove(movingSign, [x, y]);
       if (moveResult.overwrite || moveResult.suicide || moveResult.ko) return;
-      gs.applyMove(x, y, movingSign);
-      gs.tickClock();
-      gameSocket.send({ type: 'move', x, y });
       if (isOgs && ogsBridge) {
+        gs.applyMove(x, y, movingSign);
+        gs.tickClock();
+        gameSocket.send({ type: 'move', x, y });
         ogsBridge.sendMove(x, y);
-      }
-      if (isAI) {
+      } else if (isAI) {
+        gs.applyMove(x, y, movingSign);
+        gs.tickClock();
         aiMoveHistory.push({ color: movingSign, x, y });
+        gameSocket.send({ type: 'move', x, y });
         triggerAiMove();
+      } else {
+        gameSocket.send({ type: 'move', x, y });
       }
     } else if (gs.status === 'scoring') {
       if (isOgs && ogsBridge) {

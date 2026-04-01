@@ -1,6 +1,25 @@
 import { WebSocketServer } from 'ws';
 import * as db from './db.js';
 import { handicapPoints } from '../game/board/helpers.js';
+import { createBoard, placeStones, replayMoves } from '../game/board/board.js';
+
+function buildCurrentBoard(game) {
+  const size = game.size ?? 19;
+  const moves = game.moves ?? [];
+  const handicapStones = game.handicapStones ?? [];
+
+  let initialBoard = null;
+  if (handicapStones.length > 0) {
+    const stoneList = handicapStones.map(({ x, y }) => ({ x, y, sign: 1 }));
+    initialBoard = placeStones(createBoard(size), stoneList);
+  }
+
+  const board = replayMoves(moves, size, initialBoard);
+  const firstSign = handicapStones.length > 0 ? -1 : 1;
+  const currentSign = moves.length % 2 === 0 ? firstSign : -firstSign;
+
+  return { board, currentSign };
+}
 
 if (!global.__lobbyClients) global.__lobbyClients = new Set();
 const lobbyClients = global.__lobbyClients;
@@ -212,9 +231,20 @@ export function attachWebSocketServer(httpServer) {
         }
       }
       if (msg.type === 'move' && socket.gameId) {
-        const moveEntry = { type: 'move', x: msg.x, y: msg.y };
-        await db.appendMove(socket.gameId, moveEntry);
-        broadcastToOthers(socket.gameId, socket, { type: 'move', x: msg.x, y: msg.y });
+        const game = await db.getGame(socket.gameId);
+        if (!game || game.status !== 'playing') return;
+
+        const isRegularGame = game.gameType !== 'ai' && game.gameType !== 'ogs';
+        if (isRegularGame) {
+          const { board, currentSign } = buildCurrentBoard(game);
+          const analysis = board.analyzeMove(currentSign, [msg.x, msg.y]);
+          if (analysis.overwrite || analysis.suicide || analysis.ko) return;
+          await db.appendMove(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
+          broadcast(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
+        } else {
+          await db.appendMove(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
+          broadcastToOthers(socket.gameId, socket, { type: 'move', x: msg.x, y: msg.y });
+        }
       }
       if (msg.type === 'pass' && socket.gameId) {
         await db.appendMove(socket.gameId, { type: 'pass' });
