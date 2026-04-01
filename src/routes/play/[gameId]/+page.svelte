@@ -428,11 +428,13 @@
       if (isOgs && ogsBridge) {
         ogsBridge.toggleDeadStone(x, y);
       } else {
-        gs.deadStones = toggleDeadStones(gs.board, gs.deadStones, x, y);
-        gs.blackApproved = false;
-        gs.whiteApproved = false;
+        gameSocket.send({ type: 'scoring-mark', x, y });
       }
     }
+  }
+
+  function resumePlay() {
+    gameSocket.send({ type: 'scoring-resume' });
   }
 
   function pass() {
@@ -634,6 +636,18 @@
           if (msg.color === 'black') gs.blackApproved = true;
           else gs.whiteApproved = true;
           checkBothApproved();
+        }
+        if (msg.type === 'scoring-mark') {
+          gs.deadStones = toggleDeadStones(gs.board, gs.deadStones, msg.x, msg.y);
+          gs.blackApproved = false;
+          gs.whiteApproved = false;
+        }
+        if (msg.type === 'scoring-resume') {
+          gs.status = 'playing';
+          gs.consecutivePasses = 0;
+          gs.deadStones = [];
+          gs.blackApproved = false;
+          gs.whiteApproved = false;
         }
         if (msg.type === 'chat') {
           const isDuplicate = chatMessages.some((m) => m.user === msg.user && m.text === msg.text);
@@ -962,6 +976,7 @@
           onForceResign={forceResign}
           onCancel={cancel}
           onApproveScore={approveScore}
+          onResumePlay={resumePlay}
           onAnalysis={enterAnalysis}
           onExitAnalysis={exitAnalysis}
         />

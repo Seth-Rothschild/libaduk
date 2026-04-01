@@ -288,7 +288,9 @@ export function attachWebSocketServer(httpServer) {
             game.clockState ?? createInitialClockState(game.timeControl, hasHandicap)
           );
           await db.appendMove(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
-          if (clockState) await db.updateGame(socket.gameId, { clockState });
+          const movePatch = { consecutivePasses: 0 };
+          if (clockState) movePatch.clockState = clockState;
+          await db.updateGame(socket.gameId, movePatch);
           broadcast(socket.gameId, { type: 'move', x: msg.x, y: msg.y, clockState });
         } else {
           await db.appendMove(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
@@ -305,14 +307,12 @@ export function attachWebSocketServer(httpServer) {
           const clockState = tickClockState(
             game.clockState ?? createInitialClockState(game.timeControl, hasHandicap)
           );
+          const consecutivePasses = (game.consecutivePasses ?? 0) + 1;
           await db.appendMove(socket.gameId, { type: 'pass' });
-          const patch = {};
+          const patch = { consecutivePasses };
           if (clockState) patch.clockState = clockState;
-          const allMoves = [...(game.moves ?? []), { type: 'pass' }];
-          const lastTwo = allMoves.slice(-2);
-          const bothPassed = lastTwo.length === 2 && lastTwo.every((m) => m.type === 'pass');
-          if (bothPassed) patch.status = 'scoring';
-          if (Object.keys(patch).length > 0) await db.updateGame(socket.gameId, patch);
+          if (consecutivePasses >= 2) patch.status = 'scoring';
+          await db.updateGame(socket.gameId, patch);
           broadcast(socket.gameId, { type: 'pass', clockState });
         } else {
           await db.appendMove(socket.gameId, { type: 'pass' });
@@ -321,6 +321,13 @@ export function attachWebSocketServer(httpServer) {
       }
       if (msg.type === 'approve-score' && socket.gameId) {
         broadcastToOthers(socket.gameId, socket, { type: 'approve-score', color: msg.color });
+      }
+      if (msg.type === 'scoring-mark' && socket.gameId) {
+        broadcast(socket.gameId, { type: 'scoring-mark', x: msg.x, y: msg.y });
+      }
+      if (msg.type === 'scoring-resume' && socket.gameId) {
+        await db.updateGame(socket.gameId, { status: 'playing', consecutivePasses: 0 });
+        broadcast(socket.gameId, { type: 'scoring-resume' });
       }
       if (msg.type === 'analysis-enter' && socket.gameId) {
         await db.updateGame(socket.gameId, { analysisTree: msg.tree, analysisActive: true });

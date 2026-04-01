@@ -13,6 +13,7 @@
     onForceResign,
     onCancel,
     onApproveScore,
+    onResumePlay = null,
     onAnalysis = null,
     onExitAnalysis = null
   } = $props();
@@ -38,6 +39,9 @@
   >
     {myApproved ? 'Score accepted' : 'Accept score'}
   </button>
+  {#if onResumePlay}
+    <button class="button button-metal" onclick={onResumePlay}>Resume play</button>
+  {/if}
 {/if}
 {#if status === 'gameover'}
   {#if analysisMode && onExitAnalysis}
