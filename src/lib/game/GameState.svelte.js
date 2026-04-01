@@ -129,8 +129,8 @@ export class GameState {
       this.clockState = {
         black: { ...game.clockState.black },
         white: { ...game.clockState.white },
-        activeColor: null,
-        turnStartedAt: null
+        activeColor: game.clockState.activeColor ?? null,
+        turnStartedAt: game.clockState.turnStartedAt ?? null
       };
     } else if (hasRealTimeClock) {
       const mainMs = (tc.initial ?? 0) * 1000;
