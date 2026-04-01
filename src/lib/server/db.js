@@ -164,7 +164,9 @@ export async function createGame({
   handicapStones = [],
   gameType = 'hook',
   status = 'waiting',
-  aiDifficulty = null
+  aiDifficulty = null,
+  ogsGameId = null,
+  ogsUserId = null
 }) {
   try {
     const game = {
@@ -181,6 +183,8 @@ export async function createGame({
       handicap,
       handicapStones,
       aiDifficulty,
+      ogsGameId,
+      ogsUserId,
       createdAt: Date.now(),
       endedAt: null,
       winner: null,
@@ -255,7 +259,7 @@ export async function getPendingGames(tcType = null) {
     const d = await getDb();
     const query = {
       status: 'waiting',
-      gameType: { $nin: ['friend', 'local', 'ai'] },
+      gameType: { $nin: ['friend', 'ai'] },
       $or: [{ blackName: { $ne: null } }, { whiteName: { $ne: null } }]
     };
     if (tcType === 'correspondence') {
@@ -427,7 +431,7 @@ const LEADERBOARD_CATEGORIES = [
 async function leaderboardForCategory(collection, filter) {
   const docs = await collection
     .aggregate([
-      { $match: { status: 'finished', gameType: { $nin: ['friend', 'local'] }, ...filter } },
+      { $match: { status: 'finished', gameType: { $nin: ['friend'] }, ...filter } },
       {
         $project: {
           players: [{ $ifNull: ['$blackName', null] }, { $ifNull: ['$whiteName', null] }]

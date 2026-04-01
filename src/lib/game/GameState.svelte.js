@@ -28,7 +28,6 @@ export class GameState {
   finalScore = $state(null);
   timedOutColor = $state(null);
   mySign = $state(null);
-  isLocal = false;
 
   boardHistory = $state([]);
   lastMoveHistory = $state([]);
@@ -83,10 +82,7 @@ export class GameState {
     this.viewPly = null;
   }
 
-  constructor({ isLocal = false } = {}) {
-    this.isLocal = isLocal;
-    if (isLocal) this.mySign = 1;
-  }
+  constructor() {}
 
   initFromData(game, viewerColor) {
     this.boardSize = game.size ?? 19;

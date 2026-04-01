@@ -5,7 +5,6 @@
     winner,
     winnerResult,
     mySign,
-    isLocal,
     isSpectator,
     blackName,
     whiteName,
@@ -24,7 +23,7 @@
     await navigator.clipboard.writeText(gameUrl);
   }
 
-  const showWaiting = $derived(status === 'waiting' && !isLocal && !isSpectator);
+  const showWaiting = $derived(status === 'waiting' && !isSpectator);
   const isLobbyGame = $derived(gameType === 'hook');
 </script>
 
@@ -58,7 +57,7 @@
   {/if}
   {#if status === 'gameover'}
     <section class="status">
-      {#if isLocal || isSpectator}
+      {#if isSpectator}
         {winner === 1 ? 'Black' : 'White'} wins{formatResult(winnerResult)
           ? ` ${formatResult(winnerResult)}`
           : ''}.

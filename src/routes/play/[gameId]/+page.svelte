@@ -35,15 +35,16 @@
   } from '$lib/game/board';
   import { initEngine, generateMove, hasModel, isReady, dispose } from '$lib/ai/engine.js';
   import ModelManager from '$lib/ai/ModelManager.svelte';
+  import { OgsGameBridge } from '$lib/game/ogsGameBridge.svelte.js';
 
   let { data } = $props();
   const username = $derived(data.user?.username ?? '');
   const displayName = $derived(username || getGuestId());
 
-  const KOMI = $derived(data.game.komi ?? 6.5);
+  const KOMI = $derived(isOgs && ogsBridge ? ogsBridge.komi : (data.game.komi ?? 6.5));
 
   const gameId = $derived(page.params.gameId);
-  const isLocal = $derived(data.game.gameType === 'local');
+  const isOgs = $derived(data.game.gameType === 'ogs');
 
   let boardContainerWidth = $state(0);
   let boardContainerHeight = $state(0);
@@ -55,6 +56,7 @@
   let clockPausedAt = $state(null);
 
   const isAI = $derived(data.game.gameType === 'ai');
+  let ogsBridge = $state(null);
   const aiDifficulty = $derived(data.game.aiDifficulty ?? 5);
   let aiThinking = $state(false);
   let aiMoveHistory = $state([]);
@@ -69,9 +71,12 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ gameId, user: displayName, text })
     });
+    if (isOgs && ogsBridge) {
+      ogsBridge.sendChat(text);
+    }
   }
 
-  let gs = $state(new GameState({ isLocal }));
+  let gs = $state(new GameState());
 
   const vertexSize = $derived(
     computeVertexSize(boardContainerWidth, boardContainerHeight, gs.boardSize)
@@ -81,7 +86,7 @@
   const blackCaptures = $derived(displayBoard.getCaptures(1));
   const whiteCaptures = $derived(displayBoard.getCaptures(-1));
 
-  const showJoinModal = $derived(gs.status === 'waiting' && gs.mySign === null && !isLocal);
+  const showJoinModal = $derived(gs.status === 'waiting' && gs.mySign === null && !isOgs);
 
   function handleJoined(color) {
     gs.mySign = color === 'black' ? 1 : -1;
@@ -91,8 +96,8 @@
     gameSocket.send({ type: 'join', gameId, color });
   }
 
-  const isSpectator = $derived(!isLocal && gs.mySign === null);
-  const mySign = $derived(isLocal ? 1 : (gs.mySign ?? -1));
+  const isSpectator = $derived(gs.mySign === null);
+  const mySign = $derived(gs.mySign ?? -1);
   const myColor = $derived(colorName(mySign));
   const oppColor = $derived(myColor === 'black' ? 'white' : 'black');
   const myCaptures = $derived(mySign === 1 ? blackCaptures : whiteCaptures);
@@ -104,7 +109,7 @@
       gs.status === 'playing' &&
       gs.timedOutColor === null &&
       !aiThinking &&
-      (isLocal || gs.currentSign === mySign) &&
+      gs.currentSign === mySign &&
       (!isCorrGame || gs.corrState?.activeColor === myColor)
   );
 
@@ -115,23 +120,27 @@
     const winnerColor = loser === 'black' ? 'white' : 'black';
     gs.winner = winnerColor === 'black' ? 1 : -1;
     gs.winnerResult = `${winnerColor === 'black' ? 'B' : 'W'}+T`;
-    if (!isLocal) {
-      fetch('/api/game/finish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gameId,
-          winner: winnerColor,
-          result: gs.winnerResult
-        })
-      });
-    }
+    fetch('/api/game/finish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        gameId,
+        winner: winnerColor,
+        result: gs.winnerResult
+      })
+    });
   }
 
   const hasClock = $derived(
     gs.timeControl.type !== 'none' && gs.timeControl.type !== 'correspondence'
   );
-  const initialMs = $derived(hasClock ? (gs.timeControl.initial ?? 0) * 1000 : null);
+  const initialMs = $derived(
+    isOgs
+      ? (ogsBridge?.clock?.black_time?.thinking_time ?? 0) * 1000 || null
+      : hasClock
+        ? (gs.timeControl.initial ?? 0) * 1000
+        : null
+  );
   const previewClockData = $derived.by(() => {
     if (!hasClock) return null;
     const mainMs = (gs.timeControl.initial ?? 0) * 1000;
@@ -143,11 +152,47 @@
       inByoYomi: isByoyomi && mainMs === 0
     };
   });
-  const myClockData = $derived(gs.clockState?.[myColor] ?? previewClockData);
-  const oppClockData = $derived(gs.clockState?.[oppColor] ?? previewClockData);
+  function ogsTimeToClockData(t) {
+    if (!t) return null;
+    const mainMs = t.thinking_time * 1000;
+    return {
+      mainMs,
+      byoMs: t.period_time * 1000,
+      byoPeriods: t.periods,
+      periodMs: t.period_time * 1000,
+      inByoYomi: mainMs <= 0
+    };
+  }
+
+  const ogsClock = $derived(isOgs ? ogsBridge?.clock : null);
+  const ogsBlackClockData = $derived(ogsTimeToClockData(ogsClock?.black_time));
+  const ogsWhiteClockData = $derived(ogsTimeToClockData(ogsClock?.white_time));
+  // Adjust last_move server timestamp to client time using the 'now' field
+  const ogsTurnStartedAt = $derived(
+    ogsClock ? Date.now() - (ogsClock.now ?? Date.now()) + ogsClock.last_move : null
+  );
+  const ogsActiveColor = $derived.by(() => {
+    if (!ogsClock) return null;
+    return ogsClock.current_player === ogsClock.black_player_id ? 'black' : 'white';
+  });
+
+  const myClockData = $derived(
+    isOgs
+      ? myColor === 'black'
+        ? ogsBlackClockData
+        : ogsWhiteClockData
+      : (gs.clockState?.[myColor] ?? previewClockData)
+  );
+  const oppClockData = $derived(
+    isOgs
+      ? oppColor === 'black'
+        ? ogsBlackClockData
+        : ogsWhiteClockData
+      : (gs.clockState?.[oppColor] ?? previewClockData)
+  );
 
   function activePlayerOnline() {
-    if (isLocal || isAI) return true;
+    if (isAI) return true;
     const activeColor = gs.clockState?.activeColor;
     if (activeColor === 'black') return blackOnline;
     if (activeColor === 'white') return whiteOnline;
@@ -155,25 +200,34 @@
   }
 
   const myClockRunning = $derived(
-    gs.status === 'playing' &&
-      !!gs.clockState?.turnStartedAt &&
-      gs.clockState?.activeColor === myColor &&
-      activePlayerOnline()
+    isOgs
+      ? gs.status === 'playing' && ogsActiveColor === myColor
+      : gs.status === 'playing' &&
+          !!gs.clockState?.turnStartedAt &&
+          gs.clockState?.activeColor === myColor &&
+          activePlayerOnline()
   );
   const oppClockRunning = $derived(
-    gs.status === 'playing' &&
-      !!gs.clockState?.turnStartedAt &&
-      gs.clockState?.activeColor === oppColor &&
-      activePlayerOnline()
+    isOgs
+      ? gs.status === 'playing' && ogsActiveColor === oppColor
+      : gs.status === 'playing' &&
+          !!gs.clockState?.turnStartedAt &&
+          gs.clockState?.activeColor === oppColor &&
+          activePlayerOnline()
   );
 
   const scoreBoard = $derived.by(() => {
     if (gs.status !== 'scoring') return displayBoard;
-    return buildScoreBoard(gs.board, gs.deadStones);
+    const dead = isOgs && ogsBridge ? ogsBridge.deadStones : gs.deadStones;
+    return buildScoreBoard(gs.board, dead);
   });
 
   const areaMap = $derived(gs.status === 'scoring' ? influence.areaMap(scoreBoard.signMap) : null);
   const score = $derived(areaMap ? computeScore(areaMap, gs.boardSize, KOMI) : null);
+
+  const displayDeadStones = $derived(
+    gs.status === 'scoring' ? (isOgs && ogsBridge ? ogsBridge.deadStones : gs.deadStones) : null
+  );
 
   // --- AI move logic ---
 
@@ -353,30 +407,36 @@
     if (isSpectator) return;
     if (gs.status === 'playing') {
       if (!isMyTurn) return;
-      const movingSign = isLocal ? gs.currentSign : mySign;
+      const movingSign = mySign;
       const moveResult = gs.board.analyzeMove(movingSign, [x, y]);
       if (moveResult.overwrite || moveResult.suicide || moveResult.ko) return;
       gs.applyMove(x, y, movingSign);
       gs.tickClock();
-      if (!isLocal) {
-        gameSocket.send({ type: 'move', x, y });
+      gameSocket.send({ type: 'move', x, y });
+      if (isOgs && ogsBridge) {
+        ogsBridge.sendMove(x, y);
       }
       if (isAI) {
         aiMoveHistory.push({ color: movingSign, x, y });
         triggerAiMove();
       }
     } else if (gs.status === 'scoring') {
-      gs.deadStones = toggleDeadStones(gs.board, gs.deadStones, x, y);
-      gs.blackApproved = false;
-      gs.whiteApproved = false;
+      if (isOgs && ogsBridge) {
+        ogsBridge.toggleDeadStone(x, y);
+      } else {
+        gs.deadStones = toggleDeadStones(gs.board, gs.deadStones, x, y);
+        gs.blackApproved = false;
+        gs.whiteApproved = false;
+      }
     }
   }
 
   function pass() {
     if (!isMyTurn) return;
     applyPass();
-    if (!isLocal) {
-      gameSocket.send({ type: 'pass' });
+    gameSocket.send({ type: 'pass' });
+    if (isOgs && ogsBridge) {
+      ogsBridge.sendPass();
     }
     if (isAI) {
       aiMoveHistory.push({ color: mySign, x: -1, y: -1 });
@@ -393,7 +453,7 @@
     gs.currentSign = gs.currentSign === 1 ? -1 : 1;
     gs.recordPass();
     gs.tickClock();
-    if (gs.consecutivePasses >= 2) {
+    if (!isOgs && gs.consecutivePasses >= 2) {
       gs.status = 'scoring';
       gs.deadStones = [];
       gs.blackApproved = false;
@@ -416,12 +476,9 @@
   function resign() {
     const winner = myColor === 'black' ? 'white' : 'black';
     const result = winner === 'white' ? 'W+R' : 'B+R';
-    if (isLocal) {
-      gs.status = 'gameover';
-      gs.winner = mySign === 1 ? -1 : 1;
-      gs.winnerResult = result;
-    } else {
-      gameSocket.send({ type: 'gameover', winner, result, clockState: serializeClockState() });
+    gameSocket.send({ type: 'gameover', winner, result, clockState: serializeClockState() });
+    if (isOgs && ogsBridge) {
+      ogsBridge.sendResign();
     }
   }
 
@@ -436,15 +493,19 @@
   }
 
   function approveScore() {
+    if (isOgs && ogsBridge) {
+      if (ogsBridge.phase === 'stone removal') {
+        ogsBridge.acceptScoring();
+      }
+      return;
+    }
     if (myColor === 'black') gs.blackApproved = true;
     else gs.whiteApproved = true;
     if (isAI) {
       gs.blackApproved = true;
       gs.whiteApproved = true;
     }
-    if (!isLocal) {
-      gameSocket.send({ type: 'approve-score', color: myColor });
-    }
+    gameSocket.send({ type: 'approve-score', color: myColor });
     checkBothApproved();
   }
 
@@ -456,22 +517,19 @@
     gs.status = 'gameover';
     gs.winner = winner;
     gs.finalScore = finalScore;
-    if (!isLocal) {
-      gameSocket.send({
-        type: 'gameover',
-        winner: winner === 1 ? 'black' : 'white',
-        result: resultString,
-        clockState: serializeClockState()
-      });
-    }
+    gameSocket.send({
+      type: 'gameover',
+      winner: winner === 1 ? 'black' : 'white',
+      result: resultString,
+      clockState: serializeClockState()
+    });
   }
 
   const opponentOnline = $derived(
-    isLocal || isAI ? null : oppColor === 'black' ? blackOnline : whiteOnline
+    isAI || isOgs ? null : oppColor === 'black' ? blackOnline : whiteOnline
   );
 
   function resolvePlayerName(targetColor) {
-    if (isLocal) return targetColor === 'black' ? 'Black' : 'White';
     if (isSpectator) {
       const name = targetColor === 'black' ? blackName : whiteName;
       return name ?? (targetColor === 'black' ? 'Black' : 'White');
@@ -482,10 +540,6 @@
   }
 
   function resolveStripName(targetColor) {
-    if (isLocal) {
-      const name = targetColor === 'black' ? blackName : whiteName;
-      return name ?? (targetColor === 'black' ? 'Black' : 'White');
-    }
     if (isSpectator) {
       const name = targetColor === 'black' ? blackName : whiteName;
       return name ?? (targetColor === 'black' ? 'Black' : 'White');
@@ -620,6 +674,78 @@
         initAiEngine();
       }
 
+      if (data.game.gameType === 'ogs' && data.game.ogsGameId && data.game.ogsUserId) {
+        const bridge = new OgsGameBridge(data.game.ogsGameId, data.game.ogsUserId);
+
+        bridge.onGameStart = (color, ogsBlackName, ogsWhiteName) => {
+          gs.mySign = color === 'black' ? 1 : -1;
+          if (gs.status === 'waiting') gs.status = 'playing';
+          blackName = ogsBlackName;
+          whiteName = ogsWhiteName;
+          const isFirstMove = gs.moveHistory.length === 0;
+          if (isFirstMove) {
+            for (const [x, y] of bridge.handicapStones) {
+              gs.applyMove(x, y, 1);
+            }
+            if (bridge.handicapStones.length > 0) {
+              gs.currentSign = -1;
+            }
+          }
+          gameSocket.join(currentGameId, color);
+          fetch('/api/game/ogs-start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              gameId: currentGameId,
+              blackName: ogsBlackName,
+              whiteName: ogsWhiteName
+            })
+          });
+        };
+
+        bridge.onOpponentMove = (x, y) => {
+          const opponentSign = gs.currentSign;
+          gs.applyMove(x, y, opponentSign);
+          gs.tickClock();
+          gameSocket.send({ type: 'move', x, y });
+        };
+
+        bridge.onOpponentPass = () => {
+          applyPass();
+          gameSocket.send({ type: 'pass' });
+        };
+
+        bridge.onPhaseChange = (phase) => {
+          if (phase === 'stone removal') {
+            gs.status = 'scoring';
+            gs.deadStones = [];
+          } else if (phase === 'play') {
+            gs.status = 'playing';
+          }
+        };
+
+        bridge.onGameOver = (winner, result) => {
+          gs.status = 'gameover';
+          if (winner) gs.winner = winner === 'black' ? 1 : -1;
+          if (result) gs.winnerResult = result;
+          if (winner && result) {
+            fetch('/api/game/finish', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ gameId: currentGameId, winner, result })
+            });
+          }
+        };
+
+        bridge.onChat = (user, text) => {
+          const isDuplicate = chatMessages.some((m) => m.text === text);
+          if (!isDuplicate) chatMessages.push({ user, text });
+        };
+
+        bridge.connect();
+        ogsBridge = bridge;
+      }
+
       document.addEventListener('keydown', handleKeydown);
     });
 
@@ -629,6 +755,10 @@
       gameSocket.leave();
       if (data.game.gameType === 'ai') {
         dispose();
+      }
+      if (ogsBridge) {
+        ogsBridge.destroy();
+        ogsBridge = null;
       }
     };
   });
@@ -654,7 +784,6 @@
       winner={gs.winner}
       winnerResult={gs.winnerResult}
       {mySign}
-      {isLocal}
       {isSpectator}
       blackName={resolvePlayerName('black')}
       whiteName={resolvePlayerName('white')}
@@ -704,7 +833,7 @@
           size={gs.boardSize}
           {vertexSize}
           {areaMap}
-          deadStones={gs.status === 'scoring' ? gs.deadStones : null}
+          deadStones={displayDeadStones}
           showCoords={boardSettings.showCoords}
           currentSign={gs.currentSign}
           interactive={isMyTurn || gs.status === 'scoring'}
@@ -716,13 +845,13 @@
       {/if}
     </div>
 
-    {#if !isCorrGame}
+    {#if !isCorrGame || isOgs}
       <Clock
         clockData={oppClockData}
         running={oppClockRunning}
         position="top"
         {initialMs}
-        turnStartedAt={gs.clockState?.turnStartedAt}
+        turnStartedAt={isOgs ? ogsTurnStartedAt : gs.clockState?.turnStartedAt}
         onTimeout={() => handleTimeout(oppColor)}
       />
     {/if}
@@ -734,7 +863,7 @@
         : resolveStripName(topStripColor)}
       captures={opponentCaptures}
       position="top"
-      online={isLocal || isAI ? null : topStripColor === 'black' ? blackOnline : whiteOnline}
+      online={isAI || isOgs ? null : topStripColor === 'black' ? blackOnline : whiteOnline}
     />
 
     <div class="rmoves">
@@ -755,7 +884,6 @@
         {/if}
         <GameStatusMessage
           status={gs.status}
-          {isLocal}
           {isSpectator}
           {isMyTurn}
           {myColor}
@@ -785,6 +913,14 @@
       </div>
     {/if}
 
+    {#if isOgs && ogsBridge && gs.status === 'scoring'}
+      <div class="rcontrols">
+        <button class="button button-metal" onclick={() => ogsBridge.rejectScoring()}>
+          Resume Play
+        </button>
+      </div>
+    {/if}
+
     <div class="rcontrols">
       {#if analysisMode}
         <AnalysisControls
@@ -802,7 +938,6 @@
           status={gs.status}
           {isSpectator}
           {isMyTurn}
-          {isLocal}
           {myColor}
           {analysisMode}
           blackApproved={gs.blackApproved}
@@ -813,12 +948,6 @@
           onForceResign={forceResign}
           onCancel={cancel}
           onApproveScore={approveScore}
-          onApproveBlack={() => {
-            gs.blackApproved = true;
-          }}
-          onApproveWhite={() => {
-            gs.whiteApproved = true;
-          }}
           onAnalysis={enterAnalysis}
           onExitAnalysis={exitAnalysis}
         />
@@ -850,16 +979,16 @@
       name={resolveStripName(bottomStripColor)}
       captures={myCaptures}
       position="bottom"
-      online={isLocal || isAI ? null : bottomStripColor === 'black' ? blackOnline : whiteOnline}
+      online={isAI || isOgs ? null : bottomStripColor === 'black' ? blackOnline : whiteOnline}
     />
 
-    {#if !isCorrGame}
+    {#if !isCorrGame || isOgs}
       <Clock
         clockData={myClockData}
         running={myClockRunning}
         position="bottom"
         {initialMs}
-        turnStartedAt={gs.clockState?.turnStartedAt}
+        turnStartedAt={isOgs ? ogsTurnStartedAt : gs.clockState?.turnStartedAt}
         onTimeout={() => handleTimeout(myColor)}
       />
     {/if}

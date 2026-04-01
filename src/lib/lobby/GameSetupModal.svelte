@@ -103,7 +103,6 @@
   const BUTTON_LABELS = {
     hook: 'Create a game',
     friend: 'Challenge a friend',
-    local: 'Play locally',
     ai: 'Play against computer'
   };
 
@@ -156,7 +155,7 @@
       });
       const { gameId } = await res.json();
       onClose();
-      goto(gameType === 'local' ? `/play/${gameId}?local=true` : `/play/${gameId}`);
+      goto(`/play/${gameId}`);
     } catch {
       loading = false;
     }

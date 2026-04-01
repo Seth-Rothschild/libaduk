@@ -23,7 +23,6 @@
 
   let {
     status,
-    isLocal,
     isSpectator,
     isMyTurn,
     myColor,
@@ -44,9 +43,7 @@
 {#if status === 'waiting'}
   <div class="message" data-icon={ICON_INFO}>
     <div>
-      {#if isLocal}
-        <strong>{currentSign === 1 ? 'Black' : 'White'}</strong> to move<br />
-      {:else if isSpectator}
+      {#if isSpectator}
         Waiting for players...
       {:else}
         You are <strong>{myColor}</strong><br />
@@ -57,9 +54,7 @@
 {:else if status === 'playing'}
   <div class="message" data-icon={ICON_INFO}>
     <div>
-      {#if isLocal}
-        <strong>{currentSign === 1 ? 'Black' : 'White'}</strong>'s turn
-      {:else if isSpectator}
+      {#if isSpectator}
         Spectating<br />{currentSign === 1 ? 'Black' : 'White'} to play
       {:else if isMyTurn}
         You play the {myColor} stones<br /><strong>It's your turn!</strong>
@@ -82,7 +77,7 @@
 {:else if status === 'gameover'}
   <div class="message" data-icon={ICON_INFO}>
     <div>
-      {#if isLocal || isSpectator}
+      {#if isSpectator}
         {winner === 1 ? 'Black' : 'White'} wins
       {:else}
         {winner === mySign ? 'You win' : 'You lose'}

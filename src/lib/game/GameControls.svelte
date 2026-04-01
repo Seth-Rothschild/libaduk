@@ -3,7 +3,6 @@
     status,
     isSpectator,
     isMyTurn,
-    isLocal,
     myColor,
     analysisMode = false,
     blackApproved,
@@ -14,8 +13,6 @@
     onForceResign,
     onCancel,
     onApproveScore,
-    onApproveBlack,
-    onApproveWhite,
     onAnalysis = null,
     onExitAnalysis = null
   } = $props();
@@ -31,37 +28,16 @@
     <button class="button button-red" onclick={onResign}>Resign</button>
   {/if}
 {:else if !isSpectator && status === 'scoring'}
-  {#if isLocal}
-    <button
-      class="button"
-      class:button-metal={!blackApproved}
-      class:button-green={blackApproved}
-      onclick={onApproveBlack}
-      disabled={blackApproved}
-    >
-      {blackApproved ? 'Black ✓' : 'Black accepts'}
-    </button>
-    <button
-      class="button"
-      class:button-metal={!whiteApproved}
-      class:button-green={whiteApproved}
-      onclick={onApproveWhite}
-      disabled={whiteApproved}
-    >
-      {whiteApproved ? 'White ✓' : 'White accepts'}
-    </button>
-  {:else}
-    {@const myApproved = myColor === 'black' ? blackApproved : whiteApproved}
-    <button
-      class="button"
-      class:button-metal={!myApproved}
-      class:button-green={myApproved}
-      onclick={onApproveScore}
-      disabled={myApproved}
-    >
-      {myApproved ? 'Score accepted' : 'Accept score'}
-    </button>
-  {/if}
+  {@const myApproved = myColor === 'black' ? blackApproved : whiteApproved}
+  <button
+    class="button"
+    class:button-metal={!myApproved}
+    class:button-green={myApproved}
+    onclick={onApproveScore}
+    disabled={myApproved}
+  >
+    {myApproved ? 'Score accepted' : 'Accept score'}
+  </button>
 {/if}
 {#if status === 'gameover'}
   {#if analysisMode && onExitAnalysis}

@@ -30,14 +30,6 @@
 />
 
 <Story
-  name="Play locally"
-  args={{ gameType: 'local' }}
-  play={async ({ canvas }) => {
-    await expect(canvas.getByText('Play locally')).toBeInTheDocument();
-  }}
-/>
-
-<Story
   name="Board size selection"
   args={{ gameType: 'hook' }}
   play={async ({ canvas }) => {

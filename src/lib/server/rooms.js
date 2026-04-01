@@ -49,14 +49,15 @@ export async function createRoom(
   creatorName = null,
   extra = {}
 ) {
-  const local = gameType === 'local';
   const isAi = gameType === 'ai';
   const id = await uniqueId();
   const creatorColor =
     color === 'random' ? (Math.random() > 0.5 ? 'black' : 'white') : (color ?? 'black');
 
-  let blackName = creatorColor === 'black' && creatorName ? creatorName : null;
-  let whiteName = creatorColor === 'white' && creatorName ? creatorName : null;
+  const isOgs = gameType === 'ogs';
+
+  let blackName = !isOgs && creatorColor === 'black' && creatorName ? creatorName : null;
+  let whiteName = !isOgs && creatorColor === 'white' && creatorName ? creatorName : null;
 
   if (isAi) {
     const aiLabel = `AI (strength ${extra.aiDifficulty ?? 5})`;
@@ -76,13 +77,14 @@ export async function createRoom(
     whiteIsAuth: !!whiteName && !isAi,
     creatorColor,
     timeControl,
-    local,
     gameType,
     status: isAi ? 'playing' : 'waiting',
     aiDifficulty: extra.aiDifficulty ?? null,
     komi: extra.komi ?? 6.5,
     handicap: extra.handicap ?? 0,
-    handicapStones: handicapPoints(size, extra.handicap ?? 0)
+    handicapStones: handicapPoints(size, extra.handicap ?? 0),
+    ogsGameId: extra.ogsGameId ?? null,
+    ogsUserId: extra.ogsUserId ?? null
   });
 
   return { id };

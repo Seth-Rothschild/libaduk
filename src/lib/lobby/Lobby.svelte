@@ -32,6 +32,25 @@
 
   // --- Game creation ---
 
+  async function acceptOgsChallenge(entry) {
+    const ogsGameId = await ogsSeekGraph.acceptChallenge(entry.challenge_id);
+    if (!ogsGameId) return;
+    const res = await fetch('/api/game', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        gameType: 'ogs',
+        size: entry.width,
+        color: 'random',
+        ogsGameId,
+        ogsUserId: ogsSeekGraph.userId,
+        creatorName: displayName
+      })
+    });
+    const { gameId } = await res.json();
+    goto(`/play/${gameId}`);
+  }
+
   async function createGame(pool = null) {
     const body = { size: pool?.size ?? 19, color: 'random', creatorName: displayName };
     if (pool) {
@@ -102,7 +121,7 @@
 
   // --- Modal ---
 
-  let setupModal = $state(null); // 'hook' | 'friend' | 'local' | null
+  let setupModal = $state(null); // 'hook' | 'friend' | null
 </script>
 
 <div class="lobby">
@@ -124,6 +143,7 @@
           games={pendingGames}
           onJoin={(id) => goto(`/play/${id}`)}
           ogsChallenges={ogsSeekGraph.challenges}
+          onAcceptOgs={acceptOgsChallenge}
         />
       {:else if activeTab === 'correspondence'}
         <HookTable games={corrGames} onJoin={(id) => goto(`/play/${id}`)} />
