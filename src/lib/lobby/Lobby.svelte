@@ -1,5 +1,7 @@
 <script>
+  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { ogsSeekGraph } from './ogsSeekGraph.svelte.js';
   import GameSetupModal from './GameSetupModal.svelte';
   import LobbyTabs from './LobbyTabs.svelte';
   import LobbyBackground from './LobbyBackground.svelte';
@@ -50,6 +52,10 @@
   let myGames = $state([]);
   let liveGames = $state([]);
   let corrGames = $state([]);
+  onMount(() => {
+    ogsSeekGraph.start();
+    return () => ogsSeekGraph.stop();
+  });
 
   async function refreshPending() {
     const res = await fetch('/api/games?type=live');
@@ -114,7 +120,11 @@
           onCustom={() => (setupModal = 'hook')}
         />
       {:else if activeTab === 'lobby'}
-        <HookTable games={pendingGames} onJoin={(id) => goto(`/play/${id}`)} />
+        <HookTable
+          games={pendingGames}
+          onJoin={(id) => goto(`/play/${id}`)}
+          ogsChallenges={ogsSeekGraph.challenges}
+        />
       {:else if activeTab === 'correspondence'}
         <HookTable games={corrGames} onJoin={(id) => goto(`/play/${id}`)} />
       {/if}

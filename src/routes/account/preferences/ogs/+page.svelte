@@ -13,36 +13,24 @@
       response_type: 'code',
       client_id: PUBLIC_OAUTH_CLIENT_ID,
       redirect_uri: PUBLIC_OAUTH_REDIRECT_URI,
-      scope: 'read'
+      scope: 'read write'
     });
     window.location.href = `${PUBLIC_OAUTH_AUTH_URL}?${params}`;
   }
 </script>
 
 <div class="box__top">
-  <h1>Link OGS</h1>
+  <h1>OGS Integration</h1>
 </div>
 
 <section class="security-section">
   <h2>OGS Account</h2>
-  <p class="section-desc">
-    Link your OGS (online-go.com) account to import your profile information.
-  </p>
-
   {#if data.ogs}
-    <ul class="passkey-list">
-      <li class="passkey-item">
-        <span class="passkey-details">
-          <span class="passkey-type">{data.ogs.username}</span>
-          <span class="passkey-date">ID: {data.ogs.id}</span>
-        </span>
-      </li>
-    </ul>
-
+    <p>{data.ogs.username} (ID: {data.ogs.id})</p>
     <form method="POST" action="?/disconnect" use:enhance>
       <button type="submit" class="button">Disconnect</button>
     </form>
   {:else}
-    <button type="button" class="button" onclick={connectOgs}> Connect OGS Account </button>
+    <button type="button" class="button" onclick={connectOgs}>Connect OGS Account</button>
   {/if}
 </section>

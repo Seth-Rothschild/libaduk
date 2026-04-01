@@ -1,30 +1,11 @@
 <script>
-  let { games, onJoin } = $props();
+  import { formatTime, formatClock } from '$lib/format.js';
+  import { ogsSeekGraph, formatOgsRank, formatOgsClock } from './ogsSeekGraph.svelte.js';
 
-  function formatTime(createdAt) {
-    const now = Date.now();
-    const diff = now - createdAt;
-    const seconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    if (seconds < 60) return 'just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    return new Date(createdAt).toLocaleDateString();
-  }
-
-  function formatClock(timeControl) {
-    if (!timeControl) return '∞';
-    if (timeControl.type === 'correspondence') return 'Corr.';
-    if (timeControl.type === 'byoyomi')
-      return `${timeControl.initial / 60}+${timeControl.periods}×${timeControl.periodTime}s`;
-    if (timeControl.type === 'fischer')
-      return `${timeControl.initial / 60}+${timeControl.increment}`;
-    return '∞';
-  }
+  let { games, onJoin, ogsChallenges = [] } = $props();
 </script>
 
-{#if games.length === 0}
+{#if games.length === 0 && ogsChallenges.length === 0}
   <p class="lobby__tab-empty">No open games.</p>
 {:else}
   <table class="hooks__list">
@@ -34,6 +15,7 @@
         <th>Posted</th>
         <th>Clock</th>
         <th>Board</th>
+        <th>Location</th>
       </tr>
     </thead>
     <tbody>
@@ -50,6 +32,24 @@
           <td>{formatTime(game.createdAt)}</td>
           <td>{formatClock(game.timeControl)}</td>
           <td>{game.size}×{game.size}</td>
+          <td>Libaduk.com</td>
+        </tr>
+      {/each}
+      {#each ogsChallenges as entry}
+        <tr
+          class="hook join"
+          tabindex="0"
+          role="link"
+          onclick={() => ogsSeekGraph.acceptChallenge(entry.challenge_id)}
+          onkeydown={(e) =>
+            (e.key === 'Enter' || e.key === ' ') &&
+            (e.preventDefault(), ogsSeekGraph.acceptChallenge(entry.challenge_id))}
+        >
+          <td>{entry.username} ({formatOgsRank(entry.rank)})</td>
+          <td>—</td>
+          <td>{formatOgsClock(entry.time_control_parameters)}</td>
+          <td>{entry.width}×{entry.height}</td>
+          <td>OGS</td>
         </tr>
       {/each}
     </tbody>
