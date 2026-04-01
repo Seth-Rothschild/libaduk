@@ -3,6 +3,50 @@ import * as db from './db.js';
 import { handicapPoints } from '../game/board/helpers.js';
 import { createBoard, placeStones, replayMoves } from '../game/board/board.js';
 
+function createInitialClockState(tc, hasHandicap) {
+  if (!tc || (tc.type !== 'byoyomi' && tc.type !== 'fischer')) return null;
+  const mainMs = (tc.initial ?? 0) * 1000;
+  const isByoyomi = tc.type === 'byoyomi';
+  const periodMs = isByoyomi ? (tc.periodTime ?? 30) * 1000 : 0;
+  const clockEntry = {
+    mainMs,
+    byoMs: isByoyomi ? periodMs : 0,
+    byoPeriods: isByoyomi ? (tc.periods ?? 5) : 0,
+    inByoYomi: isByoyomi && mainMs === 0,
+    periodMs
+  };
+  return {
+    black: { ...clockEntry },
+    white: { ...clockEntry },
+    activeColor: hasHandicap ? 'white' : 'black',
+    turnStartedAt: null
+  };
+}
+
+function tickClockState(clockState) {
+  if (!clockState) return null;
+  const now = Date.now();
+  const movedColor = clockState.activeColor;
+  const clock = { ...clockState[movedColor] };
+  if (clockState.turnStartedAt) {
+    const elapsed = now - clockState.turnStartedAt;
+    if (clock.inByoYomi) {
+      clock.byoMs = clock.periodMs ?? clock.byoMs;
+    } else {
+      clock.mainMs = Math.max(0, clock.mainMs - elapsed);
+      if (clock.mainMs <= 0 && clock.byoPeriods > 0) {
+        clock.inByoYomi = true;
+      }
+    }
+  }
+  return {
+    ...clockState,
+    [movedColor]: clock,
+    activeColor: movedColor === 'black' ? 'white' : 'black',
+    turnStartedAt: now
+  };
+}
+
 function buildCurrentBoard(game) {
   const size = game.size ?? 19;
   const moves = game.moves ?? [];
@@ -239,8 +283,13 @@ export function attachWebSocketServer(httpServer) {
           const { board, currentSign } = buildCurrentBoard(game);
           const analysis = board.analyzeMove(currentSign, [msg.x, msg.y]);
           if (analysis.overwrite || analysis.suicide || analysis.ko) return;
+          const hasHandicap = (game.handicapStones ?? []).length > 0;
+          const clockState = tickClockState(
+            game.clockState ?? createInitialClockState(game.timeControl, hasHandicap)
+          );
           await db.appendMove(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
-          broadcast(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
+          if (clockState) await db.updateGame(socket.gameId, { clockState });
+          broadcast(socket.gameId, { type: 'move', x: msg.x, y: msg.y, clockState });
         } else {
           await db.appendMove(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
           broadcastToOthers(socket.gameId, socket, { type: 'move', x: msg.x, y: msg.y });
@@ -252,14 +301,19 @@ export function attachWebSocketServer(httpServer) {
 
         const isRegularGame = game.gameType !== 'ai' && game.gameType !== 'ogs';
         if (isRegularGame) {
+          const hasHandicap = (game.handicapStones ?? []).length > 0;
+          const clockState = tickClockState(
+            game.clockState ?? createInitialClockState(game.timeControl, hasHandicap)
+          );
           await db.appendMove(socket.gameId, { type: 'pass' });
-          broadcast(socket.gameId, { type: 'pass' });
+          const patch = {};
+          if (clockState) patch.clockState = clockState;
           const allMoves = [...(game.moves ?? []), { type: 'pass' }];
           const lastTwo = allMoves.slice(-2);
           const bothPassed = lastTwo.length === 2 && lastTwo.every((m) => m.type === 'pass');
-          if (bothPassed) {
-            await db.updateGame(socket.gameId, { status: 'scoring' });
-          }
+          if (bothPassed) patch.status = 'scoring';
+          if (Object.keys(patch).length > 0) await db.updateGame(socket.gameId, patch);
+          broadcast(socket.gameId, { type: 'pass', clockState });
         } else {
           await db.appendMove(socket.gameId, { type: 'pass' });
           broadcastToOthers(socket.gameId, socket, { type: 'pass' });

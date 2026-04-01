@@ -618,10 +618,17 @@
         if (msg.type === 'move') {
           const opponentSign = gs.currentSign;
           gs.applyMove(msg.x, msg.y, opponentSign);
-          gs.tickClock();
+          if (msg.clockState) {
+            gs.clockState = msg.clockState;
+          } else {
+            gs.tickClock();
+          }
         }
         if (msg.type === 'pass') {
           applyPass();
+          if (msg.clockState) {
+            gs.clockState = msg.clockState;
+          }
         }
         if (msg.type === 'approve-score') {
           if (msg.color === 'black') gs.blackApproved = true;
