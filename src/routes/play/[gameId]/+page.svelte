@@ -437,16 +437,19 @@
 
   function pass() {
     if (!isMyTurn) return;
-    applyPass();
-    gameSocket.send({ type: 'pass' });
     if (isOgs && ogsBridge) {
+      applyPass();
+      gameSocket.send({ type: 'pass' });
       ogsBridge.sendPass();
-    }
-    if (isAI) {
+    } else if (isAI) {
+      applyPass();
       aiMoveHistory.push({ color: mySign, x: -1, y: -1 });
+      gameSocket.send({ type: 'pass' });
       if (gs.consecutivePasses < 2) {
         triggerAiMove();
       }
+    } else {
+      gameSocket.send({ type: 'pass' });
     }
   }
 

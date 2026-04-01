@@ -247,8 +247,23 @@ export function attachWebSocketServer(httpServer) {
         }
       }
       if (msg.type === 'pass' && socket.gameId) {
-        await db.appendMove(socket.gameId, { type: 'pass' });
-        broadcastToOthers(socket.gameId, socket, { type: 'pass' });
+        const game = await db.getGame(socket.gameId);
+        if (!game || game.status !== 'playing') return;
+
+        const isRegularGame = game.gameType !== 'ai' && game.gameType !== 'ogs';
+        if (isRegularGame) {
+          await db.appendMove(socket.gameId, { type: 'pass' });
+          broadcast(socket.gameId, { type: 'pass' });
+          const allMoves = [...(game.moves ?? []), { type: 'pass' }];
+          const lastTwo = allMoves.slice(-2);
+          const bothPassed = lastTwo.length === 2 && lastTwo.every((m) => m.type === 'pass');
+          if (bothPassed) {
+            await db.updateGame(socket.gameId, { status: 'scoring' });
+          }
+        } else {
+          await db.appendMove(socket.gameId, { type: 'pass' });
+          broadcastToOthers(socket.gameId, socket, { type: 'pass' });
+        }
       }
       if (msg.type === 'approve-score' && socket.gameId) {
         broadcastToOthers(socket.gameId, socket, { type: 'approve-score', color: msg.color });
