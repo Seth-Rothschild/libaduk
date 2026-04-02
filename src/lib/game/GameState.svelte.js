@@ -215,17 +215,22 @@ export class GameState {
     const now = Date.now();
     const movedColor = this.clockState.activeColor;
     const clock = this.clockState[movedColor];
+    const elapsed = this.clockState.turnStartedAt ? now - this.clockState.turnStartedAt : 0;
 
-    if (this.clockState.turnStartedAt) {
-      const elapsed = now - this.clockState.turnStartedAt;
-
-      if (clock.inByoYomi) {
-        clock.byoMs = clock.periodMs ?? clock.byoMs;
-      } else {
-        clock.mainMs = Math.max(0, clock.mainMs - elapsed);
-        if (clock.mainMs <= 0 && clock.byoPeriods > 0) {
-          clock.inByoYomi = true;
-        }
+    if (clock.inByoYomi) {
+      const periodStep = clock.periodMs > 0 ? clock.periodMs : clock.byoMs;
+      let remaining = clock.byoMs - elapsed;
+      let periodsLeft = clock.byoPeriods;
+      while (remaining <= 0 && periodsLeft > 1) {
+        periodsLeft--;
+        remaining += periodStep;
+      }
+      clock.byoMs = clock.periodMs ?? clock.byoMs;
+      clock.byoPeriods = periodsLeft;
+    } else if (elapsed > 0) {
+      clock.mainMs = Math.max(0, clock.mainMs - elapsed);
+      if (clock.mainMs <= 0 && clock.byoPeriods > 0) {
+        clock.inByoYomi = true;
       }
     }
 
