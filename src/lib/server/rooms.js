@@ -141,6 +141,8 @@ export async function createRoom(
     }
   }
 
+  const owners = creatorName ? [creatorName] : [];
+
   await db.createGame({
     id,
     size,
@@ -149,6 +151,7 @@ export async function createRoom(
     blackIsAuth: !!blackName && !isAi,
     whiteIsAuth: !!whiteName && !isAi,
     creatorColor,
+    owners,
     timeControl,
     gameType,
     status: isAi ? 'playing' : 'waiting',
@@ -167,13 +170,14 @@ export async function findMatchingGame(size, timeControl, excludeUsername = null
   return await db.findMatchingGame(size, timeControl, excludeUsername);
 }
 
-export async function joinGame(gameId, joinerName) {
+export async function joinGame(gameId, joinerName, joinerIsAuth = false) {
   const game = await db.getGame(gameId);
   if (!game || game.status !== 'waiting') return null;
 
   const openColor = game.creatorColor === 'black' ? 'white' : 'black';
   const patch = { [`${openColor}Name`]: joinerName, status: 'playing' };
   await db.updateGame(gameId, patch);
+  if (joinerIsAuth) await db.addOwner(gameId, joinerName);
 
   broadcast(gameId, { type: 'joined', color: openColor, name: joinerName });
 
@@ -194,6 +198,10 @@ export function getLobbyStats() {
     playersOnline: users.length + guests.length,
     gamesInPlay: 0
   };
+}
+
+export function getOgsAdapter(gameId) {
+  return ogsAdapters.get(gameId) ?? null;
 }
 
 export function broadcast(gameId, msg) {
@@ -290,12 +298,17 @@ export function attachWebSocketServer(httpServer) {
             let adapter = ogsAdapters.get(msg.gameId);
             if (!adapter) {
               adapter = new OgsAdapter(game.ogsGameId, game.ogsUserId, msg.ogsToken, {
-                onBroadcast: (m) => broadcast(msg.gameId, m),
+                onBroadcast: (m) => {
+                  if (m.type === 'move') db.appendMove(msg.gameId, { type: 'move', x: m.x, y: m.y });
+                  if (m.type === 'pass') db.appendMove(msg.gameId, { type: 'pass' });
+                  broadcast(msg.gameId, m);
+                },
                 onUnicast: (m) => send(socket, m),
-                onGameStart: (myColor, blackName, whiteName) => {
+                onGameStart: (myColor, blackName, whiteName, handicapStones) => {
                   socket.playerColor = myColor;
                   broadcast(msg.gameId, { type: 'presence', color: myColor, online: true });
-                  db.updateGame(msg.gameId, { blackName, whiteName, status: 'playing' });
+                  const stones = handicapStones.map(([x, y]) => ({ x, y }));
+                  db.updateGame(msg.gameId, { blackName, whiteName, status: 'playing', handicapStones: stones });
                 }
               });
               ogsAdapters.set(msg.gameId, adapter);
@@ -313,7 +326,11 @@ export function attachWebSocketServer(httpServer) {
 
         if (game.gameType === 'ogs') {
           const adapter = ogsAdapters.get(socket.gameId);
-          if (adapter) adapter.sendMove(msg.x, msg.y);
+          if (adapter) {
+            adapter.sendMove(msg.x, msg.y);
+            await db.appendMove(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
+            broadcast(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
+          }
           return;
         }
         if (game.gameType === 'ai') {
@@ -340,7 +357,11 @@ export function attachWebSocketServer(httpServer) {
 
         if (game.gameType === 'ogs') {
           const adapter = ogsAdapters.get(socket.gameId);
-          if (adapter) adapter.sendPass();
+          if (adapter) {
+            adapter.sendPass();
+            await db.appendMove(socket.gameId, { type: 'pass' });
+            broadcast(socket.gameId, { type: 'pass' });
+          }
           return;
         }
         if (game.gameType === 'ai') {

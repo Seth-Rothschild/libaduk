@@ -17,6 +17,7 @@ export async function connectDb() {
     await db.collection('games').createIndex({ status: 1 });
     await db.collection('games').createIndex({ blackName: 1 });
     await db.collection('games').createIndex({ whiteName: 1 });
+    await db.collection('games').createIndex({ owners: 1 });
     await db.collection('credentials').createIndex({ username: 1 });
     await db.collection('credentials').createIndex({ id: 1 });
     await db.collection('puzzles').createIndex({ index: 1 }, { unique: true });
@@ -166,7 +167,8 @@ export async function createGame({
   status = 'waiting',
   aiDifficulty = null,
   ogsGameId = null,
-  ogsUserId = null
+  ogsUserId = null,
+  owners = []
 }) {
   try {
     const game = {
@@ -174,6 +176,7 @@ export async function createGame({
       size,
       blackName,
       whiteName,
+      owners,
       creatorColor,
       gameType,
       moves: [],
@@ -212,6 +215,16 @@ export async function updateGame(id, patch) {
   }
 }
 
+export async function addOwner(gameId, username) {
+  try {
+    const d = await getDb();
+    await d.collection('games').updateOne({ _id: gameId }, { $addToSet: { owners: username } });
+  } catch (err) {
+    console.error('[db] addOwner failed:', err.message);
+    throw err;
+  }
+}
+
 export async function appendMove(id, moveEntry) {
   try {
     const d = await getDb();
@@ -242,8 +255,7 @@ export async function findMatchingGame(size, timeControl, excludeUsername = null
       query['timeControl.days'] = timeControl.days;
     }
     if (excludeUsername) {
-      query.blackName = { $ne: excludeUsername };
-      query.whiteName = { $ne: excludeUsername };
+      query.owners = { $ne: excludeUsername };
     }
     const doc = await d.collection('games').findOne(query, { sort: { createdAt: 1 } });
     if (!doc) return null;
@@ -260,7 +272,7 @@ export async function getPendingGames(tcType = null) {
     const query = {
       status: 'waiting',
       gameType: { $nin: ['friend', 'ai'] },
-      $or: [{ blackName: { $ne: null } }, { whiteName: { $ne: null } }]
+      'owners.0': { $exists: true }
     };
     if (tcType === 'correspondence') {
       query['timeControl.type'] = 'correspondence';
@@ -287,7 +299,7 @@ export async function getUserGames(username) {
     const docs = await d
       .collection('games')
       .find({
-        $or: [{ blackName: username }, { whiteName: username }],
+        owners: username,
         status: { $in: ['playing', 'waiting'] }
       })
       .toArray();
@@ -376,7 +388,7 @@ export async function getAllUserGames(username) {
     const docs = await d
       .collection('games')
       .find({
-        $or: [{ blackName: username }, { whiteName: username }],
+        owners: username,
         status: { $ne: 'cancelled' }
       })
       .sort({ createdAt: -1 })
@@ -432,14 +444,8 @@ async function leaderboardForCategory(collection, filter) {
   const docs = await collection
     .aggregate([
       { $match: { status: 'finished', gameType: { $nin: ['friend'] }, ...filter } },
-      {
-        $project: {
-          players: [{ $ifNull: ['$blackName', null] }, { $ifNull: ['$whiteName', null] }]
-        }
-      },
-      { $unwind: '$players' },
-      { $match: { players: { $ne: null, $not: /^(Guest(\d{4})?|AI \()/ } } },
-      { $group: { _id: '$players', count: { $sum: 1 } } },
+      { $unwind: '$owners' },
+      { $group: { _id: '$owners', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 },
       { $project: { _id: 0, username: '$_id', count: 1 } }

@@ -1,8 +1,8 @@
 <script>
   import { formatTime, formatClock } from '$lib/format.js';
-  import { ogsSeekGraph, formatOgsRank, formatOgsClock } from './ogsSeekGraph.svelte.js';
+  import { formatOgsRank, formatOgsClock } from './ogsSeekGraph.svelte.js';
 
-  let { games, onJoin, ogsChallenges = [] } = $props();
+  let { games, onJoin, ogsChallenges = [], onAcceptOgs } = $props();
 </script>
 
 {#if games.length === 0 && ogsChallenges.length === 0}
@@ -39,11 +39,10 @@
         <tr
           class="hook join"
           tabindex="0"
-          role="link"
-          onclick={() => ogsSeekGraph.acceptChallenge(entry.challenge_id)}
+          role="button"
+          onclick={() => onAcceptOgs?.(entry)}
           onkeydown={(e) =>
-            (e.key === 'Enter' || e.key === ' ') &&
-            (e.preventDefault(), ogsSeekGraph.acceptChallenge(entry.challenge_id))}
+            (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onAcceptOgs?.(entry))}
         >
           <td>{entry.username} ({formatOgsRank(entry.rank)})</td>
           <td>—</td>

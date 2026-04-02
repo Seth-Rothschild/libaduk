@@ -15,7 +15,6 @@ export function formatClock(timeControl) {
   if (timeControl.type === 'correspondence') return 'Corr.';
   if (timeControl.type === 'byoyomi')
     return `${timeControl.initial / 60}+${timeControl.periods}×${timeControl.periodTime}s`;
-  if (timeControl.type === 'fischer')
-    return `${timeControl.initial / 60}+${timeControl.increment}`;
+  if (timeControl.type === 'fischer') return `${timeControl.initial / 60}+${timeControl.increment}`;
   return '∞';
 }

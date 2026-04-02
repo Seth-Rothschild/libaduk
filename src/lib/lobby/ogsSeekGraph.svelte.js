@@ -3,6 +3,7 @@ import { browser } from '$app/environment';
 class OgsSeekGraph {
   challenges = $state([]);
   token = $state(null);
+  userId = $state(null);
 
   #map = new Map();
   #ws = null;
@@ -24,6 +25,7 @@ class OgsSeekGraph {
     const config = await configRes.json();
     const jwt = config.user_jwt;
     if (!jwt) return;
+    this.userId = config.user?.id ?? null;
 
     const ws = new WebSocket('wss://wsp.online-go.com/');
     this.#ws = ws;
@@ -38,7 +40,11 @@ class OgsSeekGraph {
 
     ws.onmessage = (event) => {
       let msg;
-      try { msg = JSON.parse(event.data); } catch { return; }
+      try {
+        msg = JSON.parse(event.data);
+      } catch {
+        return;
+      }
       const name = msg[0];
       const payload = msg[1];
       if (typeof name === 'number') return;
@@ -75,7 +81,7 @@ class OgsSeekGraph {
       headers: { Authorization: `Bearer ${this.token}` }
     });
     const data = await res.json();
-    window.open(`https://online-go.com/game/${data.game}`, '_blank');
+    return data.game ?? null;
   }
 
   stop() {

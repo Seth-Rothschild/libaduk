@@ -19,7 +19,7 @@ export async function POST({ request, locals }) {
   if (gameType === 'hook') {
     const match = await findMatchingGame(size, timeControl, creatorName);
     if (match) {
-      const joined = await joinGame(match.id, creatorName);
+      const joined = await joinGame(match.id, creatorName, !!locals.user);
       if (joined) {
         return json({ gameId: joined.id });
       }

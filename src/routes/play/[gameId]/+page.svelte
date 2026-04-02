@@ -583,8 +583,8 @@
         }
         if (msg.type === 'gameover') {
           gs.status = 'gameover';
-          gs.winner = msg.winner === 'black' ? 1 : -1;
-          gs.winnerResult = msg.result ?? null;
+          if (msg.winner) gs.winner = msg.winner === 'black' ? 1 : -1;
+          if (msg.result) gs.winnerResult = msg.result;
         }
         if (msg.type === 'cancel') {
           gs.status = 'cancelled';
