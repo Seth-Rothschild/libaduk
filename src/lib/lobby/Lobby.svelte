@@ -71,10 +71,7 @@
   let myGames = $state([]);
   let liveGames = $state([]);
   let corrGames = $state([]);
-  onMount(() => {
-    ogsSeekGraph.start();
-    return () => ogsSeekGraph.stop();
-  });
+  let ogsStreams = $state([]);
 
   async function refreshPending() {
     const res = await fetch('/api/games?type=live');
@@ -92,10 +89,38 @@
     liveGames = await res.json();
   }
 
+  function getOgsToken() {
+    const pairs = document.cookie.split(';');
+    for (const pair of pairs) {
+      const [key, value] = pair.trim().split('=');
+      if (key === 'ogs_token') return decodeURIComponent(value);
+    }
+    return null;
+  }
+
+  async function getStreams() {
+    const ogsToken = getOgsToken();
+    const res = await fetch(`https://online-go.com/api/v1/gotv/streams/`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${ogsToken}` }
+    });
+    if (!res.ok) return null;
+    let streams = await res.json();
+    ogsStreams = streams.slice(0, 2);
+  }
+
   async function refreshCorrGames() {
     const res = await fetch('/api/games?type=correspondence');
     corrGames = await res.json();
   }
+
+  onMount(async () => {
+    ogsSeekGraph.start();
+    await getStreams();
+    console.log('OGS Streams:', ogsStreams);
+
+    return () => ogsSeekGraph.stop();
+  });
 
   $effect(() => {
     refreshLiveGames();
@@ -152,6 +177,15 @@
   </div>
 
   <div class="lobby__side">
+    {#if ogsStreams.length > 0}
+      <section class="lobby__streams">
+        {#each ogsStreams as stream}
+          <a href="https://twitch.tv/{stream.username}" class="stream highlight"
+            ><strong class="text" data-icon="">{stream.username}</strong> {stream.title}</a
+          >
+        {/each}
+      </section>
+    {/if}
     <ActiveGamesPanel games={liveGames} />
   </div>
 

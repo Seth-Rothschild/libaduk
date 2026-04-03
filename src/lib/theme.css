@@ -70,6 +70,7 @@ html {
   --m-bad_bg--mix-25: hsl(3, 36%, 23%);
   --m-bad_bg--mix-50: hsl(1, 48%, 32%);
   --m-accent_bg--mix-15: hsl(24, 39%, 18%);
+  --c-brag:                       hsl(37, 74%, 43%);
 
   /* — unused — available when needed */
   /*
@@ -88,7 +89,6 @@ html {
   --c-border-page:                hsl(0, 0%, 22%);
   --c-border-tour:                rgb(39.27, 38.488, 37.23);
   --c-bot:                        var(--c-fancy);
-  --c-brag:                       hsl(37, 74%, 43%);
   --c-brilliant:                  hsl(129, 71%, 45%);
   --c-chat-host-bg:               rgba(78, 122, 29, 0.4);
   --c-chat-mention-bg:            rgba(59, 92, 22, 0.4);
@@ -397,7 +397,6 @@ html.light {
   --c-border-page:                hsl(0, 0%, 80%);
   --c-border-tour:                rgb(220.32, 219.538, 218.28);
   --c-bot:                        var(--c-fancy);
-  --c-brag:                       hsl(37, 74%, 48%);
   --c-brilliant:                  hsl(129, 71%, 30%);
   --c-chat-host-bg:               rgba(125, 170, 73, 0.4);
   --c-chat-mention-bg:            rgba(161, 194, 124, 0.4);

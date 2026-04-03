@@ -57,6 +57,7 @@
   display: flex;
   flex-direction: column;
   gap: var(---block-gap, 10px);
+  margin-top: 2em;
 }
 .lobby__app {
   grid-area: app;
@@ -87,6 +88,7 @@
   padding: 0.15em 0.3em;
   color: var(--c-font-dim);
   font-size: 0.9em;
+  text-align: right;
 }
 
 .lobby__puzzle .text:first-child {
@@ -346,6 +348,8 @@ html.light .lpool {
   flex-direction: column;
   flex: 1 1 auto;
   gap: 9px;
+  justify-content: center;
+  margin-top: 2em;
 }
 
 .lobby__start__button {
@@ -915,4 +919,18 @@ group.radio.ai-strength {
   .game-setup .setup-content {
     padding: 1.25rem 0.75rem;
   }
+}
+
+.stream {
+  color: var(--c-font-page);
+  display: block;
+  margin-bottom: 0.5em;
+  line-height: 0.9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stream.highlight strong {
+  color: var(--c-brag);
+  /* color: #d59020; */
 }
