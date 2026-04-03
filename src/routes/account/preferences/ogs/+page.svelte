@@ -8,6 +8,12 @@
 
   let { data } = $props();
 
+  function formatOgsRank(rank) {
+    const r = Math.floor(rank);
+    if (r < 30) return `${30 - r}k`;
+    return `${r - 29}d`;
+  }
+
   function connectOgs() {
     const params = new URLSearchParams({
       response_type: 'code',
@@ -25,8 +31,15 @@
 
 <section class="security-section">
   <h2>OGS Account</h2>
+  <p class="section-desc">
+    Connecting to an OGS account allows you to see and accept unranked OGS games in the lobby. The
+    generated token is stored as ogs_token as a cookie in your browser.
+  </p>
   {#if data.ogs}
-    <p>{data.ogs.username} (ID: {data.ogs.id})</p>
+    <div class="passkey-item">
+      <span>{data.ogs.username} ({formatOgsRank(data.ogs.ranking)})</span>
+      <span class="passkey-date">ID: {data.ogs.id}</span>
+    </div>
     <form method="POST" action="?/disconnect" use:enhance>
       <button type="submit" class="button">Disconnect</button>
     </form>

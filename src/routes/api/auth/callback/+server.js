@@ -45,7 +45,11 @@ export async function GET({ url, cookies, locals }) {
   });
   const meData = await meResponse.json();
 
-  await linkOgs(locals.user.username, { id: meData.id, ogsUsername: meData.username });
+  await linkOgs(locals.user.username, {
+    id: meData.id,
+    ranking: meData.ranking,
+    ogsUsername: meData.username
+  });
 
   cookies.set('ogs_token', accessToken, {
     path: '/',

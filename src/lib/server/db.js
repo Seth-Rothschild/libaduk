@@ -114,13 +114,13 @@ export async function createUser(username) {
   }
 }
 
-export async function linkOgs(username, { id, ogsUsername }) {
+export async function linkOgs(username, { id, ogsUsername, ranking }) {
   try {
     const key = username.toLowerCase();
     const d = await getDb();
     await d
       .collection('users')
-      .updateOne({ _id: key }, { $set: { ogs: { id, username: ogsUsername } } });
+      .updateOne({ _id: key }, { $set: { ogs: { id, username: ogsUsername, ranking } } });
   } catch (err) {
     console.error('[db] linkOgs failed:', err.message);
     throw err;
