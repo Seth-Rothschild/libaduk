@@ -299,16 +299,27 @@ export function attachWebSocketServer(httpServer) {
             if (!adapter) {
               adapter = new OgsAdapter(game.ogsGameId, game.ogsUserId, msg.ogsToken, {
                 onBroadcast: (m) => {
-                  if (m.type === 'move') db.appendMove(msg.gameId, { type: 'move', x: m.x, y: m.y });
+                  if (m.type === 'move')
+                    db.appendMove(msg.gameId, { type: 'move', x: m.x, y: m.y });
                   if (m.type === 'pass') db.appendMove(msg.gameId, { type: 'pass' });
+                  if (m.type === 'gameover') {
+                    const patch = { status: 'finished', winner: m.winner, result: m.result };
+                    db.updateGame(msg.gameId, patch);
+                  }
                   broadcast(msg.gameId, m);
                 },
                 onUnicast: (m) => send(socket, m),
-                onGameStart: (myColor, blackName, whiteName, handicapStones) => {
+                onGameStart: (myColor, blackName, whiteName, handicapStones, timeControl) => {
                   socket.playerColor = myColor;
                   broadcast(msg.gameId, { type: 'presence', color: myColor, online: true });
                   const stones = handicapStones.map(([x, y]) => ({ x, y }));
-                  db.updateGame(msg.gameId, { blackName, whiteName, status: 'playing', handicapStones: stones });
+                  db.updateGame(msg.gameId, {
+                    blackName,
+                    whiteName,
+                    timeControl,
+                    status: 'playing',
+                    handicapStones: stones
+                  });
                 }
               });
               ogsAdapters.set(msg.gameId, adapter);

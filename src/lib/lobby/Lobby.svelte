@@ -117,7 +117,6 @@
   onMount(async () => {
     ogsSeekGraph.start();
     await getStreams();
-    console.log('OGS Streams:', ogsStreams);
 
     return () => ogsSeekGraph.stop();
   });

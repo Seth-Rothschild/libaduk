@@ -151,11 +151,21 @@ export class OgsAdapter {
       const blackName = data.players.black.username;
       const whiteName = data.players.white.username;
       const handicapStones = parseSgfCoords(data.initial_state?.black ?? '');
+      const timeControl = data.time_control;
+      timeControl.initial = timeControl.main_time;
+      timeControl.periodTime = timeControl.period_time;
+      timeControl.type = timeControl.system;
 
       this.#onBroadcast({ type: 'joined', color: 'black', name: blackName });
       this.#onBroadcast({ type: 'joined', color: 'white', name: whiteName });
       this.#onUnicast({ type: 'my-color', color: this.myColor, handicapStones });
-      this.#onGameStart(this.myColor, blackName, whiteName, handicapStones);
+      this.#onGameStart(this.myColor, blackName, whiteName, handicapStones, timeControl);
+      if (data.phase == 'finished') {
+        const winnerColor = data.winner === this.#blackPlayerId ? 'black' : 'white';
+        const margin = String(data.outcome).replace(' points', '');
+        const result = `${winnerColor === 'black' ? 'B' : 'W'}+${margin}`;
+        this.#onBroadcast({ type: 'gameover', winner: winnerColor, result });
+      }
 
       if (data.clock) {
         const clockState = ogsClockToState(data.clock);

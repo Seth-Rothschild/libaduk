@@ -72,10 +72,6 @@
     return `${color} wins by ${suffix}`;
   }
 
-  $effect(() => {
-    console.log('all games', data.games);
-  });
-
   function gameLabel(timeControl) {
     if (!timeControl || timeControl.type === 'none') return 'Unlimited';
     if (timeControl.type === 'correspondence') return 'Correspondence';
