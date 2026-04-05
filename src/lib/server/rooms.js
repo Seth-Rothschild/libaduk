@@ -141,7 +141,8 @@ export async function createRoom(
     }
   }
 
-  const owners = creatorName ? [creatorName] : [];
+  const creatorIsAuth = creatorName && /^(?!Guest\d{4}$)/.test(creatorName);
+  const owners = creatorIsAuth ? [creatorName] : [];
 
   await db.createGame({
     id,
