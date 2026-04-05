@@ -303,7 +303,12 @@ export function attachWebSocketServer(httpServer) {
                     db.appendMove(msg.gameId, { type: 'move', x: m.x, y: m.y });
                   if (m.type === 'pass') db.appendMove(msg.gameId, { type: 'pass' });
                   if (m.type === 'gameover') {
-                    const patch = { status: 'finished', winner: m.winner, result: m.result };
+                    const patch = {
+                      status: 'finished',
+                      winner: m.winner,
+                      result: m.result,
+                      deadStones: m.deadStones
+                    };
                     db.updateGame(msg.gameId, patch);
                   }
                   broadcast(msg.gameId, m);

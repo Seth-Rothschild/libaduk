@@ -167,12 +167,13 @@ export class GameState {
 
     if (game.scoringActive) {
       this.status = 'scoring';
-      this.deadStones = game.scoringDeadStones ?? [];
+      this.deadStones = game.deadStones ?? [];
       this.blackApproved = game.scoringBlackApproved ?? false;
       this.whiteApproved = game.scoringWhiteApproved ?? false;
     } else if (game.status === 'finished') {
       this.status = 'gameover';
       this.winner = game.winner === 'black' ? 1 : game.winner === 'white' ? -1 : null;
+      this.deadStones = game.deadStones ?? [];
       this.winnerResult = game.result ?? null;
     } else if (game.status === 'abandoned') {
       this.status = 'abandoned';

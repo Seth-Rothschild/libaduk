@@ -167,7 +167,12 @@ export class OgsAdapter {
         const winnerColor = data.winner === this.#blackPlayerId ? 'black' : 'white';
         const margin = String(data.outcome).replace(' points', '');
         const result = `${winnerColor === 'black' ? 'B' : 'W'}+${margin}`;
-        this.#onBroadcast({ type: 'gameover', winner: winnerColor, result });
+        this.#onBroadcast({
+          type: 'gameover',
+          winner: winnerColor,
+          result,
+          scoringDeadStones: parseSgfCoords(data.removed)
+        });
       }
 
       if (data.clock) {
@@ -200,10 +205,7 @@ export class OgsAdapter {
     if (name === `${gamePrefix}chat`) {
       const line = data.line || data;
       const body = typeof line.body === 'string' ? line.body : JSON.stringify(line.body);
-      if (this.#pendingSentChat.has(body)) {
-        this.#pendingSentChat.delete(body);
-        return;
-      }
+      if (line.player_id === this.#ogsUserId) return;
       const sender = line.username || 'unknown';
       this.#onBroadcast({ type: 'chat', user: sender, text: body });
       return;

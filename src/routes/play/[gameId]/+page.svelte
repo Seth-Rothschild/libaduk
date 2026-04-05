@@ -171,7 +171,9 @@
   const areaMap = $derived(gs.status === 'scoring' ? influence.areaMap(scoreBoard.signMap) : null);
   const score = $derived(areaMap ? computeScore(areaMap, gs.boardSize, KOMI) : null);
 
-  const displayDeadStones = $derived(gs.status === 'scoring' ? gs.deadStones : null);
+  const displayDeadStones = $derived(
+    gs.status === 'scoring' || gs.status === 'gameover' ? gs.deadStones : null
+  );
 
   // --- AI move logic ---
 
@@ -452,7 +454,8 @@
       type: 'gameover',
       winner: winner === 1 ? 'black' : 'white',
       result: resultString,
-      clockState: serializeClockState()
+      clockState: serializeClockState(),
+      deadStones: gs.deadStones
     });
   }
 
@@ -585,6 +588,7 @@
           gs.status = 'gameover';
           if (msg.winner) gs.winner = msg.winner === 'black' ? 1 : -1;
           if (msg.result) gs.winnerResult = msg.result;
+          if (msg.deadStones) gs.deadStones = msg.deadStones;
         }
         if (msg.type === 'cancel') {
           gs.status = 'cancelled';
