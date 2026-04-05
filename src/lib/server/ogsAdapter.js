@@ -69,6 +69,7 @@ export class OgsAdapter {
   #onBroadcast; // (msg) => void — sends to all room clients
   #onUnicast; // (msg) => void — sends to the player who owns this game
   #onGameStart; // (myColor, blackName, whiteName) => void — called when OGS confirms game
+  #onGameData;
 
   #ws = null;
   #pingInterval = null;
@@ -82,13 +83,14 @@ export class OgsAdapter {
   #pendingSentChat = new Set();
   #removedStones = '';
 
-  constructor(ogsGameId, ogsUserId, ogsToken, { onBroadcast, onUnicast, onGameStart }) {
+  constructor(ogsGameId, ogsUserId, ogsToken, { onBroadcast, onUnicast, onGameStart, onGameData }) {
     this.#ogsGameId = ogsGameId;
     this.#ogsUserId = ogsUserId;
     this.#ogsToken = ogsToken;
     this.#onBroadcast = onBroadcast;
     this.#onUnicast = onUnicast;
     this.#onGameStart = onGameStart;
+    this.#onGameData = onGameData;
   }
 
   async connect() {
@@ -142,6 +144,7 @@ export class OgsAdapter {
     const gamePrefix = `game/${this.#ogsGameId}/`;
 
     if (name === `${gamePrefix}gamedata`) {
+      this.#onGameData(data);
       this.#blackPlayerId = data.players.black.id;
       this.#whitePlayerId = data.players.white.id;
       this.myColor = data.players.white.id === this.#ogsUserId ? 'white' : 'black';

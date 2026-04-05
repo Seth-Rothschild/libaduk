@@ -310,6 +310,8 @@ export function attachWebSocketServer(httpServer) {
                 },
                 onUnicast: (m) => send(socket, m),
                 onGameStart: (myColor, blackName, whiteName, handicapStones, timeControl) => {
+                  if (game.status !== 'waiting') return;
+
                   socket.playerColor = myColor;
                   broadcast(msg.gameId, { type: 'presence', color: myColor, online: true });
                   const stones = handicapStones.map(([x, y]) => ({ x, y }));
@@ -320,6 +322,19 @@ export function attachWebSocketServer(httpServer) {
                     status: 'playing',
                     handicapStones: stones
                   });
+                },
+                onGameData: (gameData) => {
+                  let dbMoveCount = game.moves.length;
+                  let ogsMoveCount = gameData.moves.length;
+                  if (dbMoveCount < ogsMoveCount) {
+                    let missingMoves = gameData.moves.slice(dbMoveCount);
+                    for (const m of missingMoves) {
+                      let [x, y, _] = m;
+                      if (x < 0) continue;
+                      db.appendMove(msg.gameId, { type: 'move', x, y });
+                      broadcast(msg.gameId, { type: 'move', x, y });
+                    }
+                  }
                 }
               });
               ogsAdapters.set(msg.gameId, adapter);

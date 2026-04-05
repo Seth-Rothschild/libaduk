@@ -11,7 +11,6 @@
   const size = parsed.size;
 
   const plProp = parsed.root.props.PL;
-  const colorToPlay = plProp && plProp[0] === 'B' ? 'Black' : 'White';
 
   const vertexSize = 12;
   const boardPx = Math.round((size + 0.8) * vertexSize);
@@ -39,5 +38,5 @@
       <GoBoard {signMap} {size} {vertexSize} interactive={false} />
     </div>
   </div>
-  <span class="text">{colorToPlay} to play</span>
+  <span class="text">Black to play</span>
 </a>

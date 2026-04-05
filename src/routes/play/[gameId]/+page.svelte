@@ -544,7 +544,7 @@
           gs.applyMove(msg.x, msg.y, opponentSign);
           if (msg.clockState) {
             gs.clockState = msg.clockState;
-          } else {
+          } else if (!isOgs) {
             gs.tickClock();
           }
         }
