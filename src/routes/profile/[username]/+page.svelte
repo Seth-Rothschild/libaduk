@@ -124,8 +124,8 @@
     return name === 'Guest' || /^Guest\d{4}$/.test(name);
   }
 
-  function isLinkable(name) {
-    return name && !isGuest(name) && !name.startsWith('AI (');
+  function isLinkable(name, gameType) {
+    return name && !isGuest(name) && gameType !== 'ogs' && gameType !== 'ai';
   }
 
   function miniVertexSize(boardGridSize) {
@@ -285,7 +285,7 @@
             </div>
             <div class="versus">
               <div class="player white">
-                {#if isLinkable(game.whiteName)}
+                {#if isLinkable(game.whiteName, game.gameType)}
                   <a href="/profile/{game.whiteName}">{game.whiteName}</a>
                 {:else}
                   <span>{game.whiteName ?? 'Guest'}</span>
@@ -293,7 +293,7 @@
               </div>
               <div class="swords" data-icon="&#xe033;"></div>
               <div class="player black">
-                {#if isLinkable(game.blackName)}
+                {#if isLinkable(game.blackName, game.gameType)}
                   <a href="/profile/{game.blackName}">{game.blackName}</a>
                 {:else}
                   <span>{game.blackName ?? 'Guest'}</span>
