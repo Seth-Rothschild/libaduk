@@ -1,17 +1,25 @@
-import { browser } from '$app/environment';
+let me = $state(null);
 
-let username = $state(browser ? (localStorage.getItem('username') ?? '') : '');
-
-export function getUsername() {
-  return username;
+export function getMe() {
+  return me;
 }
 
-export function setUsername(name) {
-  username = name.trim();
-  if (browser) localStorage.setItem('username', username);
+export async function fetchMe() {
+  const res = await fetch('/api/user/me');
+  if (res.ok) {
+    me = await res.json();
+  } else {
+    me = null;
+  }
 }
 
-export function clearUsername() {
-  username = '';
-  if (browser) localStorage.removeItem('username');
+export async function updateMe(patch) {
+  const res = await fetch('/api/user/me', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch)
+  });
+  if (res.ok) {
+    me = await res.json();
+  }
 }

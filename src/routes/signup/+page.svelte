@@ -1,6 +1,7 @@
 <script>
   import { goto, invalidateAll } from '$app/navigation';
-  import { setUsername } from '$lib/state/user.svelte.js';
+  import { fetchMe } from '$lib/state/user.svelte.js';
+
   import { startRegistration } from '@simplewebauthn/browser';
   import SignupForm from '$lib/auth/SignupForm.svelte';
 
@@ -43,7 +44,7 @@
       });
       const verifyData = await verifyRes.json();
       if (verifyRes.ok) {
-        setUsername(verifyData.username);
+        await fetchMe();
         await invalidateAll();
         goto('/');
       } else {

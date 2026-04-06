@@ -1,5 +1,6 @@
 <script>
   import { goto, invalidateAll } from '$app/navigation';
+  import { fetchMe } from '$lib/state/user.svelte.js';
   import { onMount } from 'svelte';
   import SiteTitle from './SiteTitle.svelte';
   import TopNav from './TopNav.svelte';
@@ -13,6 +14,7 @@
 
   const signOut = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
+    await fetchMe();
     await invalidateAll();
     goto('/');
   };

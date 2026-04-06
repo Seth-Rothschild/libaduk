@@ -9,7 +9,7 @@
   import './profile/profile.css';
   import './player/player.css';
   import './account/account.css';
-  import { setUsername, clearUsername } from '$lib/state/user.svelte.js';
+  import { getMe, fetchMe } from '$lib/state/user.svelte.js';
   import { pingState } from '$lib/state/ping.svelte.js';
   import { themeState } from '$lib/nav/theme.svelte.js';
   import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
@@ -22,20 +22,14 @@
 
   let { children, data } = $props();
 
-  const username = $derived(data.user?.username ?? '');
-  const displayName = $derived(username || getGuestId());
   let setupModal = $state(null);
 
   onMount(() => {
     themeState.init();
     boardSettings.init();
     pingState.start();
+    fetchMe();
     return () => pingState.stop();
-  });
-
-  $effect(() => {
-    if (data.user) setUsername(data.user.username);
-    else clearUsername();
   });
 
   const isGamePage = $derived(
@@ -50,7 +44,7 @@
   };
 </script>
 
-<SiteHeader {username} onOpenSetup={openSetup} />
+<SiteHeader username={getMe()?.username ?? ''} onOpenSetup={openSetup} />
 
 <div id="main-wrap" class:game-page={isGamePage}>
   <main>
@@ -61,7 +55,7 @@
 {#if setupModal}
   <GameSetupModal
     gameType={setupModal}
-    creatorName={displayName}
+    creatorName={getMe()?.username || getGuestId()}
     onClose={() => (setupModal = null)}
   />
 {/if}

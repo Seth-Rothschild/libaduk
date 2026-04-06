@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { getUsername } from './user.svelte.js';
+import { getMe } from './user.svelte.js';
 import { getGuestId } from './guestId.js';
 
 class PingState {
@@ -55,9 +55,9 @@ class PingState {
   #sendPing() {
     if (this.#ws?.readyState === WebSocket.OPEN) {
       this.#sentAt = Date.now();
-      const username = getUsername();
-      const name = username || getGuestId();
-      const isAuth = !!username;
+      const me = getMe();
+      const name = me?.username || getGuestId();
+      const isAuth = !!me;
       this.#ws.send(JSON.stringify({ type: 'ping', name, isAuth }));
     }
   }

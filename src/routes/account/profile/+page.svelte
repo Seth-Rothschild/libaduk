@@ -1,7 +1,5 @@
 <script>
-  import { enhance } from '$app/forms';
-
-  let { data, form } = $props();
+  import { getMe, updateMe } from '$lib/state/user.svelte.js';
 
   const RANKINGS = [
     '9d',
@@ -34,18 +32,38 @@
     '19k',
     '20k'
   ];
+
+  let biography = $state(getMe()?.biography ?? '');
+  let realName = $state(getMe()?.realName ?? '');
+  let ranking = $state(getMe()?.ranking ?? '');
+  let saved = $state(false);
+
+  async function save() {
+    await updateMe({ biography, realName, ranking });
+    saved = true;
+  }
 </script>
 
 <div class="box__top">
   <h1>Edit Profile</h1>
 </div>
 
-<form method="POST" use:enhance>
+<form
+  onsubmit={(e) => {
+    e.preventDefault();
+    save();
+  }}
+>
   <div class="form-group">
     <label class="form-label" for="biography">Biography</label>
-    <textarea id="biography" name="biography" class="form-control" rows="5" maxlength="400"
-      >{data.biography}</textarea
-    >
+    <textarea
+      id="biography"
+      name="biography"
+      class="form-control"
+      rows="5"
+      maxlength="400"
+      bind:value={biography}
+    ></textarea>
   </div>
 
   <div class="form-group">
@@ -55,26 +73,22 @@
       name="realName"
       type="text"
       class="form-control"
-      value={data.realName}
+      bind:value={realName}
       maxlength="80"
     />
   </div>
 
   <div class="form-group">
     <label class="form-label" for="ranking">Estimated Ranking</label>
-    <select id="ranking" name="ranking" class="form-control">
-      <option value="" selected={data.ranking === ''}>— not set —</option>
+    <select id="ranking" name="ranking" class="form-control" bind:value={ranking}>
+      <option value="">— not set —</option>
       {#each RANKINGS as r}
-        <option value={r} selected={data.ranking === r}>{r}</option>
+        <option value={r}>{r}</option>
       {/each}
     </select>
   </div>
 
-  {#if form?.error}
-    <p class="form-error">{form.error}</p>
-  {/if}
-
-  {#if form?.success}
+  {#if saved}
     <p class="form-success">Profile saved.</p>
   {/if}
 
