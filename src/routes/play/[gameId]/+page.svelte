@@ -678,6 +678,7 @@
       whiteName={resolvePlayerName('white')}
       gameType={data.game.gameType}
       gameUrl={page.url.href}
+      ogsGameId={data.game.ogsGameId}
     />
     <GameChat
       {username}

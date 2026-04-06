@@ -9,7 +9,8 @@
     blackName,
     whiteName,
     gameType = null,
-    gameUrl = null
+    gameUrl = null,
+    ogsGameId = null
   } = $props();
 
   function formatResult(result) {
@@ -30,7 +31,13 @@
 <div class="game__meta">
   <section>
     <div class="game__meta__infos" data-icon="&#xe015;">
-      <div class="setup">Casual &bull; {boardSize}&times;{boardSize} &bull; Go</div>
+      {#if ogsGameId}
+        <a class="setup" href="https://online-go.com/game/{ogsGameId}" target="_blank"
+          >Casual &bull; {boardSize}&times;{boardSize} &bull; Go</a
+        >
+      {:else}
+        <div class="setup">Casual &bull; {boardSize}&times;{boardSize} &bull; Go</div>
+      {/if}
     </div>
     <div class="game__meta__players">
       <div class="player color-icon is black text">{blackName}</div>
