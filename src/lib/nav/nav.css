@@ -818,3 +818,8 @@ signal > i.off {
 .button.button-metal:not(.disabled):hover {
   background: linear-gradient(to bottom, var(--c-metal-top-hover), var(--c-metal-bottom-hover));
 }
+
+.button.button-red:not(.disabled):hover {
+  background: var(--m-bad--lighten-11);
+  color: #fff;
+}
