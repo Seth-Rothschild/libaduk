@@ -5,6 +5,7 @@
     PUBLIC_OAUTH_REDIRECT_URI
   } from '$env/static/public';
   import { enhance } from '$app/forms';
+  import { getMe, updateMe } from '$lib/state/user.svelte.js';
 
   let { data } = $props();
 
@@ -30,7 +31,6 @@
 </div>
 
 <section class="security-section">
-  <h2>OGS Account</h2>
   <p class="section-desc">
     Connecting to an OGS account allows you to see and accept unranked OGS games in the lobby. The
     generated token is stored as ogs_token as a cookie in your browser.
@@ -39,6 +39,33 @@
     <div class="passkey-item">
       <span>{data.ogs.username} ({formatOgsRank(data.ogs.ranking)})</span>
       <span class="passkey-date">ID: {data.ogs.id}</span>
+    </div>
+    <div class="config-group">
+      <h2 class="label">Show OGS games in lobby</h2>
+      <group class="radio">
+        <div>
+          <input
+            id="ogs_lobby_no"
+            name="showOgsGames"
+            type="radio"
+            value="no"
+            checked={getMe()?.settings?.showOgsGames === false}
+            onchange={() => updateMe({ settings: { showOgsGames: false } })}
+          />
+          <label for="ogs_lobby_no">No</label>
+        </div>
+        <div>
+          <input
+            id="ogs_lobby_yes"
+            name="showOgsGames"
+            type="radio"
+            value="yes"
+            checked={getMe()?.settings?.showOgsGames !== false}
+            onchange={() => updateMe({ settings: { showOgsGames: true } })}
+          />
+          <label for="ogs_lobby_yes">Yes</label>
+        </div>
+      </group>
     </div>
     <form method="POST" action="?/disconnect" use:enhance>
       <button type="submit" class="button">Disconnect</button>

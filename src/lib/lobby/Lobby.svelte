@@ -8,6 +8,7 @@
   import LobbyAbout from './LobbyAbout.svelte';
   import PoolGrid from './PoolGrid.svelte';
   import HookTable from './HookTable.svelte';
+  import { getMe } from '$lib/state/user.svelte.js';
   import ActiveGamesPanel from './ActiveGamesPanel.svelte';
   import StartButtons from './StartButtons.svelte';
   import LobbyPuzzle from './LobbyPuzzle.svelte';
@@ -72,6 +73,12 @@
   let liveGames = $state([]);
   let corrGames = $state([]);
   let ogsStreams = $state([]);
+
+  function visibleOgsChallenges() {
+    const showOgs = getMe()?.settings?.showOgsGames;
+    if (showOgs === false) return [];
+    return ogsSeekGraph.challenges;
+  }
 
   async function refreshPending() {
     const res = await fetch('/api/games?type=live');
@@ -166,7 +173,7 @@
         <HookTable
           games={pendingGames}
           onJoin={(id) => goto(`/play/${id}`)}
-          ogsChallenges={ogsSeekGraph.challenges}
+          ogsChallenges={visibleOgsChallenges()}
           onAcceptOgs={acceptOgsChallenge}
         />
       {:else if activeTab === 'correspondence'}

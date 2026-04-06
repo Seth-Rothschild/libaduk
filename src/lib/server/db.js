@@ -56,15 +56,16 @@ async function getDb() {
 export async function getUser(username) {
   try {
     const d = await getDb();
-    const doc = await d.collection('users').findOne({ _id: username.toLowerCase() });
-    if (!doc) return null;
+    const user = await d.collection('users').findOne({ _id: username.toLowerCase() });
+    if (!user) return null;
     return {
-      username: doc.username,
-      createdAt: doc.createdAt,
-      biography: doc.biography ?? '',
-      realName: doc.realName ?? '',
-      ranking: doc.ranking ?? '',
-      ogs: doc.ogs ?? null
+      username: user.username,
+      createdAt: user.createdAt,
+      biography: user.biography ?? '',
+      realName: user.realName ?? '',
+      ranking: user.ranking ?? '',
+      ogs: user.ogs ?? null,
+      settings: user.settings ?? {}
     };
   } catch (err) {
     console.error('[db] getUser failed:', err.message);
@@ -79,6 +80,27 @@ export async function updateUserProfile(username, { biography, realName, ranking
     await d.collection('users').updateOne({ _id: key }, { $set: { biography, realName, ranking } });
   } catch (err) {
     console.error('[db] updateUserProfile failed:', err.message);
+    throw err;
+  }
+}
+
+export async function updateUser(username, patch) {
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    const user = await d.collection('users').findOne({ _id: key });
+    const merged = { ...user };
+    for (const [k, v] of Object.entries(patch)) {
+      if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
+        merged[k] = { ...user[k], ...v };
+      } else {
+        merged[k] = v;
+      }
+    }
+    delete merged._id;
+    await d.collection('users').updateOne({ _id: key }, { $set: merged });
+  } catch (err) {
+    console.error('[db] updateUser failed:', err.message);
     throw err;
   }
 }
