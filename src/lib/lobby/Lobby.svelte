@@ -198,7 +198,7 @@
         {/each}
       </section>
     {/if}
-    <ActiveGamesPanel games={liveGames} />
+    <!-- <ActiveGamesPanel games={liveGames} /> -->
   </div>
 
   {#if ogsLiveGame.game}

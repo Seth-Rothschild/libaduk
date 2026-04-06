@@ -51,22 +51,25 @@
       >{formatClock(ogsLiveGame.clock?.white)}</span
     >
   </div>
+
   <div class="lobby__top-game__board" bind:this={containerEl}>
-    <div
-      style="transform: scale({scale}); transform-origin: top left; width: {boardPx}px; height: {boardPx}px;"
-    >
-      {#if signMap.length}
-        <GoBoard
-          {signMap}
-          {size}
-          {vertexSize}
-          {shiftMap}
-          {lastMove}
-          {animatedVertex}
-          interactive={false}
-        />
-      {/if}
-    </div>
+    <a href="https://online-go.com/game/{ogsLiveGame.game.id}">
+      <div
+        style="transform: scale({scale}); transform-origin: top left; width: {boardPx}px; height: {boardPx}px;"
+      >
+        {#if signMap.length}
+          <GoBoard
+            {signMap}
+            {size}
+            {vertexSize}
+            {shiftMap}
+            {lastMove}
+            {animatedVertex}
+            interactive={false}
+          />
+        {/if}
+      </div>
+    </a>
   </div>
   <div class="lobby__top-game__player">
     <span class="text"

@@ -91,7 +91,7 @@
 .lobby__puzzle .text {
   padding: 0.15em 0.3em;
   color: var(--c-font-dim);
-  font-size: 0.9em;
+
   text-align: right;
 }
 
@@ -125,11 +125,9 @@
 
 .lobby__top-game .text {
   color: var(--c-font-dim);
-  font-size: 0.9em;
 }
 
 .lobby__top-game__clock {
-  font-size: 0.9em;
   font-variant-numeric: tabular-nums;
   color: var(--c-font-dim);
 }
@@ -350,7 +348,6 @@ html.light .lpool {
 .lobby__side-empty {
   padding: 1em;
   color: var(--c-font-dim);
-  font-size: 0.9em;
 }
 
 .lobby__live-list {
@@ -365,7 +362,7 @@ html.light .lpool {
   padding: 0.5em 0.8em;
   text-decoration: none;
   color: var(--c-font);
-  font-size: 0.9em;
+
   border-bottom: 1px solid var(--c-border);
 }
 
@@ -452,7 +449,7 @@ html.light .lpool {
   flex-direction: column;
   gap: 0.3em;
   padding: 0.6em 1em;
-  font-size: 0.9em;
+
   color: var(--c-font-dim);
   grid-column: 1 / -1;
 }
