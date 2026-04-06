@@ -9,6 +9,7 @@
 
   let open = $state(false);
   let pane = $state('main');
+  let dasherEl = $state(null);
 
   const close = () => {
     open = false;
@@ -16,14 +17,28 @@
   };
   const toggle = () => (open ? close() : (open = true));
 
+  const closeOnClickAway = (e) => {
+    if (open && dasherEl && !dasherEl.contains(e.target)) {
+      close();
+    }
+  };
+
+  const closeOnEscape = (e) => {
+    if (e.key === 'Escape' && open) {
+      close();
+    }
+  };
+
   const signOut = () => {
     onSignOut();
     close();
   };
 </script>
 
+<svelte:window onclick={closeOnClickAway} onkeydown={closeOnEscape} />
+
 {#if signedIn}
-  <div class="dasher" class:shown={open}>
+  <div class="dasher" class:shown={open} bind:this={dasherEl}>
     <button id="user_tag" class="link" onclick={toggle}>{username}</button>
     <div class="dropdown">
       {#if pane === 'background'}
@@ -52,7 +67,7 @@
     <a href="/signup" class="button button-metal signup">Register</a>
     <a href="/login" class="button button-metal">Sign in</a>
   </div>
-  <div class="dasher" class:shown={open}>
+  <div class="dasher" class:shown={open} bind:this={dasherEl}>
     <button
       class="toggle link anon"
       data-icon="&#xe005;"
