@@ -15,7 +15,7 @@
 .lobby {
   grid-area: main;
   display: grid;
-  grid-template-areas: 'app' 'table' 'side' 'puzzle' 'about';
+  grid-template-areas: 'app' 'table' 'side' 'topgame' 'puzzle' 'about';
   gap: var(---block-gap, 10px);
 }
 
@@ -23,10 +23,10 @@
   .lobby {
     grid-template-columns: repeat(2, 1fr);
     grid-template-areas:
-      'app    app'
-      'side   table'
-      'side   puzzle'
-      'about  about';
+      'app     app'
+      'side    table'
+      'topgame puzzle'
+      'about   about';
   }
 }
 
@@ -34,10 +34,11 @@
   .lobby {
     grid-template-columns: 34% 1fr;
     grid-template-areas:
-      'table  app'
-      'puzzle app'
-      'side   app'
-      'about  about';
+      'table   app'
+      'topgame app'
+      'puzzle  app'
+      'side    app'
+      'about   about';
   }
 }
 
@@ -46,9 +47,9 @@
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: 1fr auto auto;
     grid-template-areas:
-      'side  app    app   table'
-      'side  app    app   puzzle'
-      'about about  about about';
+      'side    app    app   table'
+      'topgame app    app   puzzle'
+      'about   about  about about';
   }
 }
 
@@ -66,6 +67,9 @@
   grid-area: table;
   display: flex;
   flex-direction: column;
+}
+.lobby__topgame {
+  grid-area: topgame;
 }
 .lobby__about {
   grid-area: about;
@@ -97,6 +101,45 @@
 }
 
 .lobby__puzzle__board {
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+
+/* -------------------------------------------------------------
+   .lobby__top-game — live OGS game miniboard
+   ------------------------------------------------------------- */
+
+.lobby__top-game {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+}
+
+.lobby__top-game__player {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.15em 0.3em;
+}
+
+.lobby__top-game .text {
+  color: var(--c-font-dim);
+  font-size: 0.9em;
+}
+
+.lobby__top-game__clock {
+  font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-font-dim);
+}
+
+.lobby__top-game__clock.active {
+  color: var(--c-brag);
+  font-weight: bold;
+}
+
+.lobby__top-game__board {
   aspect-ratio: 1;
   overflow: hidden;
 }

@@ -12,6 +12,8 @@
   import ActiveGamesPanel from './ActiveGamesPanel.svelte';
   import StartButtons from './StartButtons.svelte';
   import LobbyPuzzle from './LobbyPuzzle.svelte';
+  import LobbyTopGame from './LobbyTopGame.svelte';
+  import { ogsLiveGame } from './ogsLiveGame.svelte.js';
   import { LIVE_POOLS } from './pools.js';
   import { pingState } from '$lib/state/ping.svelte.js';
   import { getGuestId } from '$lib/state/guestId.js';
@@ -123,9 +125,13 @@
 
   onMount(async () => {
     ogsSeekGraph.start();
+    ogsLiveGame.start();
     await getStreams();
 
-    return () => ogsSeekGraph.stop();
+    return () => {
+      ogsSeekGraph.stop();
+      ogsLiveGame.stop();
+    };
   });
 
   $effect(() => {
@@ -194,6 +200,12 @@
     {/if}
     <ActiveGamesPanel games={liveGames} />
   </div>
+
+  {#if ogsLiveGame.game}
+    <div class="lobby__topgame">
+      <LobbyTopGame />
+    </div>
+  {/if}
 
   <div class="lobby__table">
     <StartButtons
