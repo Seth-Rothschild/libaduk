@@ -98,21 +98,8 @@
     liveGames = await res.json();
   }
 
-  function getOgsToken() {
-    const pairs = document.cookie.split(';');
-    for (const pair of pairs) {
-      const [key, value] = pair.trim().split('=');
-      if (key === 'ogs_token') return decodeURIComponent(value);
-    }
-    return null;
-  }
-
   async function getStreams() {
-    const ogsToken = getOgsToken();
-    const res = await fetch(`https://online-go.com/api/v1/gotv/streams/`, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${ogsToken}` }
-    });
+    const res = await fetch('https://online-go.com/api/v1/gotv/streams/');
     if (!res.ok) return null;
     let streams = await res.json();
     ogsStreams = streams.slice(0, 2);

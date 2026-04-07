@@ -1,11 +1,18 @@
 import { OAUTH_CLIENT_SECRET, OAUTH_TOKEN_URL } from '$env/static/private';
 import { PUBLIC_OAUTH_CLIENT_ID, PUBLIC_OAUTH_REDIRECT_URI } from '$env/static/public';
-import { linkOgs } from '$lib/server/db.js';
+import { getUser, createUser, linkOgs } from '$lib/server/db.js';
+import { createSession } from '$lib/server/sessions.js';
 import { redirect } from '@sveltejs/kit';
 
 export async function GET({ url, cookies, locals }) {
-  if (!locals.user) {
-    redirect(302, '/login');
+  const state = url.searchParams.get('state');
+  const savedState = cookies.get('oauth_state');
+  cookies.delete('oauth_state', { path: '/' });
+  if (!state || state !== savedState) {
+    return new Response(JSON.stringify({ error: 'Invalid state parameter' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   const code = url.searchParams.get('code');
@@ -45,11 +52,29 @@ export async function GET({ url, cookies, locals }) {
   });
   const meData = await meResponse.json();
 
-  await linkOgs(locals.user.username, {
+  const ogsInfo = {
     id: meData.id,
     ranking: meData.ranking,
     ogsUsername: meData.username
-  });
+  };
+
+  if (locals.user) {
+    await linkOgs(locals.user.username, ogsInfo);
+  } else {
+    const localUsername = `${meData.username} (OGS)`;
+    const existing = await getUser(localUsername);
+    if (!existing) {
+      await createUser(localUsername);
+    }
+    await linkOgs(localUsername, ogsInfo);
+    const token = await createSession(localUsername);
+    cookies.set('session', token, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30
+    });
+  }
 
   cookies.set('ogs_token', accessToken, {
     path: '/',
@@ -58,5 +83,6 @@ export async function GET({ url, cookies, locals }) {
     maxAge: 60 * 60 * 24 * 30
   });
 
-  redirect(302, '/account/preferences/ogs');
+  const destination = locals.user ? '/account/preferences/ogs' : '/';
+  redirect(302, destination);
 }

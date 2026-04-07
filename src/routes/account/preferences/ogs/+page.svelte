@@ -16,11 +16,14 @@
   }
 
   function connectOgs() {
+    const state = crypto.randomUUID();
+    document.cookie = `oauth_state=${state}; path=/; max-age=600`;
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: PUBLIC_OAUTH_CLIENT_ID,
       redirect_uri: PUBLIC_OAUTH_REDIRECT_URI,
-      scope: 'read write'
+      scope: 'read write',
+      state
     });
     window.location.href = `${PUBLIC_OAUTH_AUTH_URL}?${params}`;
   }

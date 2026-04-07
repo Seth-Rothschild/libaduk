@@ -1,5 +1,24 @@
 <script>
+  import {
+    PUBLIC_OAUTH_AUTH_URL,
+    PUBLIC_OAUTH_CLIENT_ID,
+    PUBLIC_OAUTH_REDIRECT_URI
+  } from '$env/static/public';
+
   let { error = '', submitting = false, onSignIn } = $props();
+
+  function loginWithOgs() {
+    const state = crypto.randomUUID();
+    document.cookie = `oauth_state=${state}; path=/; max-age=600`;
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: PUBLIC_OAUTH_CLIENT_ID,
+      redirect_uri: PUBLIC_OAUTH_REDIRECT_URI,
+      scope: 'read write',
+      state
+    });
+    window.location.href = `${PUBLIC_OAUTH_AUTH_URL}?${params}`;
+  }
 </script>
 
 <main class="auth box box-pad">
@@ -17,6 +36,12 @@
 
     <button type="button" class="submit button" disabled={submitting} onclick={onSignIn}>
       {submitting ? 'Signing in…' : 'Sign in with passkey'}
+    </button>
+
+    <div class="oauth-divider">or</div>
+
+    <button type="button" class="submit button ogs-button" onclick={loginWithOgs}>
+      Sign in with OGS
     </button>
   </div>
 

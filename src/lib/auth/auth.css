@@ -226,3 +226,18 @@ html.light .form-control {
   outline: 2px solid var(--c-warn);
   outline-offset: -2px;
 }
+
+.oauth-divider {
+  text-align: center;
+  color: var(--c-font-dim);
+  margin: 1.5rem 0;
+  font-size: 0.9em;
+}
+
+.auth .ogs-button {
+  background: hsl(200, 50%, 35%);
+}
+
+.auth .ogs-button:hover:not(:disabled) {
+  background: hsl(200, 50%, 28%);
+}
