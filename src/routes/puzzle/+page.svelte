@@ -117,7 +117,7 @@
       </div>
 
       <!-- Dataset citation -->
-      <div class="infos" data-icon="&#xe002;">
+      <div class="infos" data-icon="&#xe00c;">
         <div>
           <p>
             From <a href="https://walruswq.com/datasets" target="_blank" rel="noopener"

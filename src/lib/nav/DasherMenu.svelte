@@ -18,7 +18,7 @@
   const toggle = () => (open ? close() : (open = true));
 
   const closeOnClickAway = (e) => {
-    if (open && dasherEl && !dasherEl.contains(e.target)) {
+    if (open && dasherEl && !dasherEl.contains(e.target) && e.target.isConnected) {
       close();
     }
   };

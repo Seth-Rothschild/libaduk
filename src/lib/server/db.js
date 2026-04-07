@@ -487,13 +487,26 @@ export async function getLeaderboards() {
   for (const category of LEADERBOARD_CATEGORIES) {
     const withGames = await leaderboardForCategory(collection, category.filter);
     const seen = new Set(withGames.map((e) => e.username));
-    for (const username of usernames) {
-      if (!seen.has(username)) {
-        withGames.push({ username, count: 0 });
-      }
-    }
-    result[category.key] = withGames.slice(0, 10);
+    const zeros = usernames.filter((u) => !seen.has(u)).map((u) => ({ username: u, count: 0 }));
+    zeros.sort(() => Math.random() - 0.5);
+    result[category.key] = [...withGames, ...zeros].slice(0, 10);
   }
+
+  const puzzleLeaders = await d
+    .collection('puzzleCompletions')
+    .aggregate([
+      { $project: { _id: 1, count: { $size: '$completed' } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+      { $project: { _id: 0, username: '$_id', count: 1 } }
+    ])
+    .toArray();
+  const puzzleSeen = new Set(puzzleLeaders.map((e) => e.username));
+  const puzzleZeros = usernames
+    .filter((u) => !puzzleSeen.has(u.toLowerCase()))
+    .map((u) => ({ username: u.toLowerCase(), count: 0 }));
+  puzzleZeros.sort(() => Math.random() - 0.5);
+  result['puzzles'] = [...puzzleLeaders, ...puzzleZeros].slice(0, 10);
   return result;
 }
 

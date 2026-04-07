@@ -9,7 +9,8 @@
     { key: 'blitz', label: 'Blitz', icon: '\ue008' },
     { key: 'rapid', label: 'Rapid', icon: '\ue002' },
     { key: 'classical', label: 'Classical', icon: '\ue00a' },
-    { key: 'correspondence', label: 'Correspondence', icon: '\ue019' }
+    { key: 'correspondence', label: 'Correspondence', icon: '\ue019' },
+    { key: 'puzzles', label: 'Puzzles', icon: '\ue00c' }
   ];
 
   let onlineUsers = $state([]);
