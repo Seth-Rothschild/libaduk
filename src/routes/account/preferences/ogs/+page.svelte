@@ -10,7 +10,7 @@
   let { data } = $props();
 
   let showOGSGames = $state(getMe()?.settings?.showOGSGames ?? true);
-  let createOGSGames = $state(getMe()?.settings?.createOGSGames ?? false);
+  let createOGSGames = $state(getMe()?.settings?.createOGSGames ?? true);
 
   function formatOgsRank(rank) {
     const r = Math.floor(rank);
@@ -83,7 +83,7 @@
             name="createOGSGames"
             type="radio"
             value="no"
-            checked={createOGSGames}
+            checked={!createOGSGames}
             onchange={() => updateMe({ settings: { createOGSGames: false } })}
           />
           <label for="ogs_quickpair_no">No</label>
@@ -94,7 +94,7 @@
             name="createOGSGames"
             type="radio"
             value="yes"
-            checked={!createOGSGames}
+            checked={createOGSGames}
             onchange={() => updateMe({ settings: { createOGSGames: true } })}
           />
           <label for="ogs_quickpair_yes">Yes</label>

@@ -60,7 +60,6 @@ class OgsSeekGraph {
       }
 
       if (name === 'notification' && payload?.type === 'gameStarted' && this.#pendingChallengeId) {
-
         const gameId = payload.game_id;
         if (gameId) {
           this.#pendingChallengeId = null;

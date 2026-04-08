@@ -13,14 +13,6 @@ async function fetchOgsJwt(ogsToken) {
   return config.user_jwt ?? null;
 }
 
-async function fetchGameState(ogsGameId, ogsToken) {
-  const res = await fetch(`https://online-go.com/api/v1/games/${ogsGameId}/state/`, {
-    headers: { Authorization: `Bearer ${ogsToken}` }
-  });
-  if (!res.ok) return null;
-  return res.json();
-}
-
 function toSgfCoord(x, y) {
   return String.fromCharCode(97 + x) + String.fromCharCode(97 + y);
 }
@@ -55,7 +47,11 @@ function ogsClockToState(ogsClock) {
   if (!blackData || !whiteData) return null;
   const activeColor = ogsClock.current_player === ogsClock.black_player_id ? 'black' : 'white';
   const serverOffset = Date.now() - (ogsClock.now ?? Date.now());
-  const turnStartedAt = ogsClock.last_move ? serverOffset + ogsClock.last_move : null;
+  const turnStartedAt = ogsClock.start_mode
+    ? null
+    : ogsClock.last_move
+      ? serverOffset + ogsClock.last_move
+      : null;
   return { black: blackData, white: whiteData, activeColor, turnStartedAt };
 }
 
@@ -176,6 +172,7 @@ export class OgsAdapter {
       }
 
       if (data.clock) {
+        console.log('[OgsAdapter] gamedata clock:', JSON.stringify(data.clock));
         const clockState = ogsClockToState(data.clock);
         if (clockState) this.#onBroadcast({ type: 'clock', clockState });
       }
@@ -187,6 +184,7 @@ export class OgsAdapter {
     }
 
     if (name === `${gamePrefix}clock`) {
+      console.log('[OgsAdapter] clock event:', JSON.stringify(data));
       const clockState = ogsClockToState(data);
       if (clockState) this.#onBroadcast({ type: 'clock', clockState });
       return;
@@ -198,7 +196,14 @@ export class OgsAdapter {
         this.#awaitingMoveConfirmation = false;
         return;
       }
-      await this.#fetchAndForwardMove();
+      const x = data.move[0];
+      const y = data.move[1];
+      const isPass = x < 0 || y < 0;
+      if (isPass) {
+        this.#onBroadcast({ type: 'pass' });
+      } else {
+        this.#onBroadcast({ type: 'move', x, y });
+      }
       return;
     }
 
@@ -240,17 +245,6 @@ export class OgsAdapter {
       const stones = parseSgfCoords(this.#removedStones);
       this.#onBroadcast({ type: 'dead-stones', stones });
       return;
-    }
-  }
-
-  async #fetchAndForwardMove() {
-    const state = await fetchGameState(this.#ogsGameId, this.#ogsToken);
-    if (!state) return;
-    const isPass = !state.last_move || state.last_move.x < 0;
-    if (isPass) {
-      this.#onBroadcast({ type: 'pass' });
-    } else {
-      this.#onBroadcast({ type: 'move', x: state.last_move.x, y: state.last_move.y });
     }
   }
 
