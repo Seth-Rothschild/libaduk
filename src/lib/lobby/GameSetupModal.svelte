@@ -39,21 +39,21 @@
     9: [
       { label: '0+3×10s', min: 0, periods: 3, sec: 10 },
       { label: '0+3×20s', min: 0, periods: 3, sec: 20 },
-      { label: '3+3×15s', min: 3, periods: 3, sec: 15 },
-      { label: '5+3×20s', min: 5, periods: 3, sec: 20 },
+      { label: '5+0', min: 5, periods: 0, sec: 0 },
       { label: '10+3×20s', min: 10, periods: 3, sec: 20 }
     ],
     13: [
-      { label: '0+3×15s', min: 0, periods: 3, sec: 15 },
-      { label: '1+3×20s', min: 1, periods: 3, sec: 20 },
-      { label: '5+3×20s', min: 5, periods: 3, sec: 20 },
+      { label: '0+5×10s', min: 0, periods: 5, sec: 10 },
+      { label: '0+5×20s', min: 0, periods: 5, sec: 20 },
+      { label: '10+0', min: 10, periods: 0, sec: 0 },
       { label: '10+3×25s', min: 10, periods: 3, sec: 25 },
       { label: '20+3×30s', min: 20, periods: 3, sec: 30 }
     ],
     19: [
-      { label: '1+3×20s', min: 1, periods: 3, sec: 20 },
-      { label: '5+3×20s', min: 5, periods: 3, sec: 20 },
-      { label: '10+3×20s', min: 10, periods: 3, sec: 20 },
+      { label: '1+5×10s', min: 1, periods: 5, sec: 10 },
+      { label: '0+5×20s', min: 0, periods: 5, sec: 20 },
+      { label: '20+0', min: 20, periods: 0, sec: 0 },
+      { label: '10+5×20s', min: 10, periods: 5, sec: 20 },
       { label: '20+3×30s', min: 20, periods: 3, sec: 30 },
       { label: '45+3×30s', min: 45, periods: 3, sec: 30 }
     ]
@@ -245,7 +245,7 @@
                   id="byo-periods"
                   class="range"
                   type="range"
-                  min="1"
+                  min="0"
                   max="10"
                   value={byoPeriods}
                   oninput={(e) => (byoPeriods = +e.target.value)}
