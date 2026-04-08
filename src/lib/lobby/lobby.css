@@ -961,6 +961,83 @@ group.radio.ai-strength {
   }
 }
 
+/* -------------------------------------------------------------
+   .pool-spinner — circle loader on pool cards
+   ------------------------------------------------------------- */
+
+@keyframes pool-spinner-stroke {
+  0% {
+    stroke-dashoffset: 175.93;
+  }
+  40% {
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dashoffset: 0;
+  }
+  65% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -175.93;
+  }
+}
+
+@keyframes pool-spinner-color {
+  0%,
+  100% {
+    stroke: var(--c-primary);
+    fill: var(--c-primary);
+  }
+  25% {
+    stroke: var(--c-error);
+    fill: var(--c-error);
+  }
+  50% {
+    stroke: var(--c-secondary);
+    fill: var(--c-secondary);
+  }
+  75% {
+    stroke: var(--c-brag);
+    fill: var(--c-brag);
+  }
+}
+
+@keyframes pool-spinner-glare {
+  0%,
+  50% {
+    clip-path: inset(0 100% 0 0);
+  }
+  55% {
+    clip-path: inset(0 0 0 0);
+  }
+  60% {
+    clip-path: inset(0 0 0 100%);
+  }
+  100% {
+    clip-path: inset(0 0 0 100%);
+  }
+}
+
+.pool-spinner {
+  width: 70px;
+  height: 70px;
+}
+
+.pool-spinner g {
+  stroke-dasharray: 175.93 175.93;
+  animation: pool-spinner-color 11s steps(1) infinite;
+}
+
+.pool-spinner__outline {
+  animation: pool-spinner-stroke 2.75s linear infinite;
+}
+
+.pool-spinner__fill {
+  fill-opacity: 0.55;
+  animation: pool-spinner-glare 2.75s linear infinite;
+}
+
 .stream {
   color: var(--c-font-page);
   display: block;

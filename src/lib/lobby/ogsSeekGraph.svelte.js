@@ -11,6 +11,9 @@ class OgsSeekGraph {
   #msgId = 1;
   #drift = 0;
   #latency = 0;
+  #pendingChallengeId = null;
+  #onChallengeAccepted = null;
+  #keepaliveInterval = null;
 
   async start() {
     if (!browser || this.#ws) return;
@@ -56,10 +59,25 @@ class OgsSeekGraph {
         return;
       }
 
+      if (name === 'notification' && payload?.type === 'gameStarted' && this.#pendingChallengeId) {
+
+        const gameId = payload.game_id;
+        if (gameId) {
+          this.#pendingChallengeId = null;
+          this.#onChallengeAccepted?.(gameId);
+          this.#onChallengeAccepted = null;
+        }
+      }
+
       if (name === 'seekgraph/global') {
         for (const entry of payload) {
           if (entry.delete || entry.game_started) {
             this.#map.delete(entry.challenge_id);
+            if (entry.game_started && entry.challenge_id === this.#pendingChallengeId) {
+              this.#pendingChallengeId = null;
+              this.#onChallengeAccepted?.(entry.game_id);
+              this.#onChallengeAccepted = null;
+            }
           } else if (!entry.ranked && entry.time_control_parameters?.speed !== 'correspondence') {
             this.#map.set(entry.challenge_id, entry);
           }
@@ -73,6 +91,83 @@ class OgsSeekGraph {
       this.#pingInterval = null;
       this.#ws = null;
     };
+  }
+
+  async createChallenge({ size, mainTime, periods, periodTime }) {
+    const tcParams = {
+      system: 'byoyomi',
+      time_control: 'byoyomi',
+      main_time: mainTime,
+      periods,
+      period_time: periodTime,
+      pause_on_weekends: false,
+      speed: 'live'
+    };
+    const body = {
+      initialized: false,
+      min_ranking: -1000,
+      max_ranking: 1000,
+      challenger_color: 'automatic',
+      rengo_auto_start: 0,
+      game: {
+        name: 'Friendly Match',
+        rules: 'japanese',
+        ranked: false,
+        width: size,
+        height: size,
+        handicap: 0,
+        komi_auto: 'automatic',
+        disable_analysis: false,
+        initial_state: null,
+        private: false,
+        rengo: false,
+        rengo_casual_mode: true,
+        time_control: 'byoyomi',
+        time_control_parameters: tcParams,
+        pause_on_weekends: false
+      },
+      aga_ranked: false
+    };
+    const res = await fetch('https://online-go.com/api/v1/challenges', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    this.#pendingChallengeId = data.challenge;
+    this.#keepaliveInterval = setInterval(() => {
+      this.#send('challenge/keepalive', { challenge_id: data.challenge, game_id: data.game });
+    }, 1000);
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => this.cancelPendingChallenge(), 60000);
+      this.#onChallengeAccepted = (gameId) => {
+        clearTimeout(timeout);
+        clearInterval(this.#keepaliveInterval);
+        this.#keepaliveInterval = null;
+
+        resolve(gameId);
+      };
+    });
+  }
+
+  async cancelPendingChallenge() {
+    const challengeId = this.#pendingChallengeId;
+    if (!challengeId) return;
+    const res = await fetch(`https://online-go.com/api/v1/challenges/${challengeId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${this.token}` }
+    });
+    if (!res.ok && res.status !== 404) return;
+    clearInterval(this.#keepaliveInterval);
+    this.#keepaliveInterval = null;
+    this.#pendingChallengeId = null;
+    this.#onChallengeAccepted?.(null);
+    this.#onChallengeAccepted = null;
   }
 
   async acceptChallenge(challengeId) {

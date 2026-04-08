@@ -54,10 +54,33 @@
     goto(`/play/${gameId}`);
   }
 
+  async function createOgsGame(pool) {
+    const tc = pool.timeControl;
+    const ogsGameId = await ogsSeekGraph.createChallenge({
+      size: pool.size,
+      mainTime: tc.initial,
+      periods: tc.periods,
+      periodTime: tc.periodTime
+    });
+    if (ogsGameId === null) return 'cancelled';
+    if (!ogsGameId) return null;
+    return { gameType: 'ogs', ogsGameId, ogsUserId: ogsSeekGraph.userId };
+  }
+
   async function createGame(pool = null) {
+    const useOgs = getMe()?.settings?.createOGSGames === true;
     const body = { size: pool?.size ?? 19, color: 'random', creatorName: displayName };
     if (pool) {
       body.timeControl = pool.timeControl;
+      if (useOgs) {
+        const ogs = await createOgsGame(pool);
+        if (ogs === 'cancelled') return;
+        if (ogs) {
+          body.gameType = ogs.gameType;
+          body.ogsGameId = ogs.ogsGameId;
+          body.ogsUserId = ogs.ogsUserId;
+        }
+      }
     }
     const res = await fetch('/api/game', {
       method: 'POST',
@@ -159,6 +182,7 @@
         <PoolGrid
           pools={LIVE_POOLS}
           onSelect={createGame}
+          onCancel={() => ogsSeekGraph.cancelPendingChallenge()}
           showCustom={true}
           onCustom={() => (setupModal = 'hook')}
         />

@@ -9,6 +9,9 @@
 
   let { data } = $props();
 
+  let showOGSGames = $state(getMe()?.settings?.showOGSGames ?? true);
+  let createOGSGames = $state(getMe()?.settings?.createOGSGames ?? false);
+
   function formatOgsRank(rank) {
     const r = Math.floor(rank);
     if (r < 30) return `${30 - r}k`;
@@ -52,7 +55,7 @@
             name="showOgsGames"
             type="radio"
             value="no"
-            checked={getMe()?.settings?.showOgsGames === false}
+            checked={!showOGSGames}
             onchange={() => updateMe({ settings: { showOgsGames: false } })}
           />
           <label for="ogs_lobby_no">No</label>
@@ -63,10 +66,38 @@
             name="showOgsGames"
             type="radio"
             value="yes"
-            checked={getMe()?.settings?.showOgsGames !== false}
+            checked={showOGSGames}
             onchange={() => updateMe({ settings: { showOgsGames: true } })}
           />
           <label for="ogs_lobby_yes">Yes</label>
+        </div>
+      </group>
+    </div>
+
+    <div class="config-group">
+      <h2 class="label">Create OGS games from quick pairing</h2>
+      <group class="radio">
+        <div>
+          <input
+            id="ogs_quickpair_no"
+            name="createOGSGames"
+            type="radio"
+            value="no"
+            checked={createOGSGames}
+            onchange={() => updateMe({ settings: { createOGSGames: false } })}
+          />
+          <label for="ogs_quickpair_no">No</label>
+        </div>
+        <div>
+          <input
+            id="ogs_quickpair_yes"
+            name="createOGSGames"
+            type="radio"
+            value="yes"
+            checked={!createOGSGames}
+            onchange={() => updateMe({ settings: { createOGSGames: true } })}
+          />
+          <label for="ogs_quickpair_yes">Yes</label>
         </div>
       </group>
     </div>

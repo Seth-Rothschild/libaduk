@@ -1,7 +1,7 @@
 <script>
   import PoolCard from './PoolCard.svelte';
 
-  let { pools, onSelect, showCustom = true, onCustom } = $props();
+  let { pools, onSelect, onCancel, showCustom = true, onCustom } = $props();
 </script>
 
 <div class="lpools">
@@ -11,6 +11,7 @@
       label={pool.label}
       size={pool.size}
       onClick={() => onSelect?.(pool)}
+      onCancel={() => onCancel?.()}
     />
   {/each}
   {#if showCustom}

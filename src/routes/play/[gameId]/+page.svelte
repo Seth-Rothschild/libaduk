@@ -88,7 +88,7 @@
   const blackCaptures = $derived(displayBoard.getCaptures(1));
   const whiteCaptures = $derived(displayBoard.getCaptures(-1));
 
-  const showJoinModal = $derived(gs.status === 'waiting' && gs.mySign === null);
+  const showJoinModal = $derived(gs.status === 'waiting' && gs.mySign === null && !isOgs);
 
   function handleJoined(color) {
     gs.mySign = color === 'black' ? 1 : -1;

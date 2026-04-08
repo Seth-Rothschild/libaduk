@@ -72,6 +72,7 @@ html {
   --m-accent_bg--mix-15: hsl(24, 39%, 18%);
   --c-brag: hsl(37, 74%, 43%);
   --m-bad--lighten-11: hsl(0, 60%, 61%);
+  --c-error: hsl(0, 60%, 50%);
 
   /* — unused — available when needed */
   /*
@@ -98,7 +99,6 @@ html {
   --c-dark:                       #333;
   --c-dasher-light:               rgb(81.68908, 105.26298, 47.9706);
   --c-dimmer:                     #000;
-  --c-error:                      hsl(0, 60%, 50%);
   --c-fancy:                      hsl(294, 62%, 48%);
   --c-font-clear:                 hsl(0, 0%, 80%);
   --c-font-dimmer:                hsl(0, 0%, 42%);
@@ -381,6 +381,7 @@ html.light {
   --m-bad_bg--mix-50: hsl(0, 60%, 75%);
   --m-accent_bg--mix-15: hsl(22, 72%, 91%);
   --m-bad--lighten-11: hsl(0, 60%, 61%);
+  --c-error: hsl(0, 60%, 50%);
 
   /* — unused — available when needed */
   /*
@@ -407,7 +408,6 @@ html.light {
   --c-dark:                       #333;
   --c-dasher-light:               rgb(181.84288, 207.2232, 152.8368);
   --c-dimmer:                     #fff;
-  --c-error:                      hsl(0, 60%, 50%);
   --c-fancy:                      hsl(294, 61%, 62%);
   --c-font-clear:                 hsl(0, 0%, 12%);
   --c-font-dimmer:                hsl(0, 0%, 70%);
