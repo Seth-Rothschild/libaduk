@@ -48,7 +48,7 @@
   const username = $derived(data.user?.username ?? '');
   const displayName = $derived(username || getGuestId());
 
-  const KOMI = $derived(data.game.komi ?? 6.5);
+  let komi = $state(data.game.komi ?? 6.5);
 
   const gameId = $derived(page.params.gameId);
   const isOgs = $derived(data.game.gameType === 'ogs');
@@ -169,7 +169,7 @@
   });
 
   const areaMap = $derived(gs.status === 'scoring' ? influence.areaMap(scoreBoard.signMap) : null);
-  const score = $derived(areaMap ? computeScore(areaMap, gs.boardSize, KOMI) : null);
+  const score = $derived(areaMap ? computeScore(areaMap, gs.boardSize, komi) : null);
 
   const displayDeadStones = $derived(
     gs.status === 'scoring' || gs.status === 'gameover' ? gs.deadStones : null
@@ -200,7 +200,7 @@
       const result = await generateMove(
         gs.board.signMap,
         aiSign,
-        KOMI,
+        komi,
         aiMoveHistory,
         aiDifficulty
       );
@@ -292,12 +292,12 @@
   let savedAnalysisTree = data.game.analysisTree ?? null;
 
   function enterAnalysisFromTree(tree) {
-    analysis = new AnalysisState(gs.boardSize, KOMI);
+    analysis = new AnalysisState(gs.boardSize, komi);
     analysis.loadTree(tree);
   }
 
   function enterAnalysisFromMoves() {
-    analysis = new AnalysisState(gs.boardSize, KOMI);
+    analysis = new AnalysisState(gs.boardSize, komi);
     const handicapStones = data.game.handicapStones ?? [];
     const moves = [];
     for (let i = 1; i < gs.lastMoveHistory.length; i++) {
@@ -613,6 +613,7 @@
         if (msg.type === 'my-color') {
           gs.mySign = msg.color === 'black' ? 1 : -1;
           if (gs.status === 'waiting') gs.status = 'playing';
+          if (msg.komi != null) komi = msg.komi;
           if (gs.totalPly === 0 && msg.handicapStones?.length > 0) {
             for (const [x, y] of msg.handicapStones) {
               gs.applyMove(x, y, 1);
@@ -782,7 +783,7 @@
           {isCorrGame}
           corrDeadline={gs.corrState?.turnDeadline}
           {score}
-          komi={KOMI}
+          {komi}
           blackApproved={gs.blackApproved}
           whiteApproved={gs.whiteApproved}
           winner={gs.winner}

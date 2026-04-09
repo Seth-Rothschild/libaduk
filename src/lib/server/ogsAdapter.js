@@ -155,10 +155,12 @@ export class OgsAdapter {
       timeControl.periodTime = timeControl.period_time;
       timeControl.type = timeControl.system;
 
+      const komi = data.komi ?? 6.5;
+
       this.#onBroadcast({ type: 'joined', color: 'black', name: blackName });
       this.#onBroadcast({ type: 'joined', color: 'white', name: whiteName });
-      this.#onUnicast({ type: 'my-color', color: this.myColor, handicapStones });
-      this.#onGameStart(this.myColor, blackName, whiteName, handicapStones, timeControl);
+      this.#onUnicast({ type: 'my-color', color: this.myColor, handicapStones, komi });
+      this.#onGameStart(this.myColor, blackName, whiteName, handicapStones, timeControl, komi);
       if (data.phase == 'finished') {
         const winnerColor = data.winner === this.#blackPlayerId ? 'black' : 'white';
         const margin = String(data.outcome).replace(' points', '');

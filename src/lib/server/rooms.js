@@ -315,7 +315,7 @@ export function attachWebSocketServer(httpServer) {
                   broadcast(msg.gameId, m);
                 },
                 onUnicast: (m) => send(socket, m),
-                onGameStart: (myColor, blackName, whiteName, handicapStones, timeControl) => {
+                onGameStart: (myColor, blackName, whiteName, handicapStones, timeControl, komi) => {
                   if (game.status !== 'waiting') return;
 
                   socket.playerColor = myColor;
@@ -326,7 +326,8 @@ export function attachWebSocketServer(httpServer) {
                     whiteName,
                     timeControl,
                     status: 'playing',
-                    handicapStones: stones
+                    handicapStones: stones,
+                    komi
                   });
                 },
                 onGameData: (gameData) => {
