@@ -5,6 +5,7 @@
     PUBLIC_OAUTH_REDIRECT_URI
   } from '$env/static/public';
   import { enhance } from '$app/forms';
+  import { page } from '$app/state';
   import { getMe, updateMe } from '$lib/state/user.svelte.js';
 
   let { data } = $props();
@@ -35,6 +36,10 @@
 <div class="box__top">
   <h1>OGS Integration</h1>
 </div>
+
+{#if page.url.searchParams.get('error')}
+  <p class="form-error">OGS connection failed.</p>
+{/if}
 
 <section class="security-section">
   <p class="section-desc">

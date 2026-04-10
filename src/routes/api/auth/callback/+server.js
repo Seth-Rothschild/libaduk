@@ -5,22 +5,21 @@ import { createSession } from '$lib/server/sessions.js';
 import { redirect } from '@sveltejs/kit';
 
 export async function GET({ url, cookies, locals }) {
+  const errorPage = locals.user ? '/account/preferences/ogs' : '/login';
+  const successPage = locals.user ? '/account/preferences/ogs' : '/';
+
   const state = url.searchParams.get('state');
   const savedState = cookies.get('oauth_state');
   cookies.delete('oauth_state', { path: '/' });
   if (!state || state !== savedState) {
-    return new Response(JSON.stringify({ error: 'Invalid state parameter' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    console.error('OAuth callback: invalid state parameter. This also happens on cancel.');
+    redirect(302, `${errorPage}?error=oauth_failed`);
   }
 
   const code = url.searchParams.get('code');
   if (!code) {
-    return new Response(JSON.stringify({ error: 'No code parameter' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    console.error('OAuth callback: no code parameter');
+    redirect(302, `${errorPage}?error=oauth_failed`);
   }
 
   const body = new URLSearchParams({
@@ -40,10 +39,8 @@ export async function GET({ url, cookies, locals }) {
   const tokenData = await tokenResponse.json();
 
   if (!tokenResponse.ok) {
-    return new Response(JSON.stringify({ error: 'Token exchange failed', details: tokenData }), {
-      status: 502,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    console.error('OAuth callback: token exchange failed', tokenData);
+    redirect(302, `${errorPage}?error=oauth_failed`);
   }
 
   const accessToken = tokenData.access_token;
@@ -83,6 +80,5 @@ export async function GET({ url, cookies, locals }) {
     maxAge: 60 * 60 * 24 * 30
   });
 
-  const destination = locals.user ? '/account/preferences/ogs' : '/';
-  redirect(302, destination);
+  redirect(302, successPage);
 }

@@ -1,11 +1,13 @@
 <script>
   import { goto, invalidateAll } from '$app/navigation';
+  import { page } from '$app/state';
   import { fetchMe } from '$lib/state/user.svelte.js';
 
   import { startAuthentication } from '@simplewebauthn/browser';
   import LoginForm from '$lib/auth/LoginForm.svelte';
 
-  let error = $state('');
+  const oauthError = page.url.searchParams.get('error') ? 'OGS connection failed.' : '';
+  let error = $state(oauthError);
   let submitting = $state(false);
 
   async function signIn() {
