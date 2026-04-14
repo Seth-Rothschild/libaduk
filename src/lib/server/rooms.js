@@ -381,6 +381,13 @@ export function attachWebSocketServer(httpServer) {
         await db.appendMove(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
         const movePatch = { consecutivePasses: 0 };
         if (clockState) movePatch.clockState = clockState;
+        if (game.timeControl?.type === 'correspondence') {
+          const turnDeadline = Date.now() + (game.timeControl.days ?? 3) * 24 * 60 * 60 * 1000;
+          movePatch.corrTurnDeadline = turnDeadline;
+          broadcast(socket.gameId, { type: 'move', x: msg.x, y: msg.y, turnDeadline });
+          await db.updateGame(socket.gameId, movePatch);
+          return;
+        }
         await db.updateGame(socket.gameId, movePatch);
         broadcast(socket.gameId, { type: 'move', x: msg.x, y: msg.y, clockState });
       }
