@@ -8,6 +8,7 @@
   import NavigationButtons from '$lib/game/NavigationButtons.svelte';
   import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
   import { getGuestId } from '$lib/state/guestId.js';
+  import { getMe } from '$lib/state/user.svelte.js';
   import { GameState } from '$lib/game/GameState.svelte.js';
   import {
     AnalysisState,
@@ -464,23 +465,29 @@
   );
 
   function resolvePlayerName(targetColor) {
-    if (isSpectator) {
-      const name = targetColor === 'black' ? blackName : whiteName;
-      return name ?? (targetColor === 'black' ? 'Black' : 'White');
+    const storedName = targetColor === 'black' ? blackName : whiteName;
+    const fallback = targetColor === 'black' ? 'Black' : 'White';
+    if (isOgs) {
+      const myOgsUsername = getMe()?.ogs?.username;
+      if (myOgsUsername && storedName === myOgsUsername) return displayName;
+      return storedName ?? fallback;
     }
+    if (isSpectator) return storedName ?? fallback;
     if (targetColor === myColor) return displayName;
-    const oppName = targetColor === 'black' ? blackName : whiteName;
-    return oppName ?? '...';
+    return storedName ?? '...';
   }
 
   function resolveStripName(targetColor) {
-    if (isSpectator) {
-      const name = targetColor === 'black' ? blackName : whiteName;
-      return name ?? (targetColor === 'black' ? 'Black' : 'White');
+    const storedName = targetColor === 'black' ? blackName : whiteName;
+    const fallback = gs.status === 'waiting' ? 'Waiting...' : targetColor;
+    if (isOgs) {
+      const myOgsUsername = getMe()?.ogs?.username;
+      if (myOgsUsername && storedName === myOgsUsername) return displayName;
+      return storedName ?? fallback;
     }
+    if (isSpectator) return storedName ?? (targetColor === 'black' ? 'Black' : 'White');
     if (targetColor === myColor) return displayName;
-    const oppName = targetColor === 'black' ? blackName : whiteName;
-    return oppName ?? (gs.status === 'waiting' ? 'Waiting...' : targetColor);
+    return storedName ?? fallback;
   }
 
   const topStripColor = $derived(isSpectator ? 'black' : oppColor);

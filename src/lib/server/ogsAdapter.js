@@ -143,7 +143,13 @@ export class OgsAdapter {
       this.#onGameData(data);
       this.#blackPlayerId = data.players.black.id;
       this.#whitePlayerId = data.players.white.id;
-      this.myColor = data.players.white.id === this.#ogsUserId ? 'white' : 'black';
+      if (data.players.white.id === this.#ogsUserId) {
+        this.myColor = 'white';
+      } else if (data.players.black.id === this.#ogsUserId) {
+        this.myColor = 'black';
+      } else {
+        this.myColor = null;
+      }
       this.phase = data.phase;
       this.#moveNumber = data.moves?.length ?? 0;
 
