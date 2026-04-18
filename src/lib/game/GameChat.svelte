@@ -14,7 +14,8 @@
   let inputText = $state('');
   let noteText = $state(initialNote);
   let messagesEl = $state(null);
-  let usedPresets = $state(new Set());
+  let usedStartPresets = $state(new Set());
+  let usedEndPresets = $state(new Set());
   let noteSaveTimer = null;
 
   const START_PRESETS = [
@@ -27,7 +28,7 @@
   const END_PRESETS = [
     { key: 'gg', text: 'Good game' },
     { key: 'wp', text: 'Well played' },
-    { key: 'ty', text: 'Thank you' },
+    { key: 'ty', text: 'Thank you!' },
     { key: 'gtg', text: "I've got to go" },
     { key: 'bye', text: 'Bye!' }
   ];
@@ -36,6 +37,7 @@
     gameStatus === 'gameover' || gameStatus === 'cancelled' || gameStatus === 'abandoned'
   );
   const activePresets = $derived(isGameOver ? END_PRESETS : START_PRESETS);
+  const usedPresets = $derived(isGameOver ? usedEndPresets : usedStartPresets);
   const presetsVisible = $derived(
     usedPresets.size < 2 && (gameStatus === 'playing' || gameStatus === 'scoring' || isGameOver)
   );
@@ -56,7 +58,8 @@
 
   function sendPreset(preset) {
     if (usedPresets.has(preset.key)) return;
-    usedPresets = new Set([...usedPresets, preset.key]);
+    if (isGameOver) usedEndPresets = new Set([...usedEndPresets, preset.key]);
+    else usedStartPresets = new Set([...usedStartPresets, preset.key]);
     sendMessage(preset.text);
   }
 

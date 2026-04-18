@@ -419,6 +419,9 @@
   function resign() {
     const winner = myColor === 'black' ? 'white' : 'black';
     const result = winner === 'white' ? 'W+R' : 'B+R';
+    gs.status = 'gameover';
+    gs.winner = winner === 'black' ? 1 : -1;
+    gs.winnerResult = result;
     gameSocket.send({ type: 'gameover', winner, result, clockState: serializeClockState() });
   }
 
