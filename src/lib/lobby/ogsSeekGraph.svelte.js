@@ -110,7 +110,7 @@ class OgsSeekGraph {
       rengo_auto_start: 0,
       game: {
         name: 'Friendly Match',
-        rules: 'japanese',
+        rules: 'chinese',
         ranked: false,
         width: size,
         height: size,
