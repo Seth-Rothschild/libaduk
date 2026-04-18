@@ -10,15 +10,15 @@
    the selected item floats with space around it.
    ------------------------------------------------------------- */
 
-.page-menu:has(.community) .sub-ratings {
+.page-menu:has(.community, .activity) .sub-ratings {
   padding: 0rem 0.8rem 0 0;
 }
 
-.page-menu:has(.community) .sub-ratings a {
+.page-menu:has(.community, .activity) .sub-ratings a {
   border-radius: 6px;
 }
 
-.page-menu:has(.community) .sub-ratings h3 {
+.page-menu:has(.community, .activity) .sub-ratings h3 {
   text-transform: none;
   font-size: 0.95em;
 }

@@ -35,4 +35,5 @@
       {/if}
     </ul>
   </div>
+  <a href="/player/activity">View recent activity</a>
 </div>

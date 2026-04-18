@@ -766,6 +766,42 @@ export async function getSiteStats() {
   };
 }
 
+export async function getRecentActivity() {
+  const d = await getDb();
+  const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+
+  const [gameDocs, userDocs] = await Promise.all([
+    d
+      .collection('games')
+      .find(
+        { status: 'finished', endedAt: { $gte: oneDayAgo } },
+        { projection: { _id: 1, blackName: 1, whiteName: 1, result: 1, endedAt: 1 } }
+      )
+      .sort({ endedAt: -1 })
+      .toArray(),
+    d
+      .collection('users')
+      .find({ createdAt: { $gte: oneDayAgo } }, { projection: { username: 1, createdAt: 1 } })
+      .sort({ createdAt: -1 })
+      .toArray()
+  ]);
+
+  const games = gameDocs.map((g) => ({
+    id: g._id,
+    blackName: g.blackName,
+    whiteName: g.whiteName,
+    result: g.result,
+    endedAt: g.endedAt
+  }));
+
+  const users = userDocs.map((u) => ({
+    username: u.username,
+    createdAt: u.createdAt
+  }));
+
+  return { games, users };
+}
+
 // --- Sessions ---
 
 export async function createSession(token, username) {

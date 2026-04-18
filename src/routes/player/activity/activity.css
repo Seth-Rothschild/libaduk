@@ -1,0 +1,64 @@
+.activity {
+  background: var(--c-bg-box);
+  border-radius: 6px;
+  padding: 4vh 2rem;
+  min-height: 100vh;
+}
+
+.activity__section {
+  margin-bottom: 2.5rem;
+}
+
+.activity__section h2 {
+  font-size: 1.7em;
+  margin: 0 0 1rem;
+}
+
+.activity__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.activity__row {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.activity__row:nth-child(even) {
+  background: var(--c-bg-zebra);
+}
+
+.activity__players {
+  flex: 1 1 auto;
+  color: var(--c-font);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity__players:hover {
+  color: var(--c-link);
+}
+
+.activity__result {
+  color: var(--c-font-dim);
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.activity__time {
+  color: var(--c-font-dim);
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+.activity__empty {
+  color: var(--c-font-dim);
+  padding: 1.5em 0;
+  margin: 0;
+}
