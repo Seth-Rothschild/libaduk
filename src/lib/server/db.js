@@ -465,7 +465,7 @@ const LEADERBOARD_CATEGORIES = [
 async function leaderboardForCategory(collection, filter) {
   const docs = await collection
     .aggregate([
-      { $match: { status: 'finished', gameType: { $nin: ['friend'] }, ...filter } },
+      { $match: { status: 'finished', ...filter } },
       { $unwind: '$owners' },
       { $group: { _id: '$owners', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
