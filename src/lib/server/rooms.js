@@ -308,7 +308,8 @@ export function attachWebSocketServer(httpServer) {
                       status: 'finished',
                       winner: m.winner,
                       result: m.result,
-                      deadStones: m.deadStones
+                      deadStones: m.deadStones,
+                      endedAt: Date.now()
                     };
                     db.updateGame(msg.gameId, patch);
                   }
