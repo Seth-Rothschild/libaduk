@@ -585,9 +585,11 @@
           gs.whiteApproved = false;
         }
         if (msg.type === 'chat') {
-          const isDuplicate = chatMessages.some((m) => m.user === msg.user && m.text === msg.text);
+          const isDuplicate = msg.t
+            ? chatMessages.some((m) => m.t === msg.t)
+            : chatMessages.some((m) => m.user === msg.user && m.text === msg.text);
           if (!isDuplicate) {
-            chatMessages.push({ user: msg.user, text: msg.text });
+            chatMessages.push({ user: msg.user, text: msg.text, t: msg.t });
           }
         }
         if (msg.type === 'presence') {

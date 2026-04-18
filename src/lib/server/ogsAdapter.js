@@ -220,7 +220,8 @@ export class OgsAdapter {
       const body = typeof line.body === 'string' ? line.body : JSON.stringify(line.body);
       if (line.player_id === this.#ogsUserId) return;
       const sender = line.username || 'unknown';
-      this.#onBroadcast({ type: 'chat', user: sender, text: body });
+      const t = line.date ? line.date * 1000 : Date.now();
+      this.#onBroadcast({ type: 'chat', user: sender, text: body, t });
       return;
     }
 

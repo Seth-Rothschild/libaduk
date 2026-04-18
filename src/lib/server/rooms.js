@@ -298,11 +298,17 @@ export function attachWebSocketServer(httpServer) {
           if (game?.gameType === 'ogs' && game.ogsGameId && game.ogsUserId) {
             let adapter = ogsAdapters.get(msg.gameId);
             if (!adapter) {
+              const existingChat = await db.getChat(msg.gameId);
+              const persistedTs = new Set(existingChat.map((e) => e.t).filter(Boolean));
               adapter = new OgsAdapter(game.ogsGameId, game.ogsUserId, msg.ogsToken, {
                 onBroadcast: (m) => {
                   if (m.type === 'move')
                     db.appendMove(msg.gameId, { type: 'move', x: m.x, y: m.y });
                   if (m.type === 'pass') db.appendMove(msg.gameId, { type: 'pass' });
+                  if (m.type === 'chat' && !persistedTs.has(m.t)) {
+                    persistedTs.add(m.t);
+                    db.appendChat(msg.gameId, { user: m.user, text: m.text, t: m.t });
+                  }
                   if (m.type === 'gameover') {
                     const patch = {
                       status: 'finished',

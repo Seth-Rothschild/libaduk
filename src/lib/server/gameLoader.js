@@ -19,7 +19,7 @@ export async function loadGameData(gameId, username, guestId = null) {
   }
 
   const chatEntries = await getChat(gameId);
-  const chat = chatEntries.map(({ user, text }) => ({ user, text }));
+  const chat = chatEntries.map(({ user, text, t }) => ({ user, text, t }));
   const note = username ? await getNote(gameId, username) : '';
 
   return { game, viewerColor, chat, note };
