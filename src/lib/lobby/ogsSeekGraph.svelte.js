@@ -208,9 +208,17 @@ class OgsSeekGraph {
 export const ogsSeekGraph = new OgsSeekGraph();
 
 export function formatOgsRank(rank) {
-  const r = Math.floor(rank);
-  if (r < 30) return `${30 - r}k`;
-  return `${r - 29}d`;
+  const r = rank;
+
+  if (r > 36) {
+    return `${r - 36}p`;
+  }
+
+  if (r < 30) {
+    return `${Math.ceil(30 - r)}k`;
+  }
+
+  return `${Math.floor(r - 29)}d`;
 }
 
 export function formatOgsClock(tc) {
