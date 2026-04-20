@@ -315,6 +315,14 @@ export async function getPendingGames(tcType = null) {
   }
 }
 
+function computeIsMyTurn(status, moves, handicapStones, myColor) {
+  if (status !== 'playing') return null;
+  const firstSign = handicapStones.length > 0 ? -1 : 1;
+  const currentSign = moves.length % 2 === 0 ? firstSign : -firstSign;
+  const mySign = myColor === 'black' ? 1 : -1;
+  return currentSign === mySign;
+}
+
 export async function getUserGames(username) {
   try {
     const d = await getDb();
@@ -326,15 +334,23 @@ export async function getUserGames(username) {
       })
       .toArray();
     return docs.map((g) => {
+      const moves = g.moves ?? [];
+      const handicapStones = g.handicapStones ?? [];
       const myColor = g.blackName === username ? 'black' : 'white';
       const isCorr = g.timeControl?.type === 'correspondence';
+      const isMyTurn = computeIsMyTurn(g.status, moves, handicapStones, myColor);
       return {
         id: g._id,
         status: g.status,
         timeControl: g.timeControl,
         opponent: g.blackName === username ? g.whiteName : g.blackName,
-        isMyTurn: isCorr ? g.corrActiveColor === myColor : null,
-        corrTurnDeadline: isCorr ? g.corrTurnDeadline : null
+        isMyTurn,
+        corrTurnDeadline: isCorr ? g.corrTurnDeadline : null,
+        moves,
+        size: g.size ?? 19,
+        blackName: g.blackName,
+        whiteName: g.whiteName,
+        handicapStones
       };
     });
   } catch (err) {

@@ -9,7 +9,7 @@
   import PoolGrid from './PoolGrid.svelte';
   import HookTable from './HookTable.svelte';
   import { getMe } from '$lib/state/user.svelte.js';
-  import ActiveGamesPanel from './ActiveGamesPanel.svelte';
+  import MyGamesPanel from './MyGamesPanel.svelte';
   import StartButtons from './StartButtons.svelte';
   import LobbyPuzzle from './LobbyPuzzle.svelte';
   import LobbyTopGame from './LobbyTopGame.svelte';
@@ -24,7 +24,7 @@
 
   // --- Tab state ---
 
-  const VALID_TABS = ['pools', 'lobby', 'correspondence'];
+  const VALID_TABS = ['pools', 'lobby', 'correspondence', 'now_playing'];
   const storedTab = typeof localStorage !== 'undefined' ? localStorage.getItem('lobby-tab') : null;
   let activeTab = $state(VALID_TABS.includes(storedTab) ? storedTab : 'pools');
 
@@ -100,6 +100,9 @@
   let corrGames = $state([]);
   let ogsStreams = $state([]);
 
+  const myGamesCount = $derived(myGames.length);
+  const myTurnCount = $derived(myGames.filter((g) => g.isMyTurn).length);
+
   function visibleOgsChallenges() {
     const showOgs = getMe()?.settings?.showOgsGames;
     if (showOgs === false) return [];
@@ -115,6 +118,9 @@
     if (!username) return;
     const res = await fetch(`/api/games?username=${encodeURIComponent(username)}`);
     myGames = await res.json();
+    if (activeTab === 'now_playing' && myGames.length === 0) {
+      switchTab('pools');
+    }
   }
 
   async function refreshLiveGames() {
@@ -147,7 +153,11 @@
 
   $effect(() => {
     refreshLiveGames();
-    const id = setInterval(refreshLiveGames, 3000);
+    refreshMyGames();
+    const id = setInterval(() => {
+      refreshLiveGames();
+      refreshMyGames();
+    }, 3000);
     return () => clearInterval(id);
   });
 
@@ -174,7 +184,7 @@
 
 <div class="lobby">
   <div class="lobby__app">
-    <LobbyTabs {activeTab} onTabChange={switchTab} />
+    <LobbyTabs {activeTab} onTabChange={switchTab} {myGamesCount} {myTurnCount} />
 
     <div class="lobby__pools-wrap">
       <LobbyBackground />
@@ -196,6 +206,8 @@
         />
       {:else if activeTab === 'correspondence'}
         <HookTable games={corrGames} onJoin={(id) => goto(`/play/${id}`)} />
+      {:else if activeTab === 'now_playing'}
+        <MyGamesPanel games={myGames} />
       {/if}
     </div>
   </div>

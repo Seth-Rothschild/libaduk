@@ -1051,3 +1051,68 @@ group.radio.ai-strength {
   color: var(--c-brag);
   /* color: #d59020; */
 }
+
+/* -------------------------------------------------------------
+   .lobby-badge — turn notification count on tab button
+   ------------------------------------------------------------- */
+
+.lobby-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2em;
+  height: 1.2em;
+  padding: 0 0.3em;
+  border-radius: 999px;
+  background: var(--c-bad);
+  color: #fff;
+  font-size: 0.7em;
+  font-weight: bold;
+  line-height: 1;
+  margin-left: 0.4em;
+  vertical-align: middle;
+}
+
+/* -------------------------------------------------------------
+   .my-games-panel — active games grid in "now playing" tab
+   ------------------------------------------------------------- */
+
+.my-games-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  padding: 1.2rem;
+  overflow-y: auto;
+  max-height: 538px;
+}
+
+.my-game-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  color: var(--c-font);
+}
+
+.my-game-card__board {
+  line-height: 0;
+}
+
+.my-game-card__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 0.85em;
+}
+
+.my-game-card__opponent {
+  font-weight: bold;
+}
+
+.my-game-card__turn {
+  color: var(--c-bad);
+  font-size: 0.8em;
+  text-align: center;
+}

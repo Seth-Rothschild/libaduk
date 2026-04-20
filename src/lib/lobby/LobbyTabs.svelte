@@ -5,7 +5,7 @@
     { id: 'correspondence', label: 'Correspondence' }
   ];
 
-  let { activeTab = 'pools', onTabChange } = $props();
+  let { activeTab = 'pools', onTabChange, myGamesCount = 0, myTurnCount = 0 } = $props();
 </script>
 
 <div class="tabs-horiz">
@@ -14,4 +14,13 @@
       {tab.label}
     </button>
   {/each}
+  {#if myGamesCount > 0}
+    <button class:active={activeTab === 'now_playing'} onclick={() => onTabChange?.('now_playing')}>
+      {myGamesCount}
+      {myGamesCount === 1 ? 'game' : 'games'} in play
+      {#if myTurnCount > 0}
+        <span class="lobby-badge">{myTurnCount}</span>
+      {/if}
+    </button>
+  {/if}
 </div>
