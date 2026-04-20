@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import GoBoard from '$lib/game/GoBoard.svelte';
-  import { replayMoves } from '$lib/game/board';
+  import { replayMoves, placeStones, createBoard } from '$lib/game/board';
 
   let { data } = $props();
 
@@ -97,7 +97,12 @@
     if (!game.moves || game.moves.length === 0) {
       return Array.from({ length: size }, () => Array(size).fill(0));
     }
-    return replayMoves(game.moves, size).signMap;
+    let initialBoard = null;
+    if (game.handicapStones?.length > 0) {
+      const stoneList = game.handicapStones.map(({ x, y }) => ({ x, y, sign: 1 }));
+      initialBoard = placeStones(createBoard(size), stoneList);
+    }
+    return replayMoves(game.moves, size, initialBoard).signMap;
   }
 
   function formatMoveCoord(move) {
