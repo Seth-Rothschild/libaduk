@@ -157,9 +157,7 @@ export class GameState {
     }
 
     if (tc.type === 'correspondence') {
-      const moves = game.moves ?? [];
-      const activeColor = moves.length % 2 === (hasHandicap ? 1 : 0) ? 'black' : 'white';
-      this.corrState = { activeColor, turnDeadline: game.corrTurnDeadline };
+      this.corrState = { turnDeadline: game.corrTurnDeadline };
     } else {
       this.corrState = null;
     }

@@ -112,8 +112,7 @@
       gs.status === 'playing' &&
       gs.timedOutColor === null &&
       !aiThinking &&
-      gs.currentSign === mySign &&
-      (!isCorrGame || gs.corrState?.activeColor === myColor)
+      gs.currentSign === mySign
   );
 
   function handleTimeout(loser) {
