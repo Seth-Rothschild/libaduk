@@ -632,6 +632,10 @@ html.light .color-icon.white::before {
   padding: 0.25em;
 }
 
+.go-goban.go-show-coords {
+  padding: 0.5em;
+}
+
 .go-goban.go-goban-image {
   background: url('/images/go/board.png') var(--go-board-background-color);
 }

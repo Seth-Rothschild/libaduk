@@ -73,13 +73,13 @@
   );
 
   const svgSize = $derived(size * vertexSize);
-  const boardSize = $derived(Math.round((size + 0.8) * vertexSize));
+  const boardSize = $derived(Math.round((size + (showCoords ? 1.3 : 0.8)) * vertexSize));
 
   const colLabels = $derived(COL_LETTERS.slice(0, size).split(''));
   const rowLabels = $derived(Array.from({ length: size }, (_, i) => size - i));
 
   const coordFontSize = $derived(Math.max(8, Math.round(vertexSize * 0.38)));
-  const coordOffset = $derived(half * 0.35);
+  const coordOffset = $derived(half * -0.5);
 
   const deadSet = $derived(
     deadStones ? new Set(deadStones.map(([x, y]) => `${x},${y}`)) : new Set()
@@ -99,6 +99,7 @@
 >
   <div
     class="go-goban go-goban-image"
+    class:go-show-coords={showCoords}
     class:go-turn-black={currentSign === 1}
     class:go-turn-white={currentSign === -1}
     class:go-interactive={interactive}
@@ -130,7 +131,7 @@
           class="go-coords"
           width={svgSize}
           height={svgSize}
-          style="position: absolute; top: 0; left: 0; z-index: 0; pointer-events: none;"
+          style="position: absolute; top: 0; left: 0; z-index: 0; pointer-events: none; overflow: visible;"
         >
           {#each colLabels as label, i}
             {@const cx = fl((2 * i + 1) * half - 0.5) + 0.5}
