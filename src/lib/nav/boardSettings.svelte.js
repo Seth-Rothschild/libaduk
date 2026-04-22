@@ -3,6 +3,7 @@ import { browser } from '$app/environment';
 class BoardSettings {
   showCoords = $state(false);
   fuzzyPlacement = $state(true);
+  moveConfirmation = $state('none');
 
   init() {
     if (!browser) return;
@@ -10,6 +11,8 @@ class BoardSettings {
     if (stored !== null) this.showCoords = stored === 'true';
     const fuzzy = localStorage.getItem('go-fuzzyPlacement');
     if (fuzzy !== null) this.fuzzyPlacement = fuzzy === 'true';
+    const confirm = localStorage.getItem('go-moveConfirmation');
+    if (confirm !== null) this.moveConfirmation = confirm;
   }
 
   toggleCoords = () => {
@@ -20,6 +23,11 @@ class BoardSettings {
   toggleFuzzyPlacement = () => {
     this.fuzzyPlacement = !this.fuzzyPlacement;
     localStorage.setItem('go-fuzzyPlacement', String(this.fuzzyPlacement));
+  };
+
+  setMoveConfirmation = (value) => {
+    this.moveConfirmation = value;
+    localStorage.setItem('go-moveConfirmation', value);
   };
 }
 

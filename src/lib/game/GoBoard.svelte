@@ -14,7 +14,8 @@
     markerMap = null,
     childrenMap = null,
     interactive = true,
-    highlightVertex = null
+    highlightVertex = null,
+    pendingVertex = null
   } = $props();
   const half = $derived(vertexSize / 2);
   const fl = Math.floor;
@@ -292,6 +293,9 @@
               {/if}
               {#if sign === 0 && childSign !== 0}
                 <div class="go-ghost go-ghost-{childSign}"></div>
+              {/if}
+              {#if sign === 0 && pendingVertex && pendingVertex[0] === x && pendingVertex[1] === y}
+                <div class="go-ghost go-ghost-{currentSign}"></div>
               {/if}
               {#if sign === 0}
                 {#if territory !== 0}

@@ -20,7 +20,6 @@
   import GameChat from '$lib/game/GameChat.svelte';
   import GameMeta from '$lib/game/GameMeta.svelte';
   import GameStatusMessage from '$lib/game/GameStatusMessage.svelte';
-  import GameControls from '$lib/game/GameControls.svelte';
   import AnalysisControls from '$lib/game/AnalysisControls.svelte';
   import AnalysisMoves from '$lib/game/AnalysisMoves.svelte';
   import EditBar from '$lib/game/EditBar.svelte';
@@ -62,6 +61,7 @@
   let whiteName = $state(data.game.whiteName ?? null);
   let blackOnline = $state(false);
   let whiteOnline = $state(false);
+  let pendingMove = $state(null);
 
   const isAI = $derived(data.game.gameType === 'ai');
   const aiDifficulty = $derived(data.game.aiDifficulty ?? 5);
@@ -350,17 +350,31 @@
 
   // --- Game actions ---
 
+  function confirmMove() {
+    if (!pendingMove) return;
+    onVertexClick(pendingMove[0], pendingMove[1]);
+  }
+
   function onVertexClick(x, y) {
     if (isSpectator) return;
     if (gs.status === 'playing') {
       if (!isMyTurn) return;
-      const movingSign = mySign;
-      const moveResult = gs.board.analyzeMove(movingSign, [x, y]);
+      const moveResult = gs.board.analyzeMove(mySign, [x, y]);
       if (moveResult.overwrite || moveResult.suicide || moveResult.ko) return;
+      const mode = boardSettings.moveConfirmation;
+      if (mode === 'double-click' && !(pendingMove?.[0] === x && pendingMove?.[1] === y)) {
+        pendingMove = [x, y];
+        return;
+      }
+      if (mode === 'button' && !pendingMove) {
+        pendingMove = [x, y];
+        return;
+      }
+      pendingMove = null;
       if (isAI) {
-        gs.applyMove(x, y, movingSign);
+        gs.applyMove(x, y, mySign);
         gs.tickClock();
-        aiMoveHistory.push({ color: movingSign, x, y });
+        aiMoveHistory.push({ color: mySign, x, y });
         gameSocket.send({ type: 'move', x, y });
         triggerAiMove();
       } else {
@@ -743,6 +757,7 @@
           currentSign={gs.currentSign}
           interactive={isMyTurn || gs.status === 'scoring'}
           highlightVertex={chatHighlightVertex}
+          pendingVertex={pendingMove}
           onVertexClick={!gs.isViewingHistory &&
           (gs.status === 'playing' || gs.status === 'scoring')
             ? onVertexClick
@@ -832,24 +847,37 @@
           onExit={exitAnalysis}
         />
       {:else}
-        <GameControls
-          status={gs.status}
-          {isSpectator}
-          {isMyTurn}
-          {myColor}
-          {analysisMode}
-          blackApproved={gs.blackApproved}
-          whiteApproved={gs.whiteApproved}
-          {opponentOnline}
-          onPass={pass}
-          onResign={resign}
-          onForceResign={forceResign}
-          onCancel={cancel}
-          onApproveScore={approveScore}
-          onResumePlay={resumePlay}
-          onAnalysis={enterAnalysis}
-          onExitAnalysis={exitAnalysis}
-        />
+        {#if !isSpectator && gs.status === 'waiting'}
+          <button class="button button-red" onclick={cancel}>Cancel Game</button>
+        {:else if !isSpectator && gs.status === 'playing'}
+          {#if pendingMove && boardSettings.moveConfirmation === 'button'}
+            <button class="button button-confirm" onclick={confirmMove}>Confirm move</button>
+          {:else}
+            <button class="button button-metal" onclick={pass} disabled={!isMyTurn}>Pass</button>
+          {/if}
+          {#if opponentOnline === false}
+            <button class="button button-red" onclick={forceResign}>Force Resignation</button>
+          {:else}
+            <button class="button button-red" onclick={resign}>Resign</button>
+          {/if}
+        {:else if !isSpectator && gs.status === 'scoring'}
+          {@const myApproved = myColor === 'black' ? gs.blackApproved : gs.whiteApproved}
+          <button
+            class="button"
+            class:button-metal={!myApproved}
+            class:button-green={myApproved}
+            onclick={approveScore}
+            disabled={myApproved}
+          >
+            {myApproved ? 'Score accepted' : 'Accept score'}
+          </button>
+          <button class="button button-metal" onclick={resumePlay}>Resume play</button>
+        {/if}
+        {#if gs.status === 'gameover'}
+          {#if !analysisMode}
+            <button class="button button-green" onclick={enterAnalysis}>Analysis board</button>
+          {/if}
+        {/if}
       {/if}
     </div>
 

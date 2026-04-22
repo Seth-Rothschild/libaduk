@@ -22,4 +22,15 @@
     />
     Fuzzy placement
   </label>
+  <div class="board-setting-row">
+    Move confirmation
+    <select
+      value={boardSettings.moveConfirmation}
+      onchange={(e) => boardSettings.setMoveConfirmation(e.target.value)}
+    >
+      <option value="none">None</option>
+      <option value="double-click">Double-click</option>
+      <option value="button">Button</option>
+    </select>
+  </div>
 </div>

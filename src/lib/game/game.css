@@ -292,6 +292,30 @@
   width: 100%;
 }
 
+.button.button-confirm {
+  background: linear-gradient(to bottom, var(--c-metal-top), var(--c-metal-bottom));
+  color: var(--c-font-dim);
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+  border: 1px solid var(--c-good);
+  box-shadow: 0 0 6px 1px color-mix(in srgb, var(--c-good) 40%, transparent);
+  animation: confirm-pulse 1.4s ease-in-out infinite;
+}
+
+.button.button-confirm:hover {
+  background: linear-gradient(to bottom, var(--c-metal-top-hover), var(--c-metal-bottom-hover));
+  color: var(--c-font-dim);
+}
+
+@keyframes confirm-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 6px 1px color-mix(in srgb, var(--c-good) 40%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 12px 3px color-mix(in srgb, var(--c-good) 65%, transparent);
+  }
+}
+
 /* -------------------------------------------------------------
    .game__meta — game info panel (left sidebar)
    ------------------------------------------------------------- */
