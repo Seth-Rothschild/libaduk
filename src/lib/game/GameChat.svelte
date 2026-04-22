@@ -7,8 +7,26 @@
     gameStatus = 'waiting',
     messages = $bindable([]),
     initialNote = '',
-    onSend = () => {}
+    onSend = () => {},
+    boardSize = 19,
+    onCoordHover = () => {}
   } = $props();
+
+  const COL_LETTERS = 'ABCDEFGHJKLMNOPQRST';
+
+  function parseMessageParts(text) {
+    const isCoord = (word) => /^[A-HJ-Ta-hj-t]\d{1,2}$/i.test(word);
+    const coordSet = new Set(text.split(' ').filter(isCoord));
+    if (coordSet.size === 0) return [{ type: 'text', content: text }];
+
+    const pattern = new RegExp(`(${[...coordSet].join('|')})`);
+    return text.split(pattern).map((part, i) => {
+      if (i % 2 === 0) return { type: 'text', content: part };
+      const x = COL_LETTERS.indexOf(part[0].toUpperCase());
+      const y = boardSize - parseInt(part.slice(1));
+      return { type: 'coord', content: part, x, y };
+    });
+  }
 
   let activeTab = $state('discussion');
   let inputText = $state('');
@@ -124,7 +142,22 @@
               {msg.text}
             {:else}
               <span class="color">{msg.user}</span>
-              <t>{msg.text}</t>
+              <t>
+                {#each parseMessageParts(msg.text) as part}
+                  {#if part.type === 'coord'}
+                    <span
+                      class="coord-ref"
+                      role="img"
+                      aria-label={part.content}
+                      onmouseenter={() => onCoordHover([part.x, part.y])}
+                      onmouseleave={() => onCoordHover(null)}
+                      >{part.content}
+                    </span>
+                  {:else}
+                    {part.content}
+                  {/if}
+                {/each}
+              </t>
             {/if}
           </li>
         {/each}

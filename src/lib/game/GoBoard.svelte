@@ -13,7 +13,8 @@
     currentSign = 1,
     markerMap = null,
     childrenMap = null,
-    interactive = true
+    interactive = true,
+    highlightVertex = null
   } = $props();
   const half = $derived(vertexSize / 2);
   const fl = Math.floor;
@@ -187,6 +188,8 @@
             {@const marker = markerMap?.[y]?.[x] ?? null}
             {@const childSign = childrenMap?.[y]?.[x] ?? 0}
             {@const territory = areaMap?.[y]?.[x] ?? 0}
+            {@const isHighlighted =
+              highlightVertex && highlightVertex[0] === x && highlightVertex[1] === y}
             <div
               class="go-vertex go-shift_{shift}"
               class:go-black={sign === 1}
@@ -298,6 +301,9 @@
                   ></div>
                 {/if}
               {/if}
+              {#if isHighlighted}
+                <div class="go-chat-highlight"></div>
+              {/if}
             </div>
           {/each}
         {/each}
@@ -305,141 +311,3 @@
     </div>
   </div>
 </div>
-
-<style>
-  .go-coord-text {
-    fill: var(--go-board-foreground-color, #5e2e0c);
-    user-select: none;
-    font-family: sans-serif;
-  }
-
-  .go-stone.go-dead :global(.go-inner) {
-    opacity: 0.35;
-  }
-
-  .go-dead-x {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 1em;
-    height: 1em;
-    z-index: 3;
-  }
-
-  .go-dead-x line {
-    stroke: #e44;
-  }
-
-  .go-territory {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 0.36em;
-    height: 0.36em;
-    z-index: 2;
-  }
-
-  .go-territory-black {
-    background: #111;
-  }
-
-  .go-territory-white {
-    background: #eee;
-    outline: 1px solid #777;
-  }
-
-  .go-marker {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 1em;
-    height: 1em;
-    z-index: 3;
-    pointer-events: none;
-  }
-
-  .go-marker-empty {
-    z-index: 2;
-  }
-
-  .go-marker-bg {
-    fill: var(--go-board-background-color, #f1b458);
-  }
-
-  .go-marker-shape {
-    fill: none;
-    stroke-width: 2px;
-    stroke-linejoin: round;
-    stroke-linecap: round;
-    vector-effect: non-scaling-stroke;
-  }
-
-  .go-marker-on-1 {
-    stroke: var(--go-black-foreground-color, #fff);
-  }
-
-  .go-marker-on--1 {
-    stroke: var(--go-white-foreground-color, rgba(0, 0, 0, 0.75));
-  }
-
-  .go-marker-on-empty {
-    stroke: var(--go-board-foreground-color, #5e2e0c);
-  }
-
-  circle.go-marker-on-empty,
-  rect.go-marker-on-empty,
-  path.go-marker-on-empty {
-    fill: var(--go-board-background-color, #f1b458);
-  }
-
-  .go-marker-label {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 3;
-    pointer-events: none;
-    font-size: 0.5em;
-    font-weight: bold;
-    font-family: sans-serif;
-    line-height: 1;
-    text-align: center;
-    white-space: pre;
-  }
-
-  .go-marker-label-on-1 {
-    color: var(--go-black-foreground-color, #fff);
-  }
-
-  .go-marker-label-on--1 {
-    color: var(--go-white-foreground-color, rgba(0, 0, 0, 0.75));
-  }
-
-  .go-marker-label-on-empty {
-    color: var(--go-board-foreground-color, #5e2e0c);
-    background: var(--go-board-background-color, #f1b458);
-  }
-
-  .go-ghost {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 0.4em;
-    height: 0.4em;
-    border-radius: 50%;
-    z-index: 2;
-    opacity: 0.5;
-    pointer-events: none;
-  }
-
-  .go-ghost-1 {
-    background: #111;
-  }
-
-  .go-ghost--1 {
-    background: #ddd;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
-  }
-</style>

@@ -2035,3 +2035,164 @@ html.light .color-icon.white::before {
   color: var(--c-font-dim);
   line-height: 1.5;
 }
+
+.coord-ref {
+  font-weight: bold;
+  cursor: default;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.coord-ref:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.go-coord-text {
+  fill: var(--go-board-foreground-color, #5e2e0c);
+  user-select: none;
+  font-family: sans-serif;
+}
+
+.go-stone.go-dead .go-inner {
+  opacity: 0.35;
+}
+
+.go-dead-x {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1em;
+  height: 1em;
+  z-index: 3;
+}
+
+.go-dead-x line {
+  stroke: #e44;
+}
+
+.go-territory {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.36em;
+  height: 0.36em;
+  z-index: 2;
+}
+
+.go-territory-black {
+  background: #111;
+}
+
+.go-territory-white {
+  background: #eee;
+  outline: 1px solid #777;
+}
+
+.go-marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1em;
+  height: 1em;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.go-marker-empty {
+  z-index: 2;
+}
+
+.go-marker-bg {
+  fill: var(--go-board-background-color, #f1b458);
+}
+
+.go-marker-shape {
+  fill: none;
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.go-marker-on-1 {
+  stroke: var(--go-black-foreground-color, #fff);
+}
+
+.go-marker-on--1 {
+  stroke: var(--go-white-foreground-color, rgba(0, 0, 0, 0.75));
+}
+
+.go-marker-on-empty {
+  stroke: var(--go-board-foreground-color, #5e2e0c);
+}
+
+circle.go-marker-on-empty,
+rect.go-marker-on-empty,
+path.go-marker-on-empty {
+  fill: var(--go-board-background-color, #f1b458);
+}
+
+.go-marker-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  pointer-events: none;
+  font-size: 0.5em;
+  font-weight: bold;
+  font-family: sans-serif;
+  line-height: 1;
+  text-align: center;
+  white-space: pre;
+}
+
+.go-marker-label-on-1 {
+  color: var(--go-black-foreground-color, #fff);
+}
+
+.go-marker-label-on--1 {
+  color: var(--go-white-foreground-color, rgba(0, 0, 0, 0.75));
+}
+
+.go-marker-label-on-empty {
+  color: var(--go-board-foreground-color, #5e2e0c);
+  background: var(--go-board-background-color, #f1b458);
+}
+
+.go-ghost {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  z-index: 2;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.go-ghost-1 {
+  background: #111;
+}
+
+.go-ghost--1 {
+  background: #ddd;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.go-chat-highlight {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 1em;
+  height: 1em;
+  box-sizing: border-box;
+  background: rgba(59, 130, 246, 0.65);
+  border: 3px solid rgba(59, 130, 246, 0.65);
+  z-index: 4;
+  pointer-events: none;
+}

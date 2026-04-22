@@ -57,6 +57,7 @@
   let boardContainerWidth = $state(0);
   let boardContainerHeight = $state(0);
   let chatMessages = $state(data.chat ?? []);
+  let chatHighlightVertex = $state(null);
   let blackName = $state(data.game.blackName ?? null);
   let whiteName = $state(data.game.whiteName ?? null);
   let blackOnline = $state(false);
@@ -699,6 +700,8 @@
       bind:messages={chatMessages}
       initialNote={data.note ?? ''}
       onSend={handleChatSend}
+      boardSize={gs.boardSize}
+      onCoordHover={(v) => (chatHighlightVertex = v)}
     />
   </aside>
 
@@ -739,6 +742,7 @@
           showCoords={boardSettings.showCoords}
           currentSign={gs.currentSign}
           interactive={isMyTurn || gs.status === 'scoring'}
+          highlightVertex={chatHighlightVertex}
           onVertexClick={!gs.isViewingHistory &&
           (gs.status === 'playing' || gs.status === 'scoring')
             ? onVertexClick
