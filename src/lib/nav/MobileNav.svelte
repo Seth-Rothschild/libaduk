@@ -35,6 +35,7 @@
     <a href="/player" onclick={onClose}>Community</a>
     <div role="group">
       <a href="/player" onclick={onClose}>Players</a>
+      <a href="/player/activity" onclick={onClose}>Activity</a>
     </div>
   </section>
   <section>

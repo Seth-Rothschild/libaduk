@@ -24,6 +24,7 @@
     <a href="/player">Community</a>
     <div role="group">
       <a href="/player">Players</a>
+      <a href="/player/activity">Activity</a>
     </div>
   </section>
   <section>

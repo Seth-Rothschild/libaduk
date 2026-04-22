@@ -20,7 +20,6 @@ The client-side AI uses KataGo ONNX models served by [Kaya](https://github.com/k
 
 I'm not interested in replacing OGS or further partitioning the Go community. There are no major new features planned at this time since the site is sufficient for my Go playing needs. That being said, if there's functionality you're specifically interested in please reach out.
 
-
 ## Development
 
 ### Setup
