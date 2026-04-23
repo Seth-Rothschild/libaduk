@@ -514,9 +514,11 @@ export function attachWebSocketServer(httpServer) {
       }
       if (gameId && !gameClients.has(gameId)) {
         const game = await db.getGame(gameId);
+        const isCorrespondence = game.timeControl?.type === 'correspondence';
         const isAbandoned =
-          (game.status === 'waiting' && game.gameType === 'hook') ||
-          (game.gameType === 'ai' && game.status !== 'finished');
+          !isCorrespondence &&
+          ((game.status === 'waiting' && game.gameType === 'hook') ||
+            (game.gameType === 'ai' && game.status !== 'finished'));
         if (game && isAbandoned) {
           await db.updateGame(gameId, { status: 'cancelled', endedAt: Date.now() });
         }
