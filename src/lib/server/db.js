@@ -509,18 +509,20 @@ export async function getLeaderboards() {
   }
 
   const puzzleLeaders = await d
-    .collection('puzzleCompletions')
+    .collection('users')
     .aggregate([
-      { $project: { _id: 1, count: { $size: '$completed' } } },
+      { $unwind: '$attempts' },
+      { $match: { 'attempts.result': 'success' } },
+      { $group: { _id: '$username', puzzleIds: { $addToSet: '$attempts.puzzleId' } } },
+      { $project: { _id: 0, username: '$_id', count: { $size: '$puzzleIds' } } },
       { $sort: { count: -1 } },
-      { $limit: 10 },
-      { $project: { _id: 0, username: '$_id', count: 1 } }
+      { $limit: 10 }
     ])
     .toArray();
   const puzzleSeen = new Set(puzzleLeaders.map((e) => e.username));
   const puzzleZeros = usernames
-    .filter((u) => !puzzleSeen.has(u.toLowerCase()))
-    .map((u) => ({ username: u.toLowerCase(), count: 0 }));
+    .filter((u) => !puzzleSeen.has(u))
+    .map((u) => ({ username: u, count: 0 }));
   puzzleZeros.sort(() => Math.random() - 0.5);
   result['puzzles'] = [...puzzleLeaders, ...puzzleZeros].slice(0, 10);
   return result;
@@ -694,27 +696,26 @@ export async function recordPuzzleVote(puzzleId, vote) {
   }
 }
 
-export async function markPuzzleCompleted(username, puzzleId) {
+export async function recordPuzzleAttempt(username, puzzleId, result) {
   try {
     const key = username.toLowerCase();
     const d = await getDb();
-    await d
-      .collection('puzzleCompletions')
-      .updateOne({ _id: key }, { $addToSet: { completed: puzzleId } }, { upsert: true });
+    const attempt = { puzzleId, result, attemptedAt: Date.now() };
+    await d.collection('users').updateOne({ _id: key }, { $push: { attempts: attempt } });
   } catch (err) {
-    console.error('[db] markPuzzleCompleted failed:', err.message);
+    console.error('[db] recordPuzzleAttempt failed:', err.message);
     throw err;
   }
 }
 
-export async function getUserPuzzleCompletions(username) {
+export async function getUserPuzzleAttempts(username) {
   try {
     const key = username.toLowerCase();
     const d = await getDb();
-    const doc = await d.collection('puzzleCompletions').findOne({ _id: key });
-    return doc?.completed ?? [];
+    const doc = await d.collection('users').findOne({ _id: key }, { projection: { attempts: 1 } });
+    return doc?.attempts ?? [];
   } catch (err) {
-    console.error('[db] getUserPuzzleCompletions failed:', err.message);
+    console.error('[db] getUserPuzzleAttempts failed:', err.message);
     throw err;
   }
 }
@@ -742,8 +743,8 @@ export async function getSiteStats() {
     d.collection('games').countDocuments({ status: 'finished', aiDifficulty: null }),
     d.collection('games').countDocuments({ status: 'finished', aiDifficulty: { $ne: null } }),
     d
-      .collection('puzzles')
-      .aggregate([{ $group: { _id: null, total: { $sum: '$plays' } } }])
+      .collection('users')
+      .aggregate([{ $unwind: '$attempts' }, { $count: 'total' }])
       .toArray(),
     d.collection('puzzles').countDocuments(),
     d.collection('users').countDocuments({ createdAt: { $gte: oneDayAgo } }),

@@ -428,3 +428,100 @@
   align-items: center;
   justify-content: center;
 }
+
+/* -------------------------------------------------------------
+   .activity — timeline feed
+   ------------------------------------------------------------- */
+
+.activity section {
+  font-size: 1.2em;
+  margin-inline-start: 2rem;
+  padding-top: 1rem;
+}
+
+.activity section h2 {
+  font-family: Roboto, sans-serif;
+  color: var(--c-brag);
+  font-size: 1.2em;
+  margin-bottom: 10px;
+}
+
+.activity section h2 time {
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.activity .entries {
+  display: flex;
+  flex-direction: column;
+  margin: 0 50px;
+  border-inline-start: 3px solid var(--c-contours);
+}
+
+.activity .entry {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  position: relative;
+  padding: 6px 0 6px 45px;
+}
+
+.activity .entry:not(:first-child) {
+  margin-top: -4px;
+}
+
+.activity .entry > div {
+  max-width: 100%;
+}
+
+.activity .entry > i {
+  position: absolute;
+  top: 7px;
+  font-size: 24px;
+  width: 50px;
+  height: 50px;
+  margin-inline-start: -72px;
+  line-height: 39px;
+  text-align: center;
+  background-color: var(--c-contours);
+  border: 3px solid var(--c-bg-box);
+  border-radius: 50%;
+  color: #fff;
+}
+
+.activity .sub {
+  overflow: hidden;
+  margin: 1px 0 3px;
+  font-size: 1rem;
+}
+
+.activity score {
+  margin-left: auto;
+  font-size: 0.7em;
+  display: flex;
+  gap: 8px;
+}
+
+.activity score > * {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.activity score strong {
+  border-radius: 3px;
+  color: #fff;
+  font-size: 1.2em;
+  padding: 0 6px;
+  display: inline-block;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.activity win strong {
+  background: var(--c-good);
+}
+
+.activity loss strong {
+  background: var(--c-bad);
+}

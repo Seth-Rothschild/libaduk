@@ -173,6 +173,72 @@
 
   let activeCategory = $state(null);
   let activeResult = $state('all');
+  let view = $state('games');
+
+  function utcDayKey(ts) {
+    const d = new Date(ts);
+    return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+  }
+
+  function utcDayStart(ts) {
+    const d = new Date(ts);
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  }
+
+  function formatDayLabel(ts) {
+    return new Date(ts).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC'
+    });
+  }
+
+  function myGameColor(game) {
+    const name = data.profile.username;
+    const ogsName = data.profile.ogs?.username;
+    if (game.blackName === name || game.blackName === ogsName) return 'black';
+    return 'white';
+  }
+
+  function gameWon(game) {
+    return game.winner === myGameColor(game);
+  }
+
+  const timeline = $derived(buildTimeline(data.games, data.attempts));
+
+  function buildTimeline(games, attempts) {
+    const dayMap = new Map();
+
+    for (const game of games.filter((g) => g.status === 'finished')) {
+      const ts = game.endedAt ?? game.createdAt;
+      const key = utcDayKey(ts);
+      if (!dayMap.has(key))
+        dayMap.set(key, { ts: utcDayStart(ts), categories: new Map(), puzzles: [] });
+      const day = dayMap.get(key);
+      const label = gameLabel(game.timeControl);
+      if (!day.categories.has(label))
+        day.categories.set(label, { label, icon: gameIcon(game.timeControl), games: [] });
+      day.categories.get(label).games.push(game);
+    }
+
+    for (const attempt of attempts) {
+      const key = utcDayKey(attempt.attemptedAt);
+      if (!dayMap.has(key))
+        dayMap.set(key, {
+          ts: utcDayStart(attempt.attemptedAt),
+          categories: new Map(),
+          puzzles: []
+        });
+      dayMap.get(key).puzzles.push(attempt);
+    }
+
+    return [...dayMap.values()].sort((a, b) => b.ts - a.ts);
+  }
+
+  function gameOpponent(game) {
+    return myGameColor(game) === 'black' ? game.whiteName : game.blackName;
+  }
 
   const categoryCounts = $derived(
     CATEGORIES.map((cat) => ({
@@ -248,75 +314,154 @@
     </div>
 
     <div class="angles number-menu number-menu--tabs">
-      <a class="nm-item to-games active" href="/profile/{data.profile.username}">
+      <span
+        class="nm-item to-games"
+        class:active={view === 'games'}
+        onclick={() => (view = 'games')}
+      >
         {totalGames} Games
-      </a>
+      </span>
+      <span class="nm-item" class:active={view === 'timeline'} onclick={() => (view = 'timeline')}>
+        Timeline
+      </span>
     </div>
 
-    <div class="number-menu number-menu--tabs" id="games">
-      <span
-        class="nm-item"
-        class:active={activeResult === 'all'}
-        onclick={() => (activeResult = 'all')}>All</span
-      >
-      <span
-        class="nm-item"
-        class:active={activeResult === 'wins'}
-        onclick={() => (activeResult = 'wins')}><strong>{wins}</strong> Wins</span
-      >
-      <span
-        class="nm-item"
-        class:active={activeResult === 'losses'}
-        onclick={() => (activeResult = 'losses')}><strong>{losses}</strong> Losses</span
-      >
-    </div>
+    {#if view === 'games'}
+      <div class="number-menu number-menu--tabs" id="games">
+        <span
+          class="nm-item"
+          class:active={activeResult === 'all'}
+          onclick={() => (activeResult = 'all')}>All</span
+        >
+        <span
+          class="nm-item"
+          class:active={activeResult === 'wins'}
+          onclick={() => (activeResult = 'wins')}><strong>{wins}</strong> Wins</span
+        >
+        <span
+          class="nm-item"
+          class:active={activeResult === 'losses'}
+          onclick={() => (activeResult = 'losses')}><strong>{losses}</strong> Losses</span
+        >
+      </div>
 
-    <div class="games">
-      {#each visibleGames as game}
-        {@const size = game.size ?? 19}
-        <article class="game-row">
-          <a class="game-row__overlay" href="/play/{game.id}"></a>
-          <div class="game-row__board mini-board" style="margin-right: 14px;">
-            <GoBoard signMap={signMapForGame(game)} {size} vertexSize={miniVertexSize(size)} />
-          </div>
-          <div class="game-row__infos">
-            <div class="header" data-icon={gameIcon(game.timeControl)}>
-              <div class="header__text">
-                <strong
-                  >{formatClock(game.timeControl)} • {gameLabel(game.timeControl)} • {game.size} x {game.size}</strong
-                >
-                <span>{formatDate(game.createdAt)}</span>
+      <div class="games">
+        {#each visibleGames as game}
+          {@const size = game.size ?? 19}
+          <article class="game-row">
+            <a class="game-row__overlay" href="/play/{game.id}"></a>
+            <div class="game-row__board mini-board" style="margin-right: 14px;">
+              <GoBoard signMap={signMapForGame(game)} {size} vertexSize={miniVertexSize(size)} />
+            </div>
+            <div class="game-row__infos">
+              <div class="header" data-icon={gameIcon(game.timeControl)}>
+                <div class="header__text">
+                  <strong
+                    >{formatClock(game.timeControl)} • {gameLabel(game.timeControl)} • {game.size} x {game.size}</strong
+                  >
+                  <span>{formatDate(game.createdAt)}</span>
+                </div>
+              </div>
+              <div class="versus">
+                <div class="player white">
+                  {#if isLinkable(game.whiteName, game.gameType)}
+                    <a href="/profile/{game.whiteName}">{game.whiteName}</a>
+                  {:else}
+                    <span>{game.whiteName ?? 'Guest'}</span>
+                  {/if}
+                </div>
+                <div class="swords" data-icon="&#xe033;"></div>
+                <div class="player black">
+                  {#if isLinkable(game.blackName, game.gameType)}
+                    <a href="/profile/{game.blackName}">{game.blackName}</a>
+                  {:else}
+                    <span>{game.blackName ?? 'Guest'}</span>
+                  {/if}
+                </div>
+              </div>
+              <div class="result">
+                <span class={resultClass(game)}>{resultText(game)}</span>
+              </div>
+              <div class="opening">
+                <!-- <strong>{size}×{size}</strong> -->
+                <div class="pgn">{formatOpeningMoves(game.moves)}</div>
               </div>
             </div>
-            <div class="versus">
-              <div class="player white">
-                {#if isLinkable(game.whiteName, game.gameType)}
-                  <a href="/profile/{game.whiteName}">{game.whiteName}</a>
-                {:else}
-                  <span>{game.whiteName ?? 'Guest'}</span>
-                {/if}
-              </div>
-              <div class="swords" data-icon="&#xe033;"></div>
-              <div class="player black">
-                {#if isLinkable(game.blackName, game.gameType)}
-                  <a href="/profile/{game.blackName}">{game.blackName}</a>
-                {:else}
-                  <span>{game.blackName ?? 'Guest'}</span>
-                {/if}
-              </div>
+          </article>
+        {:else}
+          <div class="no-games">No games yet.</div>
+        {/each}
+      </div>
+    {/if}
+
+    {#if view === 'timeline'}
+      <div class="activity">
+        {#each timeline as day}
+          <section>
+            <h2>
+              <time datetime={new Date(day.ts).toISOString()} title={formatDayLabel(day.ts)}>
+                {formatDayLabel(day.ts)}
+              </time>
+            </h2>
+            <div class="entries">
+              {#if day.puzzles.length > 0}
+                {@const successes = day.puzzles.filter((p) => p.result === 'success').length}
+                {@const failures = day.puzzles.filter((p) => p.result === 'failure').length}
+                <div class="entry">
+                  <i data-icon="&#xe00c;"></i>
+                  <div>
+                    Solved {day.puzzles.length}
+                    {day.puzzles.length === 1 ? 'tactical puzzle' : 'tactical puzzles'}
+                  </div>
+                  <score>
+                    {#if successes > 0}<win
+                        ><strong>{successes}</strong> {successes === 1 ? 'win' : 'wins'}</win
+                      >{/if}
+                    {#if failures > 0}<loss
+                        ><strong>{failures}</strong> {failures === 1 ? 'loss' : 'losses'}</loss
+                      >{/if}
+                  </score>
+                </div>
+              {/if}
+              {#each day.categories.values() as cat}
+                {@const wins = cat.games.filter((g) => gameWon(g)).length}
+                {@const losses = cat.games.filter((g) => !gameWon(g)).length}
+                <div class="entry">
+                  <i data-icon={cat.icon}></i>
+                  <div>
+                    Played {cat.games.length}
+                    {cat.label}
+                    {cat.games.length === 1 ? 'game' : 'games'}
+                    <div class="sub">
+                      {#each cat.games as game}
+                        {@const opponent = gameOpponent(game)}
+                        {@const won = gameWon(game)}
+                        <a href="/play/{game.id}">{won ? 'Victory' : 'Defeat'}</a>
+                        {' vs '}
+                        {#if isLinkable(opponent, game.gameType)}
+                          <a href="/profile/{opponent}">{opponent}</a>
+                        {:else}
+                          {opponent ?? 'Guest'}
+                        {/if}
+                        <br />
+                      {/each}
+                    </div>
+                  </div>
+                  <score>
+                    {#if wins > 0}<win><strong>{wins}</strong> {wins === 1 ? 'win' : 'wins'}</win
+                      >{/if}
+                    {#if losses > 0}<loss
+                        ><strong>{losses}</strong> {losses === 1 ? 'loss' : 'losses'}</loss
+                      >{/if}
+                  </score>
+                </div>
+              {/each}
             </div>
-            <div class="result">
-              <span class={resultClass(game)}>{resultText(game)}</span>
-            </div>
-            <div class="opening">
-              <!-- <strong>{size}×{size}</strong> -->
-              <div class="pgn">{formatOpeningMoves(game.moves)}</div>
-            </div>
-          </div>
-        </article>
-      {:else}
-        <div class="no-games">No games yet.</div>
-      {/each}
-    </div>
+          </section>
+        {:else}
+          <div class="no-games">No activity yet.</div>
+        {/each}
+      </div>
+    {/if}
   </div>
 </main>

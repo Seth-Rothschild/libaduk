@@ -42,7 +42,8 @@
   async function completePuzzle(vote = null) {
     if (completed) return;
     completed = true;
-    const body = { puzzleId: data.puzzle.id };
+    const result = puzzle.hadFailure ? 'failure' : 'success';
+    const body = { puzzleId: data.puzzle.id, result };
     if (vote) body.vote = vote;
     await fetch('/api/puzzle/complete', {
       method: 'POST',

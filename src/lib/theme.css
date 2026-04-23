@@ -73,6 +73,7 @@ html {
   --c-brag: hsl(37, 74%, 43%);
   --m-bad--lighten-11: hsl(0, 60%, 61%);
   --c-error: hsl(0, 60%, 50%);
+  --c-contours: rgb(167.9328, 118.16632, 38.1072);
 
   /* — unused — available when needed */
   /*
@@ -95,7 +96,6 @@ html {
   --c-chat-host-bg:               rgba(78, 122, 29, 0.4);
   --c-chat-mention-bg:            rgba(59, 92, 22, 0.4);
   --c-clearer:                    #fff;
-  --c-contours:                   rgb(167.9328, 118.16632, 38.1072);
   --c-dark:                       #333;
   --c-dasher-light:               rgb(81.68908, 105.26298, 47.9706);
   --c-dimmer:                     #000;
@@ -382,6 +382,7 @@ html.light {
   --m-accent_bg--mix-15: hsl(22, 72%, 91%);
   --m-bad--lighten-11: hsl(0, 60%, 61%);
   --c-error: hsl(0, 60%, 50%);
+  --c-contours: rgb(213.2208, 157.66752, 68.2992);
 
   /* — unused — available when needed */
   /*
@@ -404,7 +405,6 @@ html.light {
   --c-chat-host-bg:               rgba(125, 170, 73, 0.4);
   --c-chat-mention-bg:            rgba(161, 194, 124, 0.4);
   --c-clearer:                    #000;
-  --c-contours:                   rgb(213.2208, 157.66752, 68.2992);
   --c-dark:                       #333;
   --c-dasher-light:               rgb(181.84288, 207.2232, 152.8368);
   --c-dimmer:                     #fff;

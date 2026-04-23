@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
-import { incrementPuzzlePlays, recordPuzzleVote, markPuzzleCompleted } from '$lib/server/db.js';
+import { incrementPuzzlePlays, recordPuzzleVote, recordPuzzleAttempt } from '$lib/server/db.js';
 
 export async function POST({ request, locals }) {
-  const { puzzleId, vote } = await request.json();
+  const { puzzleId, result, vote } = await request.json();
 
   if (!puzzleId) {
     return json({ error: 'puzzleId required' }, { status: 400 });
@@ -15,8 +15,8 @@ export async function POST({ request, locals }) {
   }
 
   const username = locals.user?.username;
-  if (username) {
-    await markPuzzleCompleted(username, puzzleId);
+  if (username && (result === 'success' || result === 'failure')) {
+    await recordPuzzleAttempt(username, puzzleId, result);
   }
 
   return json({ ok: true });
