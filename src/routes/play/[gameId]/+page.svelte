@@ -31,7 +31,8 @@
     computeScore,
     buildScoreBoard,
     toggleDeadStones,
-    scoreVerdictShort
+    scoreVerdictShort,
+    exportSgf
   } from '$lib/game/board';
   import { initEngine, generateMove, hasModel, isReady, dispose } from '$lib/ai/engine.js';
   import ModelManager from '$lib/ai/ModelManager.svelte';
@@ -321,6 +322,20 @@
     }
     const tree = serializeTree(analysis.root);
     gameSocket.send({ type: 'analysis-enter', tree });
+  }
+
+  function downloadSgf() {
+    const sgf = exportSgf(analysis.root, gs.boardSize, {
+      playerBlack: blackName,
+      playerWhite: whiteName
+    });
+    const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'analysis.sgf';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function exitAnalysis() {
@@ -844,6 +859,7 @@
           onStartScoring={() => analysis.startScoring()}
           onStopScoring={() => analysis.stopScoring()}
           onToggleEstimate={() => (analysis.showEstimate = !analysis.showEstimate)}
+          onDownloadSgf={downloadSgf}
           onExit={exitAnalysis}
         />
       {:else}
