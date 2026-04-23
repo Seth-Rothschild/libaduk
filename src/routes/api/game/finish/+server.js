@@ -6,6 +6,9 @@ export async function POST({ request }) {
   const { gameId, winner, result } = body;
   if (!gameId || !winner) return json({ error: 'missing fields' }, { status: 400 });
 
+  const game = await db.getGame(gameId);
+  if (!game || game.status === 'finished') return json({ ok: true });
+
   await db.updateGame(gameId, {
     status: 'finished',
     winner,

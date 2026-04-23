@@ -310,14 +310,17 @@ export function attachWebSocketServer(httpServer) {
                     db.appendChat(msg.gameId, { user: m.user, text: m.text, t: m.t });
                   }
                   if (m.type === 'gameover') {
-                    const patch = {
-                      status: 'finished',
-                      winner: m.winner,
-                      result: m.result,
-                      deadStones: m.deadStones,
-                      endedAt: Date.now()
-                    };
-                    db.updateGame(msg.gameId, patch);
+                    db.getGame(msg.gameId).then((current) => {
+                      if (!current || current.status === 'finished') return;
+                      const patch = {
+                        status: 'finished',
+                        winner: m.winner,
+                        result: m.result,
+                        deadStones: m.deadStones,
+                        endedAt: Date.now()
+                      };
+                      db.updateGame(msg.gameId, patch);
+                    });
                   }
                   broadcast(msg.gameId, m);
                 },
