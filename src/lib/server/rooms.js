@@ -256,6 +256,19 @@ function removeFromGame(socket) {
 export function attachWebSocketServer(httpServer) {
   const wss = new WebSocketServer({ noServer: true });
 
+  setInterval(async () => {
+    for (const [gameId, clients] of gameClients) {
+      const game = await db.getGame(gameId);
+      if (game?.analysisActive && game?.analysisTree) {
+        broadcast(gameId, {
+          type: 'analysis-tree',
+          tree: game.analysisTree,
+          path: game.currentNodePath ?? null
+        });
+      }
+    }
+  }, 5000);
+
   httpServer.on('upgrade', (req, socket, head) => {
     if (req.url === '/ws') {
       wss.handleUpgrade(req, socket, head, (ws) => {
