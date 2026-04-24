@@ -558,7 +558,7 @@ export class AnalysisState {
     node.board = applySetup(node.board, [{ x, y, sign: newSign }]);
 
     const setupWithout = node.setup.filter((s) => s.x !== x || s.y !== y);
-    node.setup = newSign === 0 ? setupWithout : [...setupWithout, { x, y, sign: newSign }];
+    node.setup = [...setupWithout, { x, y, sign: newSign }];
 
     this.#version++;
   }

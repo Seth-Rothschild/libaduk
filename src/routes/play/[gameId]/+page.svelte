@@ -896,10 +896,10 @@
       <NavigationButtons
         canPrev={analysis.canGoPrev}
         canNext={analysis.canGoNext}
-        onFirst={() => analysis.navigate('first')}
-        onPrev={() => analysis.navigate('prev')}
-        onNext={() => analysis.navigate('next')}
-        onLast={() => analysis.navigate('last')}
+        onFirst={() => { analysis.navigate('first'); persistAnalysisTree(); }}
+        onPrev={() => { analysis.navigate('prev'); persistAnalysisTree(); }}
+        onNext={() => { analysis.navigate('next'); persistAnalysisTree(); }}
+        onLast={() => { analysis.navigate('last'); persistAnalysisTree(); }}
       />
     {:else if gs.totalPly > 0}
       <NavigationButtons
