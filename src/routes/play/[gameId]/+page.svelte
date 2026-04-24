@@ -755,6 +755,7 @@
           markerMap={analysis.markerMap}
           areaMap={analysis.displayAreaMap}
           deadStones={analysis.displayDeadStones}
+          highlightVertex={chatHighlightVertex}
           onVertexClick={(x, y) => onAnalysisVertexClick(x, y)}
         />
         <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
