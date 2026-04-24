@@ -419,11 +419,15 @@ export class AnalysisState {
     this.#reset();
   }
 
-  loadTree(data) {
+  loadTree(data, path = null) {
     const root = deserializeTree(data, this.#size);
     if (!root) return;
     let node = root;
-    while (node.children.length > 0) node = node.children[0];
+    if (path) {
+      node = followNodePath(root, path);
+    } else {
+      while (node.children.length > 0) node = node.children[0];
+    }
     this.#root = root;
     this.currentNode = node;
     this.#reset();

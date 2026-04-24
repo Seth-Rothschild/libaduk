@@ -293,8 +293,16 @@ export function attachWebSocketServer(httpServer) {
           }
         }
 
+        const game = await db.getGame(msg.gameId);
+        if (game?.analysisActive && game?.analysisTree) {
+          send(socket, {
+            type: 'analysis-enter',
+            tree: game.analysisTree,
+            path: game.currentNodePath ?? null
+          });
+        }
+
         if (msg.ogsToken) {
-          const game = await db.getGame(msg.gameId);
           if (game?.gameType === 'ogs' && game.ogsGameId && game.ogsUserId) {
             let adapter = ogsAdapters.get(msg.gameId);
             if (!adapter) {
@@ -463,18 +471,15 @@ export function attachWebSocketServer(httpServer) {
         }
       }
       if (msg.type === 'analysis-enter' && socket.gameId) {
-        await db.updateGame(socket.gameId, { analysisTree: msg.tree, analysisActive: true });
-        broadcastToOthers(socket.gameId, socket, { type: 'analysis-enter', tree: msg.tree });
-      }
-      if (msg.type === 'analysis-navigate' && socket.gameId) {
-        broadcastToOthers(socket.gameId, socket, { type: 'analysis-navigate', path: msg.path });
-      }
-      if (msg.type === 'analysis-move' && socket.gameId) {
+        await db.updateGame(socket.gameId, {
+          analysisTree: msg.tree,
+          currentNodePath: msg.path ?? null,
+          analysisActive: true
+        });
         broadcastToOthers(socket.gameId, socket, {
-          type: 'analysis-move',
-          x: msg.x,
-          y: msg.y,
-          tool: msg.tool
+          type: 'analysis-enter',
+          tree: msg.tree,
+          path: msg.path ?? null
         });
       }
       if (msg.type === 'analysis-exit' && socket.gameId) {
@@ -482,7 +487,15 @@ export function attachWebSocketServer(httpServer) {
         broadcastToOthers(socket.gameId, socket, { type: 'analysis-exit' });
       }
       if (msg.type === 'analysis-tree' && socket.gameId) {
-        await db.updateGame(socket.gameId, { analysisTree: msg.tree });
+        await db.updateGame(socket.gameId, {
+          analysisTree: msg.tree,
+          currentNodePath: msg.path ?? null
+        });
+        broadcastToOthers(socket.gameId, socket, {
+          type: 'analysis-tree',
+          tree: msg.tree,
+          path: msg.path ?? null
+        });
       }
       if (msg.type === 'cancel' && socket.gameId) {
         const game = await db.getGame(socket.gameId);

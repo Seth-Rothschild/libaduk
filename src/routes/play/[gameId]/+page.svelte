@@ -10,12 +10,7 @@
   import { getGuestId } from '$lib/state/guestId.js';
   import { getMe } from '$lib/state/user.svelte.js';
   import { GameState } from '$lib/game/GameState.svelte.js';
-  import {
-    AnalysisState,
-    serializeTree,
-    getNodePath,
-    followNodePath
-  } from '$lib/game/analysisState.svelte.js';
+  import { AnalysisState, serializeTree, getNodePath } from '$lib/game/analysisState.svelte.js';
   import { gameSocket } from '$lib/state/socket.svelte.js';
   import GameChat from '$lib/game/GameChat.svelte';
   import GameMeta from '$lib/game/GameMeta.svelte';
@@ -291,11 +286,12 @@
 
   // Tracks the latest analysis tree. data.game.analysisTree is a page-load snapshot
   // and goes stale as moves are made, so we keep our own up-to-date copy.
-  let savedAnalysisTree = data.game.analysisTree ?? null;
+  let savedAnalysisTree = null;
+  let savedAnalysisPath = null;
 
-  function enterAnalysisFromTree(tree) {
+  function enterAnalysisFromTree(tree, path = null) {
     analysis = new AnalysisState(gs.boardSize, komi);
-    analysis.loadTree(tree);
+    analysis.loadTree(tree, path);
   }
 
   function enterAnalysisFromMoves() {
@@ -316,12 +312,13 @@
   function enterAnalysis() {
     if (analysis) return;
     if (savedAnalysisTree) {
-      enterAnalysisFromTree(savedAnalysisTree);
+      enterAnalysisFromTree(savedAnalysisTree, savedAnalysisPath);
     } else {
       enterAnalysisFromMoves();
     }
     const tree = serializeTree(analysis.root);
-    gameSocket.send({ type: 'analysis-enter', tree });
+    const path = getNodePath(analysis.currentNode);
+    gameSocket.send({ type: 'analysis-enter', tree, path });
   }
 
   function downloadSgf() {
@@ -340,27 +337,28 @@
 
   function exitAnalysis() {
     savedAnalysisTree = serializeTree(analysis.root);
+    savedAnalysisPath = getNodePath(analysis.currentNode);
     analysis = null;
     gameSocket.send({ type: 'analysis-exit' });
   }
 
   function persistAnalysisTree() {
     const tree = serializeTree(analysis.root);
+    const path = getNodePath(analysis.currentNode);
     savedAnalysisTree = tree;
-    gameSocket.send({ type: 'analysis-tree', tree });
+    savedAnalysisPath = path;
+    gameSocket.send({ type: 'analysis-tree', tree, path });
   }
 
   function onAnalysisVertexClick(x, y) {
     analysis.onVertexClick(x, y);
-    gameSocket.send({ type: 'analysis-move', x, y, tool: analysis.tool });
     persistAnalysisTree();
   }
 
   function navigateAnalysisTo(node) {
     analysis.currentNode = node;
     analysis.animatedVertex = null;
-    const path = getNodePath(node);
-    gameSocket.send({ type: 'analysis-navigate', path });
+    persistAnalysisTree();
   }
 
   // --- Game actions ---
@@ -540,8 +538,7 @@
       if (action) {
         e.preventDefault();
         analysis.navigate(action);
-        const path = getNodePath(analysis.currentNode);
-        gameSocket.send({ type: 'analysis-navigate', path });
+        persistAnalysisTree();
       }
       return;
     }
@@ -570,10 +567,6 @@
         else if (whiteName === displayName) gs.mySign = -1;
       }
       chatMessages = data.chat ?? [];
-
-      if (data.game.analysisActive) {
-        enterAnalysisFromTree(data.game.analysisTree);
-      }
 
       gameSocket.onMessage((msg) => {
         if (msg.type === 'joined') {
@@ -635,21 +628,22 @@
           gs.status = 'cancelled';
         }
         if (msg.type === 'analysis-enter') {
-          enterAnalysisFromTree(msg.tree);
+          savedAnalysisTree = msg.tree;
+          savedAnalysisPath = msg.path ?? null;
+          enterAnalysisFromTree(msg.tree, msg.path ?? null);
         }
         if (msg.type === 'analysis-exit') {
           analysis = null;
         }
-        if (msg.type === 'analysis-navigate' && analysis) {
-          const target = followNodePath(analysis.root, msg.path);
-          analysis.currentNode = target;
-          analysis.animatedVertex = null;
-        }
-        if (msg.type === 'analysis-move' && analysis) {
-          const prevTool = analysis.tool;
-          analysis.tool = msg.tool ?? 'stone';
-          analysis.onVertexClick(msg.x, msg.y);
-          analysis.tool = prevTool;
+        if (msg.type === 'analysis-tree' && analysis) {
+          const prevPath = getNodePath(analysis.currentNode);
+          analysis.loadTree(msg.tree, msg.path ?? null);
+          const newPath = getNodePath(analysis.currentNode);
+          const isOneStepForward =
+            newPath.length === prevPath.length + 1 && prevPath.every((v, i) => v === newPath[i]);
+          if (isOneStepForward) {
+            analysis.animatedVertex = analysis.currentNode.lastMove ?? null;
+          }
         }
         if (msg.type === 'my-color') {
           gs.mySign = msg.color === 'black' ? 1 : -1;
