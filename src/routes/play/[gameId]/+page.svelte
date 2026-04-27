@@ -375,11 +375,10 @@
       const moveResult = gs.board.analyzeMove(mySign, [x, y]);
       if (moveResult.overwrite || moveResult.suicide || moveResult.ko) return;
       const mode = boardSettings.moveConfirmation;
-      if (mode === 'double-click' && !(pendingMove?.[0] === x && pendingMove?.[1] === y)) {
-        pendingMove = [x, y];
-        return;
-      }
-      if (mode === 'button' && !pendingMove) {
+      if (
+        (mode === 'double-click' || mode === 'button') &&
+        !(pendingMove?.[0] === x && pendingMove?.[1] === y)
+      ) {
         pendingMove = [x, y];
         return;
       }
@@ -896,10 +895,22 @@
       <NavigationButtons
         canPrev={analysis.canGoPrev}
         canNext={analysis.canGoNext}
-        onFirst={() => { analysis.navigate('first'); persistAnalysisTree(); }}
-        onPrev={() => { analysis.navigate('prev'); persistAnalysisTree(); }}
-        onNext={() => { analysis.navigate('next'); persistAnalysisTree(); }}
-        onLast={() => { analysis.navigate('last'); persistAnalysisTree(); }}
+        onFirst={() => {
+          analysis.navigate('first');
+          persistAnalysisTree();
+        }}
+        onPrev={() => {
+          analysis.navigate('prev');
+          persistAnalysisTree();
+        }}
+        onNext={() => {
+          analysis.navigate('next');
+          persistAnalysisTree();
+        }}
+        onLast={() => {
+          analysis.navigate('last');
+          persistAnalysisTree();
+        }}
       />
     {:else if gs.totalPly > 0}
       <NavigationButtons
