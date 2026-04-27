@@ -289,6 +289,16 @@
   let savedAnalysisTree = null;
   let savedAnalysisPath = null;
 
+  let pendingAnalysisTree = null;
+
+  function flushPendingAnalysisTree() {
+    if (!pendingAnalysisTree || !analysis) return;
+    if (analysis.status === 'scoring' || analysis.showEstimate) return;
+    analysis.loadTree(pendingAnalysisTree.tree, pendingAnalysisTree.path);
+    analysis.animatedVertex = null;
+    pendingAnalysisTree = null;
+  }
+
   function enterAnalysisFromTree(tree, path = null) {
     analysis = new AnalysisState(gs.boardSize, komi);
     analysis.loadTree(tree, path);
@@ -635,6 +645,10 @@
           analysis = null;
         }
         if (msg.type === 'analysis-tree' && analysis) {
+          if (analysis.status === 'scoring' || analysis.showEstimate) {
+            pendingAnalysisTree = { tree: msg.tree, path: msg.path ?? null };
+            return;
+          }
           const prevPath = getNodePath(analysis.currentNode);
           analysis.loadTree(msg.tree, msg.path ?? null);
           const newPath = getNodePath(analysis.currentNode);
@@ -851,8 +865,14 @@
           estimatedScore={analysis.estimatedScore}
           showEstimate={analysis.showEstimate}
           onStartScoring={() => analysis.startScoring()}
-          onStopScoring={() => analysis.stopScoring()}
-          onToggleEstimate={() => (analysis.showEstimate = !analysis.showEstimate)}
+          onStopScoring={() => {
+            analysis.stopScoring();
+            flushPendingAnalysisTree();
+          }}
+          onToggleEstimate={() => {
+            analysis.showEstimate = !analysis.showEstimate;
+            flushPendingAnalysisTree();
+          }}
           onDownloadSgf={downloadSgf}
           onExit={exitAnalysis}
         />
