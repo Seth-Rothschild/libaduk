@@ -53,7 +53,7 @@
   </div>
 
   <div class="lobby__top-game__board" bind:this={containerEl}>
-    <a href="https://online-go.com/game/{ogsLiveGame.game.id}">
+    <a href="/tv">
       <div
         style="transform: scale({scale}); transform-origin: top left; width: {boardPx}px; height: {boardPx}px;"
       >

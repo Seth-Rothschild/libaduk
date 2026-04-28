@@ -10,6 +10,11 @@ class OgsLiveGame {
   clock = $state(null);
   lastMove = $state(null);
   animatedVertex = $state(null);
+  moves = $state([]);
+  result = $state(null);
+
+  onGameStart = null;
+  onGameEnd = null;
 
   #ws = null;
   #pingInterval = null;
@@ -19,8 +24,10 @@ class OgsLiveGame {
   #latency = 0;
   #gameId = null;
   #moveCount = 0;
+  #endedFired = false;
+  #periodMs = 0;
 
-  async start() {
+  async start(gameId = null) {
     if (!browser || this.#ws) return;
 
     const configRes = await fetch('https://online-go.com/api/v1/ui/config/');
@@ -34,14 +41,19 @@ class OgsLiveGame {
 
     ws.onopen = () => {
       this.#send('authenticate', { jwt });
-      this.#send('gamelist/query', {
-        list: 'live',
-        sort_by: 'rank',
-        where: {},
-        from: 0,
-        limit: 1,
-        channel: ''
-      });
+      if (gameId) {
+        this.#gameId = gameId;
+        this.#send('game/connect', { game_id: gameId, chat: false });
+      } else {
+        this.#send('gamelist/query', {
+          list: 'live',
+          sort_by: 'rank',
+          where: {},
+          from: 0,
+          limit: 1,
+          channel: ''
+        });
+      }
       this.#pingInterval = setInterval(() => {
         this.#send('net/ping', { client: Date.now(), drift: this.#drift, latency: this.#latency });
       }, 10000);
@@ -87,6 +99,19 @@ class OgsLiveGame {
         this.#handleClock(data);
         return;
       }
+
+      if (name === `${prefix}phase`) {
+        if (data === 'finished') this.#fireGameEnd();
+        return;
+      }
+
+      if (name === `${prefix}removed_stones_accepted`) {
+        if (data.phase === 'finished') {
+          this.result = this.#computeResultFromData(data);
+          this.#fireGameEnd();
+        }
+        return;
+      }
     };
 
     ws.onclose = () => {
@@ -110,8 +135,14 @@ class OgsLiveGame {
     this.board = null;
     this.shiftMap = null;
     this.clock = null;
+    this.lastMove = null;
+    this.animatedVertex = null;
+    this.moves = [];
+    this.result = null;
     this.#gameId = null;
     this.#moveCount = 0;
+    this.#endedFired = false;
+    this.#periodMs = 0;
   }
 
   #handleAck(data) {
@@ -120,14 +151,31 @@ class OgsLiveGame {
     this.game = topGame;
     this.#gameId = topGame.id;
     this.#send('game/connect', { game_id: this.#gameId, chat: false });
+    if (typeof this.onGameStart === 'function') this.onGameStart(topGame);
+  }
+
+  #fireGameEnd() {
+    if (this.#endedFired) return;
+    this.#endedFired = true;
+    if (typeof this.onGameEnd === 'function') this.onGameEnd(this.#gameId);
   }
 
   #handleGamedata(data) {
+    if (!this.game) {
+      this.game = {
+        id: this.#gameId,
+        width: data.width,
+        black: data.players?.black,
+        white: data.players?.white
+      };
+    }
+    this.#periodMs = (data.time_control?.period_time ?? 0) * 1000;
     const size = data.width;
     let board = GoBoardLib.fromDimensions(size);
     let shifts = emptyShiftMap(size);
 
     const moves = data.moves || [];
+    const recordedMoves = [];
     for (let i = 0; i < moves.length; i++) {
       const x = moves[i][0];
       const y = moves[i][1];
@@ -136,9 +184,13 @@ class OgsLiveGame {
         const result = applyMoveWithShifts(board, shifts, color, x, y);
         board = result.board;
         shifts = result.shiftMap;
+        recordedMoves.push({ x, y, color });
+      } else {
+        recordedMoves.push({ x: -1, y: -1, color });
       }
     }
 
+    this.moves = recordedMoves;
     this.board = board;
     this.shiftMap = shifts;
     this.#moveCount = moves.length;
@@ -150,6 +202,20 @@ class OgsLiveGame {
     this.animatedVertex = null;
 
     this.#handleClock(data.clock);
+
+    if (data.phase === 'finished') {
+      this.result = this.#computeResultFromData(data);
+      this.#fireGameEnd();
+    }
+  }
+
+  #computeResultFromData(data) {
+    if (data.winner == null || data.outcome == null) return null;
+    const blackId = this.game?.black?.id ?? data.players?.black?.id;
+    const winnerColor = data.winner === blackId ? 'black' : 'white';
+    const margin = String(data.outcome).replace(' points', '');
+    const prefix = winnerColor === 'black' ? 'B' : 'W';
+    return { winner: winnerColor, result: `${prefix}+${margin}` };
   }
 
   #handleMove(data) {
@@ -164,6 +230,9 @@ class OgsLiveGame {
       this.shiftMap = result.shiftMap;
       this.lastMove = [x, y];
       this.animatedVertex = [x, y];
+      this.moves = [...this.moves, { x, y, color }];
+    } else {
+      this.moves = [...this.moves, { x: -1, y: -1, color }];
     }
   }
 
@@ -197,11 +266,13 @@ class OgsLiveGame {
   #parseTime(t) {
     if (!t) return null;
     const mainMs = t.thinking_time * 1000;
+    const periodMs = this.#periodMs || t.period_time * 1000;
     return {
       mainMs,
       byoMs: t.period_time * 1000,
       byoPeriods: t.periods,
-      inByoYomi: mainMs <= 0
+      inByoYomi: mainMs <= 0,
+      periodMs
     };
   }
 

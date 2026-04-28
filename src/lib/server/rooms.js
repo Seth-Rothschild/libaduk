@@ -3,6 +3,7 @@ import * as db from './db.js';
 import { handicapPoints } from '../game/board/helpers.js';
 import { createBoard, placeStones, replayMoves } from '../game/board/board.js';
 import { OgsAdapter } from './ogsAdapter.js';
+import * as tvRoom from './tvRoom.js';
 
 function createInitialClockState(tc, hasHandicap) {
   if (!tc || (tc.type !== 'byoyomi' && tc.type !== 'fischer')) return null;
@@ -510,6 +511,28 @@ export function attachWebSocketServer(httpServer) {
           path: msg.path ?? null
         });
       }
+      if (msg.type === 'tv-join') {
+        socket.tvViewer = true;
+        tvRoom.addClient(socket);
+        const state = tvRoom.getState();
+        send(socket, { type: 'tv-state', gameId: state.gameId, chat: state.chat });
+      }
+      if (msg.type === 'tv-set-game' && socket.tvViewer) {
+        if (tvRoom.getState().gameId == null && msg.gameId) {
+          tvRoom.setGame(msg.gameId, {
+            blackName: msg.blackName ?? null,
+            whiteName: msg.whiteName ?? null
+          });
+        }
+      }
+      if (msg.type === 'tv-chat' && socket.tvViewer) {
+        const text = typeof msg.text === 'string' ? msg.text.slice(0, 500).trim() : '';
+        const user = typeof msg.user === 'string' ? msg.user.slice(0, 50) : 'anon';
+        if (text) tvRoom.addChat({ user, text, t: Date.now() });
+      }
+      if (msg.type === 'tv-game-ended' && socket.tvViewer) {
+        tvRoom.clearGameIfMatches(msg.gameId);
+      }
       if (msg.type === 'cancel' && socket.gameId) {
         const game = await db.getGame(socket.gameId);
         if (game && game.status === 'waiting') {
@@ -535,6 +558,7 @@ export function attachWebSocketServer(httpServer) {
     });
     socket.on('close', async () => {
       lobbyClients.delete(socket);
+      if (socket.tvViewer) tvRoom.removeClient(socket);
       const gameId = socket.gameId;
       const color = socket.playerColor;
       removeFromGame(socket);
