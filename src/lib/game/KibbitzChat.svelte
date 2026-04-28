@@ -4,6 +4,7 @@
   let {
     username = '',
     messages = [],
+    viewers = [],
     onSend = () => {},
     boardSize = 19,
     onCoordHover = () => {}
@@ -27,10 +28,31 @@
 
   let inputText = $state('');
   let messagesEl = $state(null);
+  let sendFailed = $state(false);
+
+  function formatTime(t) {
+    if (!t) return '';
+    return new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function filterEmptyDividers(messages) {
+    return messages.filter((m, i) => {
+      if (!m.divider) return true;
+      const next = messages[i + 1];
+      return !next || !next.divider;
+    });
+  }
+
+  const visibleMessages = $derived(filterEmptyDividers(messages));
 
   function sendMessage(text) {
     if (!text.trim()) return;
-    onSend(text.trim());
+    const sent = onSend(text.trim());
+    if (sent === false) {
+      sendFailed = true;
+      return;
+    }
+    sendFailed = false;
     inputText = '';
     scrollToBottom();
   }
@@ -58,6 +80,14 @@
 
 <section class="mchat">
   <div class="mchat__content">
+    <header class="mchat__viewers">
+      <span class="mchat__viewers-count">{viewers.length} watching</span>
+      <ul class="mchat__viewers-list">
+        {#each viewers as viewer}
+          <li>{viewer}</li>
+        {/each}
+      </ul>
+    </header>
     <ol
       class="mchat__messages"
       aria-live="polite"
@@ -65,7 +95,7 @@
       tabindex="0"
       bind:this={messagesEl}
     >
-      {#each messages as msg}
+      {#each visibleMessages as msg}
         {#if msg.divider}
           <li class="kibbitz-divider">
             <a href="https://online-go.com/game/{msg.gameId}" target="_blank" rel="noopener">
@@ -74,6 +104,7 @@
           </li>
         {:else}
           <li class:me={msg.user === username}>
+            <time class="mchat__ts">{formatTime(msg.t)}</time>
             <span class="color">{msg.user}</span>
             <t>
               {#each parseMessageParts(msg.text) as part}
@@ -97,7 +128,8 @@
     </ol>
     <input
       class="mchat__say"
-      placeholder="Chat is local to libaduk only"
+      class:mchat__say--disconnected={sendFailed}
+      placeholder={sendFailed ? 'Disconnected — message not sent' : 'Chat is local to libaduk only'}
       aria-label="Kibbitz message"
       bind:value={inputText}
       onkeydown={handleKeydown}
@@ -130,5 +162,62 @@
 
   .kibbitz-divider a:hover {
     text-decoration: underline;
+  }
+
+  .mchat__viewers {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+    padding: 0.4em 0.6em;
+    border-bottom: 1px solid var(--c-border);
+    font-size: 0.85em;
+    color: var(--c-font-dim);
+    flex-shrink: 0;
+  }
+
+  .mchat__viewers-count {
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+
+  .mchat__viewers-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 0.75em;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .mchat__viewers-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mchat__viewers-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+    white-space: nowrap;
+  }
+
+  .mchat__viewers-list li::before {
+    content: '';
+    width: 0.5em;
+    height: 0.5em;
+    border-radius: 50%;
+    background: var(--c-success, #4ade80);
+    flex-shrink: 0;
+  }
+
+  .mchat__ts,
+  .mchat__movenum {
+    color: var(--c-font-dim);
+    font-size: 0.8em;
+    margin-right: 0.25em;
+  }
+
+  .mchat__say--disconnected {
+    border-color: var(--c-error, #f87171);
   }
 </style>

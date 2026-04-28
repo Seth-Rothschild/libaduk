@@ -19,11 +19,22 @@
   let ws = null;
   let activeGameId;
   let lingerTimer = null;
+  let reconnectTimer = null;
+  let reconnectDelay = 500;
+  let disposed = false;
+  const MAX_RECONNECT_DELAY = 5000;
 
   function clearLingerTimer() {
     if (lingerTimer) {
       clearTimeout(lingerTimer);
       lingerTimer = null;
+    }
+  }
+
+  function clearReconnectTimer() {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
     }
   }
 
@@ -33,6 +44,7 @@
   let boardContainerWidth = $state(0);
   let boardContainerHeight = $state(0);
   let chatMessages = $state([]);
+  let chatViewers = $state([]);
   let chatHighlightVertex = $state(null);
   let movesAreaEl = $state(null);
 
@@ -93,11 +105,18 @@
   function wsSend(msg) {
     if (ws?.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(msg));
+      return true;
     }
+    return false;
   }
 
   function handleChatSend(text) {
-    wsSend({ type: 'tv-chat', user: displayName, text });
+    return wsSend({
+      type: 'tv-chat',
+      user: displayName,
+      text,
+      moveNumber: ogsLiveGame.moves.length
+    });
   }
 
   async function syncToServerGameId(gameId) {
@@ -106,6 +125,55 @@
     activeGameId = gameId;
     ogsLiveGame.stop();
     await ogsLiveGame.start(gameId ?? null);
+  }
+
+  function connect() {
+    if (disposed) return;
+    const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${protocol}://${location.host}/ws`);
+
+    ws.addEventListener('open', () => {
+      reconnectDelay = 500;
+      wsSend({ type: 'tv-join', name: displayName });
+      const game = ogsLiveGame.game;
+      if (activeGameId && game) {
+        wsSend({
+          type: 'tv-set-game',
+          gameId: activeGameId,
+          blackName: game.black?.username ?? null,
+          whiteName: game.white?.username ?? null
+        });
+      }
+    });
+
+    ws.addEventListener('message', (event) => {
+      let msg;
+      try {
+        msg = JSON.parse(event.data);
+      } catch {
+        return;
+      }
+      if (msg.type === 'tv-state') {
+        chatMessages = msg.chat ?? [];
+        chatViewers = msg.viewers ?? [];
+        syncToServerGameId(msg.gameId);
+      } else if (msg.type === 'tv-game') {
+        syncToServerGameId(msg.gameId);
+      } else if (msg.type === 'tv-chat' && msg.entry) {
+        chatMessages.push(msg.entry);
+      } else if (msg.type === 'tv-viewers') {
+        chatViewers = msg.viewers ?? [];
+      }
+    });
+
+    ws.addEventListener('close', () => {
+      if (disposed) return;
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY);
+        connect();
+      }, reconnectDelay);
+    });
   }
 
   onMount(() => {
@@ -126,30 +194,13 @@
       }, LINGER_MS);
     };
 
-    const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-    ws = new WebSocket(`${protocol}://${location.host}/ws`);
-
-    ws.addEventListener('open', () => wsSend({ type: 'tv-join' }));
-
-    ws.addEventListener('message', (event) => {
-      let msg;
-      try {
-        msg = JSON.parse(event.data);
-      } catch {
-        return;
-      }
-      if (msg.type === 'tv-state') {
-        chatMessages = msg.chat ?? [];
-        syncToServerGameId(msg.gameId);
-      } else if (msg.type === 'tv-game') {
-        syncToServerGameId(msg.gameId);
-      } else if (msg.type === 'tv-chat' && msg.entry) {
-        chatMessages.push(msg.entry);
-      }
-    });
+    disposed = false;
+    connect();
 
     return () => {
+      disposed = true;
       clearLingerTimer();
+      clearReconnectTimer();
       ogsLiveGame.onGameStart = null;
       ogsLiveGame.onGameEnd = null;
       ogsLiveGame.stop();
@@ -179,6 +230,7 @@
     <KibbitzChat
       {username}
       messages={chatMessages}
+      viewers={chatViewers}
       onSend={handleChatSend}
       {boardSize}
       onCoordHover={(v) => (chatHighlightVertex = v)}

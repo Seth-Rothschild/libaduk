@@ -513,9 +513,15 @@ export function attachWebSocketServer(httpServer) {
       }
       if (msg.type === 'tv-join') {
         socket.tvViewer = true;
-        tvRoom.addClient(socket);
+        const name = typeof msg.name === 'string' ? msg.name.slice(0, 50) : 'anon';
+        tvRoom.addClient(socket, name);
         const state = tvRoom.getState();
-        send(socket, { type: 'tv-state', gameId: state.gameId, chat: state.chat });
+        send(socket, {
+          type: 'tv-state',
+          gameId: state.gameId,
+          chat: state.chat,
+          viewers: state.viewers
+        });
       }
       if (msg.type === 'tv-set-game' && socket.tvViewer) {
         if (tvRoom.getState().gameId == null && msg.gameId) {
@@ -528,7 +534,8 @@ export function attachWebSocketServer(httpServer) {
       if (msg.type === 'tv-chat' && socket.tvViewer) {
         const text = typeof msg.text === 'string' ? msg.text.slice(0, 500).trim() : '';
         const user = typeof msg.user === 'string' ? msg.user.slice(0, 50) : 'anon';
-        if (text) tvRoom.addChat({ user, text, t: Date.now() });
+        const moveNumber = Number.isFinite(msg.moveNumber) ? msg.moveNumber : null;
+        if (text) tvRoom.addChat({ user, text, t: Date.now(), moveNumber });
       }
       if (msg.type === 'tv-game-ended' && socket.tvViewer) {
         tvRoom.clearGameIfMatches(msg.gameId);

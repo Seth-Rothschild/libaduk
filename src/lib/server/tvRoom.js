@@ -6,16 +6,31 @@ const room = {
   clients: new Set()
 };
 
-export function addClient(socket) {
+export function addClient(socket, name) {
+  socket.tvName = name;
   room.clients.add(socket);
+  broadcastViewers();
 }
 
 export function removeClient(socket) {
   room.clients.delete(socket);
+  broadcastViewers();
+}
+
+function getViewers() {
+  const viewers = [];
+  for (const socket of room.clients) {
+    if (socket.tvName) viewers.push(socket.tvName);
+  }
+  return viewers;
+}
+
+function broadcastViewers() {
+  broadcast({ type: 'tv-viewers', viewers: getViewers() });
 }
 
 export function getState() {
-  return { gameId: room.currentGameId, chat: [...room.chat] };
+  return { gameId: room.currentGameId, chat: [...room.chat], viewers: getViewers() };
 }
 
 export function setGame(gameId, names = {}) {
