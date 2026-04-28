@@ -48,7 +48,7 @@
             (e.key === 'Enter' || e.key === ' ') &&
             (e.preventDefault(), onAcceptOgs?.(entry))}
         >
-          <td>{entry.username} ({formatOgsRank(entry.rank)})</td>
+          <td>{entry.username} ({formatOgsRank(entry)})</td>
           <td>—</td>
           <td>{formatOgsClock(entry.time_control_parameters)}</td>
           <td>{entry.width}×{entry.height}</td>

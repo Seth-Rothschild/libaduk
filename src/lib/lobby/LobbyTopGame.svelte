@@ -45,7 +45,7 @@
 <div class="lobby__top-game">
   <div class="lobby__top-game__player">
     <span class="text"
-      >{ogsLiveGame.game.white.username} ({formatOgsRank(ogsLiveGame.game.white.rank)})</span
+      >{ogsLiveGame.game.white.username} ({formatOgsRank(ogsLiveGame.game.white)})</span
     >
     <span class="lobby__top-game__clock" class:active={whiteToMove}
       >{formatClock(ogsLiveGame.clock?.white)}</span
@@ -73,7 +73,7 @@
   </div>
   <div class="lobby__top-game__player">
     <span class="text"
-      >{ogsLiveGame.game.black.username} ({formatOgsRank(ogsLiveGame.game.black.rank)})</span
+      >{ogsLiveGame.game.black.username} ({formatOgsRank(ogsLiveGame.game.black)})</span
     >
     <span class="lobby__top-game__clock" class:active={blackToMove}
       >{formatClock(ogsLiveGame.clock?.black)}</span
