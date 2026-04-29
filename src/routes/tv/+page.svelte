@@ -7,12 +7,14 @@
   import GameMeta from '$lib/game/GameMeta.svelte';
   import AnalysisMoves from '$lib/game/AnalysisMoves.svelte';
   import KibbitzChat from '$lib/game/KibbitzChat.svelte';
+  import NavigationButtons from '$lib/game/NavigationButtons.svelte';
   import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
   import { getGuestId } from '$lib/state/guestId.js';
   import { getMe } from '$lib/state/user.svelte.js';
   import { computeVertexSize } from '$lib/game/layout.js';
   import { ogsLiveGame } from '$lib/lobby/ogsLiveGame.svelte.js';
   import { formatOgsRank } from '$lib/lobby/ogsSeekGraph.svelte.js';
+  import { replayMoves } from '$lib/game/board/board.js';
 
   const LINGER_MS = 10000;
 
@@ -47,9 +49,21 @@
   let chatViewers = $state([]);
   let chatHighlightVertex = $state(null);
   let movesAreaEl = $state(null);
+  let viewedIndex = $state(null);
 
   const boardSize = $derived(ogsLiveGame.game?.width ?? 19);
-  const displayBoard = $derived(ogsLiveGame.board);
+  const isLive = $derived(viewedIndex === null);
+  const movesUpToView = $derived(
+    ogsLiveGame.moves
+      .slice(0, viewedIndex + 1)
+      .map((m) => ({ ...m, type: m.x >= 0 ? 'move' : 'pass' }))
+  );
+  const displayBoard = $derived(isLive ? ogsLiveGame.board : replayMoves(movesUpToView, boardSize));
+  const displayLastMove = $derived.by(() => {
+    if (isLive) return ogsLiveGame.lastMove;
+    const m = ogsLiveGame.moves[viewedIndex];
+    return m && m.x >= 0 ? [m.x, m.y] : null;
+  });
   const signMap = $derived(displayBoard?.signMap ?? []);
   const vertexSize = $derived(
     computeVertexSize(boardContainerWidth, boardContainerHeight, boardSize)
@@ -74,10 +88,11 @@
   const whiteRunning = $derived(ogsLiveGame.clock?.activeColor === 'white');
 
   const moveNodes = $derived.by(() =>
-    ogsLiveGame.moves.map((m) => ({
+    ogsLiveGame.moves.map((m, i) => ({
       lastMove: m.x >= 0 ? [m.x, m.y] : null,
       moveName: undefined,
-      children: []
+      children: [],
+      index: i
     }))
   );
 
@@ -93,10 +108,33 @@
     return rows;
   });
 
-  const latestMoveNode = $derived(moveNodes[moveNodes.length - 1] ?? null);
+  const viewedNode = $derived(
+    isLive ? (moveNodes[moveNodes.length - 1] ?? null) : (moveNodes[viewedIndex] ?? null)
+  );
+  const currentIndex = $derived(isLive ? ogsLiveGame.moves.length - 1 : viewedIndex);
+  const navCanPrev = $derived(currentIndex > 0);
+  const navCanNext = $derived(!isLive);
+
+  function navFirst() {
+    viewedIndex = 0;
+  }
+  function navPrev() {
+    viewedIndex = currentIndex - 1;
+  }
+  function navNext() {
+    if (viewedIndex === ogsLiveGame.moves.length - 1) {
+      viewedIndex = null;
+    } else {
+      viewedIndex = viewedIndex + 1;
+    }
+  }
+  function navLast() {
+    viewedIndex = null;
+  }
 
   $effect(() => {
     ogsLiveGame.moves.length;
+    if (!isLive) return;
     if (!movesAreaEl) return;
     const scroller = movesAreaEl.querySelector('.analysis-moves');
     if (scroller) scroller.scrollTop = scroller.scrollHeight;
@@ -248,7 +286,7 @@
       {#if displayBoard}
         <GoBoard
           {signMap}
-          lastMove={ogsLiveGame.lastMove}
+          lastMove={displayLastMove}
           shiftMap={boardSettings.fuzzyPlacement ? ogsLiveGame.shiftMap : null}
           animatedVertex={ogsLiveGame.animatedVertex}
           size={boardSize}
@@ -270,9 +308,17 @@
     <div class="rmoves rmoves--tv" bind:this={movesAreaEl}>
       <AnalysisMoves
         analysisMoveRows={moveRows}
-        analysisNode={latestMoveNode}
+        analysisNode={viewedNode}
         {boardSize}
-        onSelectNode={() => {}}
+        onSelectNode={(node) => (viewedIndex = node.index)}
+      />
+      <NavigationButtons
+        canPrev={navCanPrev}
+        canNext={navCanNext}
+        onFirst={navFirst}
+        onPrev={navPrev}
+        onNext={navNext}
+        onLast={navLast}
       />
     </div>
 
