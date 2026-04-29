@@ -133,12 +133,29 @@
   }
 
   $effect(() => {
+    viewedIndex;
     ogsLiveGame.moves.length;
-    if (!isLive) return;
     if (!movesAreaEl) return;
     const scroller = movesAreaEl.querySelector('.analysis-moves');
-    if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    if (!scroller) return;
+    if (isLive) {
+      scroller.scrollTop = scroller.scrollHeight;
+      return;
+    }
+    const active = scroller.querySelector('.move-entry.active');
+    if (active) active.scrollIntoView({ block: 'nearest' });
   });
+
+  function handleKeyNav(e) {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if (e.key === 'ArrowLeft' && navCanPrev) {
+      e.preventDefault();
+      navPrev();
+    } else if (e.key === 'ArrowRight' && navCanNext) {
+      e.preventDefault();
+      navNext();
+    }
+  }
 
   function wsSend(msg) {
     if (ws?.readyState === WebSocket.OPEN) {
@@ -248,6 +265,8 @@
     };
   });
 </script>
+
+<svelte:window onkeydown={handleKeyNav} />
 
 <div class="round">
   <aside class="round__side">
