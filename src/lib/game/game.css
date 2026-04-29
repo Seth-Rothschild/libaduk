@@ -1191,9 +1191,9 @@ html.light .color-icon.white::before {
 }
 
 .move-entry.active {
-  background: var(--c-accent);
   color: #fff;
-  border-color: var(--c-accent);
+  background: var(--m-primary_bg--mix-20);
+  border-color: var(--m-primary_bg--mix-20);
 }
 
 .move-branches {
