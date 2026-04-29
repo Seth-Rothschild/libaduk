@@ -380,6 +380,33 @@ export async function getChat(gameId) {
   }
 }
 
+export async function loadTvChat() {
+  try {
+    const d = await getDb();
+    const doc = await d.collection('tvChat').findOne({ _id: 'tv' });
+    return doc?.messages ?? [];
+  } catch (err) {
+    console.error('[db] loadTvChat failed:', err.message);
+    throw err;
+  }
+}
+
+export async function pushTvChat(entry, cap = 100) {
+  try {
+    const d = await getDb();
+    await d
+      .collection('tvChat')
+      .updateOne(
+        { _id: 'tv' },
+        { $push: { messages: { $each: [entry], $slice: -cap } } },
+        { upsert: true }
+      );
+  } catch (err) {
+    console.error('[db] pushTvChat failed:', err.message);
+    throw err;
+  }
+}
+
 export async function setNote(gameId, username, text) {
   try {
     const key = `notes.${username.toLowerCase()}`;

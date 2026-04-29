@@ -1,3 +1,5 @@
+import * as db from './db.js';
+
 const CHAT_CAP = 100;
 
 const room = {
@@ -5,6 +7,10 @@ const room = {
   chat: [],
   clients: new Set()
 };
+
+export async function init() {
+  room.chat = await db.loadTvChat();
+}
 
 export function addClient(socket, name) {
   socket.tvName = name;
@@ -61,6 +67,7 @@ export function addChat(entry) {
 function pushChat(entry) {
   room.chat.push(entry);
   if (room.chat.length > CHAT_CAP) room.chat.shift();
+  db.pushTvChat(entry, CHAT_CAP).catch(() => {});
   broadcast({ type: 'tv-chat', entry });
 }
 

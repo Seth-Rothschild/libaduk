@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { connectDb } from './src/lib/server/db.js';
 import { handler } from './build/handler.js';
 import { attachWebSocketServer } from './src/lib/server/rooms.js';
+import * as tvRoom from './src/lib/server/tvRoom.js';
 
 process.on('uncaughtException', (err) => {
   if (err.code === 'ENOENT' && err.syscall === 'open') {
@@ -15,6 +16,7 @@ process.on('uncaughtException', (err) => {
 const port = process.env.PORT ?? 3000;
 
 await connectDb();
+await tvRoom.init();
 
 const server = createServer(handler);
 attachWebSocketServer(server);
