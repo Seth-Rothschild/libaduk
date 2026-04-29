@@ -44,6 +44,7 @@
   }
 
   const visibleMessages = $derived(filterEmptyDividers(messages));
+  const uniqueViewers = $derived([...new Set(viewers)]);
 
   function sendMessage(text) {
     if (!text.trim()) return;
@@ -81,9 +82,9 @@
 <section class="mchat">
   <div class="mchat__content">
     <header class="mchat__viewers">
-      <span class="mchat__viewers-count">{viewers.length} watching</span>
+      <span class="mchat__viewers-count">{uniqueViewers.length} watching</span>
       <ul class="mchat__viewers-list">
-        {#each viewers as viewer}
+        {#each uniqueViewers as viewer}
           <li>{viewer}</li>
         {/each}
       </ul>
