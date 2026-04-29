@@ -705,6 +705,13 @@ html.light .color-icon.white::before {
   border-radius: 50%;
 }
 
+.go-coord-mode .go-vertex.go-empty:hover,
+.go-coord-mode .go-vertex:not(.go-empty):hover {
+  outline: 2px solid rgba(59, 130, 246, 0.7);
+  outline-offset: -3px;
+  border-radius: 50%;
+}
+
 /* -------------------------------------------------------------
    Stones
    ------------------------------------------------------------- */

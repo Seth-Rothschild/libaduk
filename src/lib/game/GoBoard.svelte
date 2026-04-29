@@ -1,4 +1,6 @@
 <script>
+  import { onMount } from 'svelte';
+
   let {
     signMap,
     size = 19,
@@ -86,11 +88,41 @@
     deadStones ? new Set(deadStones.map(([x, y]) => `${x},${y}`)) : new Set()
   );
 
+  let coordMode = $state(false);
+
+  onMount(() => {
+    function isCoordKey(e) {
+      return e.key === 'Control' || e.key === 'Meta';
+    }
+    function onKeyDown(e) {
+      if (isCoordKey(e)) coordMode = true;
+    }
+    function onKeyUp(e) {
+      if (isCoordKey(e)) coordMode = false;
+    }
+    function onBlur() {
+      coordMode = false;
+    }
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+    };
+  });
+
   function handleClick(e) {
     const vertex = e.target.closest('.go-vertex');
     if (!vertex) return;
     const x = parseInt(vertex.dataset.x);
     const y = parseInt(vertex.dataset.y);
+    if (e.ctrlKey || e.metaKey) {
+      const coord = COL_LETTERS[x] + (size - y);
+      navigator.clipboard?.writeText(coord);
+      return;
+    }
     onVertexClick?.(x, y);
   }
 </script>
@@ -103,7 +135,8 @@
     class:go-show-coords={showCoords}
     class:go-turn-black={currentSign === 1}
     class:go-turn-white={currentSign === -1}
-    class:go-interactive={interactive}
+    class:go-interactive={interactive && !coordMode}
+    class:go-coord-mode={coordMode}
     style="display: inline-grid; line-height: 1em;"
     onclick={handleClick}
     role="img"
