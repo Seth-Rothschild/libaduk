@@ -36,6 +36,9 @@
     <div role="group">
       <a href="/player" onclick={onClose}>Players</a>
       <a href="/player/activity" onclick={onClose}>Activity</a>
+      <a href="https://online-go.com/group/16370" onclick={onClose}>OGS Group</a>
+      <a href="https://github.com/Seth-Rothschild/libaduk/issues" onclick={onClose}>Github Issues</a
+      >
     </div>
   </section>
   <section>
@@ -43,6 +46,12 @@
     <div role="group">
       <a href="/puzzle" onclick={onClose}>Random puzzle</a>
       <a href="/puzzle/daily" onclick={onClose}>Puzzle of the day</a>
+    </div>
+  </section>
+  <section>
+    <a href="/tv" onclick={onClose}>Watch</a>
+    <div role="group">
+      <a href="/tv" onclick={onClose}>TV</a>
     </div>
   </section>
   <section>

@@ -21,10 +21,18 @@
     </div>
   </section>
   <section>
+    <a href="/tv">Watch</a>
+    <div role="group">
+      <a href="/tv">TV</a>
+    </div>
+  </section>
+  <section>
     <a href="/player">Community</a>
     <div role="group">
       <a href="/player">Players</a>
       <a href="/player/activity">Activity</a>
+      <a href="https://online-go.com/group/16370">OGS Group</a>
+      <a href="https://github.com/Seth-Rothschild/libaduk/issues">Github Issues</a>
     </div>
   </section>
   <section>
