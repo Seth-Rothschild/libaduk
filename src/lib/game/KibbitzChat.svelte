@@ -14,12 +14,15 @@
 
   function parseMessageParts(text) {
     const isCoord = (word) => /^[A-HJ-Ta-hj-t]\d{1,2}$/i.test(word);
-    const coordSet = new Set(text.split(' ').filter(isCoord));
-    if (coordSet.size === 0) return [{ type: 'text', content: text }];
+    const isURL = (word) => /^https?:\/\/\S+$/.test(word);
+    const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const matchSet = new Set(text.split(' ').filter((w) => isCoord(w) || isURL(w)));
+    if (matchSet.size === 0) return [{ type: 'text', content: text }];
 
-    const pattern = new RegExp(`(${[...coordSet].join('|')})`);
+    const pattern = new RegExp(`(${[...matchSet].map(escapeRegex).join('|')})`);
     return text.split(pattern).map((part, i) => {
       if (i % 2 === 0) return { type: 'text', content: part };
+      if (isURL(part)) return { type: 'url', content: part };
       const x = COL_LETTERS.indexOf(part[0].toUpperCase());
       const y = boardSize - parseInt(part.slice(1));
       return { type: 'coord', content: part, x, y };
@@ -118,6 +121,8 @@
                     onmouseleave={() => onCoordHover(null)}
                     >{part.content}
                   </span>
+                {:else if part.type === 'url'}
+                  <a href={part.content} target="_blank" rel="noopener">{part.content}</a>
                 {:else}
                   {part.content}
                 {/if}
