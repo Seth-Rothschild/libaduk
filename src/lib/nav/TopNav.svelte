@@ -39,6 +39,7 @@
     <a href="/analysis" data-sveltekit-preload-data="off">Tools</a>
     <div role="group">
       <a href="/analysis" data-sveltekit-preload-data="off">Analysis board</a>
+      <a href="/kifu" data-sveltekit-preload-data="off">Kifu</a>
     </div>
   </section>
 </nav>
