@@ -2292,8 +2292,8 @@ path.go-marker-on-empty {
   --go-board-border-color: var(--c-font-clearer);
   --go-board-background-color: var(--c-bg-box);
   --go-board-foreground-color: var(--c-font-clearer);
-  --go-black-foreground-color: var(--c-bg-box);
-  --go-white-foreground-color: var(--c-font-clearer);
+  --go-white-foreground-color: var(--c-bg-box);
+  --go-black-foreground-color: var(--c-font-clearer);
 }
 
 .kifu__board .go-goban-image {
@@ -2311,13 +2311,13 @@ path.go-marker-on-empty {
 
 .kifu__board .go-inner.go-sign_1 {
   background-image: none;
-  background: var(--c-font-clearer);
+  background: var(--c-bg-box);
+  box-shadow: inset 0 0 0 1px var(--c-font-clearer);
 }
 
 .kifu__board .go-inner.go-sign_-1 {
   background-image: none;
-  background: var(--c-bg-box);
-  box-shadow: inset 0 0 0 1px var(--c-font-clearer);
+  background: var(--c-font-clearer);
 }
 
 .kifu__board .go-last-marker {
