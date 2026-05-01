@@ -74,6 +74,7 @@
 
   const gameResult = $derived(ogsLiveGame.result);
   const gameStatus = $derived(gameResult ? 'gameover' : 'playing');
+  const isStuck = $derived(moveRows.length === 0);
   const winnerSign = $derived(gameResult?.winner === 'black' ? 1 : -1);
 
   const blackClock = $derived(ogsLiveGame.clock?.black ?? null);
@@ -328,6 +329,14 @@
         onNext={navNext}
         onLast={navLast}
       />
+      {#if isStuck}
+        <button
+          class="find-game-btn"
+          onclick={() => wsSend({ type: 'tv-game-ended', gameId: activeGameId })}
+        >
+          Find new game
+        </button>
+      {/if}
     </div>
 
     <PlayerStrip color="black" name={blackLabel} captures={0} position="bottom" />
@@ -341,5 +350,17 @@
 <style>
   .rmoves.rmoves--tv {
     padding: 0;
+  }
+
+  .find-game-btn {
+    display: block;
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    background: var(--c-accent, #629924);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
   }
 </style>
