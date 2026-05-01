@@ -1,10 +1,11 @@
 <script>
   import { onMount } from 'svelte';
 
+  import { computeVertexSize } from '$lib/game/layout.js';
+
   let {
     signMap,
     size = 19,
-    vertexSize = 24,
     lastMove = null,
     shiftMap = null,
     animatedVertex = null,
@@ -19,6 +20,10 @@
     highlightVertex = null,
     pendingVertex = null
   } = $props();
+
+  let containerWidth = $state(0);
+  let containerHeight = $state(0);
+  const vertexSize = $derived(computeVertexSize(containerWidth, containerHeight, size));
   const half = $derived(vertexSize / 2);
   const fl = Math.floor;
   const COL_LETTERS = 'ABCDEFGHJKLMNOPQRST';
@@ -128,223 +133,241 @@
 </script>
 
 <div
-  style="display: inline-grid; grid-template-columns: {boardSize}px; grid-template-rows: {boardSize}px; font-size: {vertexSize}px;"
+  style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"
+  bind:clientWidth={containerWidth}
+  bind:clientHeight={containerHeight}
 >
   <div
-    class="go-goban go-goban-image"
-    class:go-show-coords={showCoords}
-    class:go-turn-black={currentSign === 1}
-    class:go-turn-white={currentSign === -1}
-    class:go-interactive={interactive && !coordMode}
-    class:go-coord-mode={coordMode}
-    style="display: inline-grid; line-height: 1em;"
-    onclick={handleClick}
-    role="img"
-    aria-label="Go board, {size} by {size}"
+    style="display: inline-grid; grid-template-columns: {boardSize}px; grid-template-rows: {boardSize}px; font-size: {vertexSize}px;"
   >
-    <div class="go-content" style="position: relative; width: {size}em; height: {size}em;">
-      <svg
-        class="go-grid"
-        width={svgSize}
-        height={svgSize}
-        style="position: absolute; top: 0; left: 0; z-index: 0;"
-      >
-        {#each hLines as line}
-          <rect class="go-gridline" x={line.x} y={line.y} width={line.width} height={line.height} />
-        {/each}
-        {#each vLines as line}
-          <rect class="go-gridline" x={line.x} y={line.y} width={line.width} height={line.height} />
-        {/each}
-        {#each hoshiPoints as h}
-          <circle class="go-hoshi" cx={h.cx} cy={h.cy} r="2.4" />
-        {/each}
-      </svg>
-
-      {#if showCoords}
+    <div
+      class="go-goban go-goban-image"
+      class:go-show-coords={showCoords}
+      class:go-turn-black={currentSign === 1}
+      class:go-turn-white={currentSign === -1}
+      class:go-interactive={interactive && !coordMode}
+      class:go-coord-mode={coordMode}
+      style="display: inline-grid; line-height: 1em;"
+      onclick={handleClick}
+      role="img"
+      aria-label="Go board, {size} by {size}"
+    >
+      <div class="go-content" style="position: relative; width: {size}em; height: {size}em;">
         <svg
-          class="go-coords"
+          class="go-grid"
           width={svgSize}
           height={svgSize}
-          style="position: absolute; top: 0; left: 0; z-index: 0; pointer-events: none; overflow: visible;"
+          style="position: absolute; top: 0; left: 0; z-index: 0;"
         >
-          {#each colLabels as label, i}
-            {@const cx = fl((2 * i + 1) * half - 0.5) + 0.5}
-            <text
-              x={cx}
-              y={coordOffset}
-              text-anchor="middle"
-              dominant-baseline="middle"
-              font-size={coordFontSize}
-              class="go-coord-text">{label}</text
-            >
-            <text
-              x={cx}
-              y={svgSize - coordOffset}
-              text-anchor="middle"
-              dominant-baseline="middle"
-              font-size={coordFontSize}
-              class="go-coord-text">{label}</text
-            >
+          {#each hLines as line}
+            <rect
+              class="go-gridline"
+              x={line.x}
+              y={line.y}
+              width={line.width}
+              height={line.height}
+            />
           {/each}
-          {#each rowLabels as num, i}
-            {@const cy = fl((2 * i + 1) * half - 0.5) + 0.5}
-            <text
-              x={coordOffset}
-              y={cy}
-              text-anchor="middle"
-              dominant-baseline="middle"
-              font-size={coordFontSize}
-              class="go-coord-text">{num}</text
-            >
-            <text
-              x={svgSize - coordOffset}
-              y={cy}
-              text-anchor="middle"
-              dominant-baseline="middle"
-              font-size={coordFontSize}
-              class="go-coord-text">{num}</text
-            >
+          {#each vLines as line}
+            <rect
+              class="go-gridline"
+              x={line.x}
+              y={line.y}
+              width={line.width}
+              height={line.height}
+            />
+          {/each}
+          {#each hoshiPoints as h}
+            <circle class="go-hoshi" cx={h.cx} cy={h.cy} r="2.4" />
           {/each}
         </svg>
-      {/if}
 
-      <div
-        class="go-vertices"
-        style="display: grid; grid-template-columns: repeat({size}, 1em); grid-template-rows: repeat({size}, 1em); position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;"
-      >
-        {#each ys as y}
-          {#each xs as x}
-            {@const sign = signMap[y]?.[x] ?? 0}
-            {@const shift = shiftMap?.[y]?.[x] ?? 0}
-            {@const isLast = lastMove && lastMove[0] === x && lastMove[1] === y}
-            {@const isAnimated =
-              animatedVertex && animatedVertex[0] === x && animatedVertex[1] === y}
-            {@const isDead = deadSet.has(`${x},${y}`)}
-            {@const marker = markerMap?.[y]?.[x] ?? null}
-            {@const childSign = childrenMap?.[y]?.[x] ?? 0}
-            {@const territory = areaMap?.[y]?.[x] ?? 0}
-            {@const isHighlighted =
-              highlightVertex && highlightVertex[0] === x && highlightVertex[1] === y}
-            <div
-              class="go-vertex go-shift_{shift}"
-              class:go-black={sign === 1}
-              class:go-white={sign === -1}
-              class:go-empty={sign === 0}
-              class:go-animate={isAnimated}
-              style="position: relative;"
-              data-x={x}
-              data-y={y}
-            >
-              {#if sign !== 0}
-                <div
-                  class="go-stone"
-                  class:go-dead={isDead}
-                  style="position: absolute; z-index: 2;"
-                >
-                  <div class="go-inner go-sign_{sign}"></div>
-                  {#if isLast && !isDead}
-                    <svg class="go-last-marker" viewBox="0 0 1 1">
-                      <circle
-                        cx="0.5"
-                        cy="0.5"
-                        r="0.18"
-                        class="go-last-marker-dot go-last-marker-dot_{sign}"
+        {#if showCoords}
+          <svg
+            class="go-coords"
+            width={svgSize}
+            height={svgSize}
+            style="position: absolute; top: 0; left: 0; z-index: 0; pointer-events: none; overflow: visible;"
+          >
+            {#each colLabels as label, i}
+              {@const cx = fl((2 * i + 1) * half - 0.5) + 0.5}
+              <text
+                x={cx}
+                y={coordOffset}
+                text-anchor="middle"
+                dominant-baseline="middle"
+                font-size={coordFontSize}
+                class="go-coord-text">{label}</text
+              >
+              <text
+                x={cx}
+                y={svgSize - coordOffset}
+                text-anchor="middle"
+                dominant-baseline="middle"
+                font-size={coordFontSize}
+                class="go-coord-text">{label}</text
+              >
+            {/each}
+            {#each rowLabels as num, i}
+              {@const cy = fl((2 * i + 1) * half - 0.5) + 0.5}
+              <text
+                x={coordOffset}
+                y={cy}
+                text-anchor="middle"
+                dominant-baseline="middle"
+                font-size={coordFontSize}
+                class="go-coord-text">{num}</text
+              >
+              <text
+                x={svgSize - coordOffset}
+                y={cy}
+                text-anchor="middle"
+                dominant-baseline="middle"
+                font-size={coordFontSize}
+                class="go-coord-text">{num}</text
+              >
+            {/each}
+          </svg>
+        {/if}
+
+        <div
+          class="go-vertices"
+          style="display: grid; grid-template-columns: repeat({size}, 1em); grid-template-rows: repeat({size}, 1em); position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;"
+        >
+          {#each ys as y}
+            {#each xs as x}
+              {@const sign = signMap[y]?.[x] ?? 0}
+              {@const shift = shiftMap?.[y]?.[x] ?? 0}
+              {@const isLast = lastMove && lastMove[0] === x && lastMove[1] === y}
+              {@const isAnimated =
+                animatedVertex && animatedVertex[0] === x && animatedVertex[1] === y}
+              {@const isDead = deadSet.has(`${x},${y}`)}
+              {@const marker = markerMap?.[y]?.[x] ?? null}
+              {@const childSign = childrenMap?.[y]?.[x] ?? 0}
+              {@const territory = areaMap?.[y]?.[x] ?? 0}
+              {@const isHighlighted =
+                highlightVertex && highlightVertex[0] === x && highlightVertex[1] === y}
+              <div
+                class="go-vertex go-shift_{shift}"
+                class:go-black={sign === 1}
+                class:go-white={sign === -1}
+                class:go-empty={sign === 0}
+                class:go-animate={isAnimated}
+                style="position: relative;"
+                data-x={x}
+                data-y={y}
+              >
+                {#if sign !== 0}
+                  <div
+                    class="go-stone"
+                    class:go-dead={isDead}
+                    style="position: absolute; z-index: 2;"
+                  >
+                    <div class="go-inner go-sign_{sign}"></div>
+                    {#if isLast && !isDead}
+                      <svg class="go-last-marker" viewBox="0 0 1 1">
+                        <circle
+                          cx="0.5"
+                          cy="0.5"
+                          r="0.18"
+                          class="go-last-marker-dot go-last-marker-dot_{sign}"
+                        />
+                      </svg>
+                    {/if}
+                    {#if isDead}
+                      <svg class="go-dead-x" viewBox="0 0 1 1">
+                        <line
+                          x1="0.2"
+                          y1="0.2"
+                          x2="0.8"
+                          y2="0.8"
+                          stroke-width="0.12"
+                          stroke-linecap="round"
+                        />
+                        <line
+                          x1="0.8"
+                          y1="0.2"
+                          x2="0.2"
+                          y2="0.8"
+                          stroke-width="0.12"
+                          stroke-linecap="round"
+                        />
+                      </svg>
+                    {/if}
+                  </div>
+                {/if}
+                {#if marker === 'cross'}
+                  <svg class="go-marker" viewBox="0 0 1 1">
+                    {#if sign === 0}
+                      <rect
+                        x="0.25"
+                        y="0.25"
+                        width="0.5"
+                        height="0.5"
+                        class="go-marker-bg"
+                        stroke="none"
                       />
-                    </svg>
-                  {/if}
-                  {#if isDead}
-                    <svg class="go-dead-x" viewBox="0 0 1 1">
-                      <line
-                        x1="0.2"
-                        y1="0.2"
-                        x2="0.8"
-                        y2="0.8"
-                        stroke-width="0.12"
-                        stroke-linecap="round"
-                      />
-                      <line
-                        x1="0.8"
-                        y1="0.2"
-                        x2="0.2"
-                        y2="0.8"
-                        stroke-width="0.12"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                  {/if}
-                </div>
-              {/if}
-              {#if marker === 'cross'}
-                <svg class="go-marker" viewBox="0 0 1 1">
-                  {#if sign === 0}
+                    {/if}
+                    <path
+                      d="M 0 0 L .5 .5 M .5 0 L 0 .5"
+                      transform="translate(.25 .25)"
+                      class="go-marker-shape go-marker-on-{sign || 'empty'}"
+                    />
+                  </svg>
+                {:else if marker === 'circle'}
+                  <svg class="go-marker" viewBox="0 0 1 1">
+                    <circle
+                      cx="0.5"
+                      cy="0.5"
+                      r="0.22"
+                      class="go-marker-shape go-marker-on-{sign || 'empty'}"
+                    />
+                  </svg>
+                {:else if marker === 'square'}
+                  <svg class="go-marker" viewBox="0 0 1 1">
                     <rect
                       x="0.25"
                       y="0.25"
                       width="0.5"
                       height="0.5"
-                      class="go-marker-bg"
-                      stroke="none"
+                      class="go-marker-shape go-marker-on-{sign || 'empty'}"
                     />
-                  {/if}
-                  <path
-                    d="M 0 0 L .5 .5 M .5 0 L 0 .5"
-                    transform="translate(.25 .25)"
-                    class="go-marker-shape go-marker-on-{sign || 'empty'}"
-                  />
-                </svg>
-              {:else if marker === 'circle'}
-                <svg class="go-marker" viewBox="0 0 1 1">
-                  <circle
-                    cx="0.5"
-                    cy="0.5"
-                    r="0.22"
-                    class="go-marker-shape go-marker-on-{sign || 'empty'}"
-                  />
-                </svg>
-              {:else if marker === 'square'}
-                <svg class="go-marker" viewBox="0 0 1 1">
-                  <rect
-                    x="0.25"
-                    y="0.25"
-                    width="0.5"
-                    height="0.5"
-                    class="go-marker-shape go-marker-on-{sign || 'empty'}"
-                  />
-                </svg>
-              {:else if marker === 'triangle'}
-                <svg class="go-marker" viewBox="0 0 1 1">
-                  <path
-                    d="M 0 .5 L .6 .5 L .3 0 z"
-                    transform="translate(.2 .2)"
-                    class="go-marker-shape go-marker-on-{sign || 'empty'}"
-                  />
-                </svg>
-              {:else if marker?.type === 'label' || marker?.type === 'number'}
-                <div class="go-marker-label go-marker-label-on-{sign || 'empty'}">
-                  {marker.label}
-                </div>
-              {/if}
-              {#if sign === 0 && childSign !== 0}
-                <div class="go-ghost go-ghost-{childSign}"></div>
-              {/if}
-              {#if sign === 0 && pendingVertex && pendingVertex[0] === x && pendingVertex[1] === y}
-                <div class="go-ghost go-ghost-{currentSign}"></div>
-              {/if}
-              {#if sign === 0}
-                {#if territory !== 0}
-                  <div
-                    class="go-territory"
-                    class:go-territory-black={territory > 0}
-                    class:go-territory-white={territory < 0}
-                  ></div>
+                  </svg>
+                {:else if marker === 'triangle'}
+                  <svg class="go-marker" viewBox="0 0 1 1">
+                    <path
+                      d="M 0 .5 L .6 .5 L .3 0 z"
+                      transform="translate(.2 .2)"
+                      class="go-marker-shape go-marker-on-{sign || 'empty'}"
+                    />
+                  </svg>
+                {:else if marker?.type === 'label' || marker?.type === 'number'}
+                  <div class="go-marker-label go-marker-label-on-{sign || 'empty'}">
+                    {marker.label}
+                  </div>
                 {/if}
-              {/if}
-              {#if isHighlighted}
-                <div class="go-chat-highlight"></div>
-              {/if}
-            </div>
+                {#if sign === 0 && childSign !== 0}
+                  <div class="go-ghost go-ghost-{childSign}"></div>
+                {/if}
+                {#if sign === 0 && pendingVertex && pendingVertex[0] === x && pendingVertex[1] === y}
+                  <div class="go-ghost go-ghost-{currentSign}"></div>
+                {/if}
+                {#if sign === 0}
+                  {#if territory !== 0}
+                    <div
+                      class="go-territory"
+                      class:go-territory-black={territory > 0}
+                      class:go-territory-white={territory < 0}
+                    ></div>
+                  {/if}
+                {/if}
+                {#if isHighlighted}
+                  <div class="go-chat-highlight"></div>
+                {/if}
+              </div>
+            {/each}
           {/each}
-        {/each}
+        </div>
       </div>
     </div>
   </div>

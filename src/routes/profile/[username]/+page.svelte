@@ -133,12 +133,6 @@
     return name && !isGuest(name) && gameType !== 'ogs' && gameType !== 'ai';
   }
 
-  function miniVertexSize(boardGridSize) {
-    // Target 240px wide so all boards fill roughly the same space.
-    // GoBoard formula: boardSize = (gridSize + 0.8) * vertexSize
-    return Math.floor(240 / (boardGridSize + 0.8));
-  }
-
   const CATEGORIES = [
     { label: 'Bullet', icon: '\ue032', match: (tc) => isLive(tc) && tcMins(tc) <= 3 },
     {
@@ -351,7 +345,7 @@
           <article class="game-row">
             <a class="game-row__overlay" href="/play/{game.id}"></a>
             <div class="game-row__board mini-board" style="margin-right: 14px;">
-              <GoBoard signMap={signMapForGame(game)} {size} vertexSize={miniVertexSize(size)} />
+              <GoBoard signMap={signMapForGame(game)} {size} />
             </div>
             <div class="game-row__infos">
               <div class="header" data-icon={gameIcon(game.timeControl)}>

@@ -16,7 +16,6 @@
   } from '$lib/game/analysisState.svelte.js';
   import { page } from '$app/state';
   import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
-  import { computeVertexSize } from '$lib/game/layout.js';
   import {
     clampBoardSize,
     emptyMarkerMap,
@@ -45,10 +44,6 @@
 
   let blackName = $state(gameData?.blackName ?? 'Black');
   let whiteName = $state(gameData?.whiteName ?? 'White');
-
-  let boardContainerWidth = $state(0);
-  let boardContainerHeight = $state(0);
-  const vertexSize = $derived(computeVertexSize(boardContainerWidth, boardContainerHeight, SIZE));
 
   let fileInput;
 
@@ -179,25 +174,22 @@
   <div class="round__app">
     <div class="round__app__table"></div>
 
-    <div
-      class="round__app__board"
-      bind:clientWidth={boardContainerWidth}
-      bind:clientHeight={boardContainerHeight}
-    >
-      <GoBoard
-        signMap={analysis.signMap}
-        lastMove={analysis.currentNode?.lastMove}
-        animatedVertex={analysis.animatedVertex}
-        size={SIZE}
-        {vertexSize}
-        showCoords={boardSettings.showCoords}
-        currentSign={analysis.hoverSign}
-        markerMap={analysis.markerMap}
-        childrenMap={analysis.childrenMap}
-        areaMap={analysis.displayAreaMap}
-        deadStones={analysis.displayDeadStones}
-        onVertexClick={(x, y) => analysis.onVertexClick(x, y)}
-      />
+    <div class="round__app__board round__app__board--with-editbar">
+      <div class="round__app__board__inner">
+        <GoBoard
+          signMap={analysis.signMap}
+          lastMove={analysis.currentNode?.lastMove}
+          animatedVertex={analysis.animatedVertex}
+          size={SIZE}
+          showCoords={boardSettings.showCoords}
+          currentSign={analysis.hoverSign}
+          markerMap={analysis.markerMap}
+          childrenMap={analysis.childrenMap}
+          areaMap={analysis.displayAreaMap}
+          deadStones={analysis.displayDeadStones}
+          onVertexClick={(x, y) => analysis.onVertexClick(x, y)}
+        />
+      </div>
       <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
     </div>
 

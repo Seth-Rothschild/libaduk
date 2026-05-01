@@ -47,7 +47,7 @@
 /* -------------------------------------------------------------
    .round__app — board area + right sidebar grid
    col1 (default): vertical stack
-   col2 (≥500px):  board left | sidebar right, fixed height
+   col2 (≥750px):  board left | sidebar right, fixed height
    ------------------------------------------------------------- */
 
 .round__app {
@@ -55,7 +55,7 @@
   display: grid;
 }
 
-@media (max-width: 499px) {
+@media (max-width: 749px) {
   .round__app {
     grid-template-areas:
       'user-top'
@@ -88,7 +88,7 @@
   }
 }
 
-@media (min-width: 500px) {
+@media (min-width: 750px) {
   .round__app {
     grid-template-columns: minmax(0, 1fr) minmax(200px, 240px);
     grid-template-rows: auto auto 1fr 1fr auto auto auto auto;
@@ -126,7 +126,21 @@
   min-width: 0;
 }
 
-@media (min-width: 500px) {
+.round__app__board--with-editbar {
+  aspect-ratio: auto;
+}
+
+.round__app__board__inner {
+  aspect-ratio: 1;
+  width: 100%;
+  max-height: calc(100svh - 130px);
+}
+
+.round__app__board--with-editbar .round__app__board__inner {
+  max-height: calc(100svh - 162px);
+}
+
+@media (min-width: 750px) {
   .round__app__board {
     height: 100%;
     justify-content: center;
@@ -141,7 +155,7 @@
   display: none;
 }
 
-@media (min-width: 500px) {
+@media (min-width: 750px) {
   .round__app__table {
     display: block;
     grid-column: 2;
@@ -517,7 +531,7 @@ html.light .color-icon.white::before {
 }
 
 /* Mobile: clock overlaps player strip, floats to end */
-@media (max-width: 499px) {
+@media (max-width: 749px) {
   .rclock {
     justify-self: flex-end;
     z-index: 1;
@@ -525,7 +539,7 @@ html.light .color-icon.white::before {
 }
 
 /* Tablet+: spans full width with turn label on one side */
-@media (min-width: 500px) {
+@media (min-width: 750px) {
   .rclock {
     justify-content: space-between;
   }
@@ -555,7 +569,7 @@ html.light .color-icon.white::before {
   font-size: 2.3em;
 }
 
-@media (max-width: 499px) {
+@media (max-width: 749px) {
   .rclock .time {
     border-radius: 0;
     box-shadow: none;
@@ -563,7 +577,7 @@ html.light .color-icon.white::before {
   }
 }
 
-@media (min-width: 500px) {
+@media (min-width: 750px) {
   .rclock .time {
     align-items: flex-end;
     line-height: 1.2em;
@@ -577,7 +591,7 @@ html.light .color-icon.white::before {
   }
 }
 
-@media (min-width: 500px) and (min-height: 600px) {
+@media (min-width: 750px) and (min-height: 600px) {
   .rclock .time {
     font-size: 3.6em;
     letter-spacing: 0.12em;
@@ -594,7 +608,7 @@ html.light .color-icon.white::before {
   display: none;
 }
 
-@media (min-width: 500px) {
+@media (min-width: 750px) {
   .rclock .bar {
     display: block;
     position: absolute;
@@ -1238,7 +1252,7 @@ html.light .color-icon.white::before {
 /* -------------------------------------------------------------
    .puzzle — page grid
    col1 (default): stacked — board, controls, tools, session, side
-   col2 (≥500px):  board+session left, tools+controls right
+   col2 (≥750px):  board+session left, tools+controls right
    col3 (≥800px):  side | board+session | tools+controls
    ------------------------------------------------------------- */
 

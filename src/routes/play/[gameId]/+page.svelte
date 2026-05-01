@@ -20,7 +20,6 @@
   import EditBar from '$lib/game/EditBar.svelte';
   import GameGraph from '$lib/game/GameGraph.svelte';
   import JoinGameModal from '$lib/game/JoinGameModal.svelte';
-  import { computeVertexSize } from '$lib/game/layout.js';
   import {
     colorName,
     computeScore,
@@ -49,8 +48,6 @@
   const gameId = $derived(page.params.gameId);
   const isOgs = $derived(data.game.gameType === 'ogs');
 
-  let boardContainerWidth = $state(0);
-  let boardContainerHeight = $state(0);
   let chatMessages = $state(data.chat ?? []);
   let chatHighlightVertex = $state(null);
   let blackName = $state(data.game.blackName ?? null);
@@ -78,9 +75,6 @@
 
   let gs = $state(new GameState());
 
-  const vertexSize = $derived(
-    computeVertexSize(boardContainerWidth, boardContainerHeight, gs.boardSize)
-  );
   const displayBoard = $derived(gs.viewBoard);
   const signMap = $derived(displayBoard.signMap);
   const blackCaptures = $derived(displayBoard.getCaptures(1));
@@ -744,48 +738,46 @@
   <div class="round__app">
     <div class="round__app__table"></div>
 
-    <div
-      class="round__app__board"
-      bind:clientWidth={boardContainerWidth}
-      bind:clientHeight={boardContainerHeight}
-    >
+    <div class="round__app__board" class:round__app__board--with-editbar={analysisMode}>
+      <div class="round__app__board__inner">
+        {#if analysisMode}
+          <GoBoard
+            signMap={analysis.signMap}
+            lastMove={analysis.currentNode?.lastMove}
+            animatedVertex={analysis.animatedVertex}
+            size={gs.boardSize}
+            showCoords={boardSettings.showCoords}
+            currentSign={analysis.currentSign}
+            childrenMap={analysis.childrenMap}
+            markerMap={analysis.markerMap}
+            areaMap={analysis.displayAreaMap}
+            deadStones={analysis.displayDeadStones}
+            highlightVertex={chatHighlightVertex}
+            onVertexClick={(x, y) => onAnalysisVertexClick(x, y)}
+          />
+        {:else}
+          <GoBoard
+            {signMap}
+            lastMove={gs.viewLastMove}
+            shiftMap={boardSettings.fuzzyPlacement ? gs.viewShiftMap : null}
+            animatedVertex={gs.isViewingHistory ? null : gs.animatedVertex}
+            size={gs.boardSize}
+            {areaMap}
+            deadStones={displayDeadStones}
+            showCoords={boardSettings.showCoords}
+            currentSign={gs.currentSign}
+            interactive={isMyTurn || gs.status === 'scoring'}
+            highlightVertex={chatHighlightVertex}
+            pendingVertex={pendingMove}
+            onVertexClick={!gs.isViewingHistory &&
+            (gs.status === 'playing' || gs.status === 'scoring')
+              ? onVertexClick
+              : null}
+          />
+        {/if}
+      </div>
       {#if analysisMode}
-        <GoBoard
-          signMap={analysis.signMap}
-          lastMove={analysis.currentNode?.lastMove}
-          animatedVertex={analysis.animatedVertex}
-          size={gs.boardSize}
-          {vertexSize}
-          showCoords={boardSettings.showCoords}
-          currentSign={analysis.currentSign}
-          childrenMap={analysis.childrenMap}
-          markerMap={analysis.markerMap}
-          areaMap={analysis.displayAreaMap}
-          deadStones={analysis.displayDeadStones}
-          highlightVertex={chatHighlightVertex}
-          onVertexClick={(x, y) => onAnalysisVertexClick(x, y)}
-        />
         <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
-      {:else}
-        <GoBoard
-          {signMap}
-          lastMove={gs.viewLastMove}
-          shiftMap={boardSettings.fuzzyPlacement ? gs.viewShiftMap : null}
-          animatedVertex={gs.isViewingHistory ? null : gs.animatedVertex}
-          size={gs.boardSize}
-          {vertexSize}
-          {areaMap}
-          deadStones={displayDeadStones}
-          showCoords={boardSettings.showCoords}
-          currentSign={gs.currentSign}
-          interactive={isMyTurn || gs.status === 'scoring'}
-          highlightVertex={chatHighlightVertex}
-          pendingVertex={pendingMove}
-          onVertexClick={!gs.isViewingHistory &&
-          (gs.status === 'playing' || gs.status === 'scoring')
-            ? onVertexClick
-            : null}
-        />
       {/if}
     </div>
 

@@ -11,22 +11,6 @@
   const whiteToMove = $derived(ogsLiveGame.clock?.activeColor === 'white');
   const blackToMove = $derived(ogsLiveGame.clock?.activeColor === 'black');
 
-  const vertexSize = 12;
-  const boardPx = $derived(Math.round((size + 0.8) * vertexSize));
-
-  let containerEl = $state(null);
-  let scale = $state(1);
-
-  $effect(() => {
-    if (!containerEl) return;
-    const observer = new ResizeObserver((entries) => {
-      const width = entries[0].contentRect.width;
-      scale = width / boardPx;
-    });
-    observer.observe(containerEl);
-    return () => observer.disconnect();
-  });
-
   function formatClock(time) {
     if (!time) return '--:--';
     if (time.inByoYomi) {
@@ -52,24 +36,14 @@
     >
   </div>
 
-  <div class="lobby__top-game__board" bind:this={containerEl}>
-    <a href="/tv">
-      <div
-        style="transform: scale({scale}); transform-origin: top left; width: {boardPx}px; height: {boardPx}px;"
-      >
+  <div class="lobby__top-game__board-wrap">
+    <div class="lobby__top-game__board">
+      <a href="/tv">
         {#if signMap.length}
-          <GoBoard
-            {signMap}
-            {size}
-            {vertexSize}
-            {shiftMap}
-            {lastMove}
-            {animatedVertex}
-            interactive={false}
-          />
+          <GoBoard {signMap} {size} {shiftMap} {lastMove} {animatedVertex} interactive={false} />
         {/if}
-      </div>
-    </a>
+      </a>
+    </div>
   </div>
   <div class="lobby__top-game__player">
     <span class="text"

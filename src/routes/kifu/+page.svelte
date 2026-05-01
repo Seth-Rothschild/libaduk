@@ -9,7 +9,6 @@
     sgfNodeComment,
     emptyMarkerMap
   } from '$lib/game/board';
-  import { computeVertexSize } from '$lib/game/layout.js';
 
   let size = $state(19);
 
@@ -17,10 +16,6 @@
   let whiteName = $state('');
   let notes = $state('');
   let moves = $state([]);
-
-  let boardContainerWidth = $state(0);
-  let boardContainerHeight = $state(0);
-  const vertexSize = $derived(computeVertexSize(boardContainerWidth, boardContainerHeight, size));
 
   const gameState = $derived.by(() => buildGameState(moves, size));
   const currentSign = $derived(moves.length % 2 === 0 ? 1 : -1);
@@ -177,16 +172,11 @@
 </script>
 
 <div class="kifu">
-  <div
-    class="kifu__board"
-    bind:clientWidth={boardContainerWidth}
-    bind:clientHeight={boardContainerHeight}
-  >
+  <div class="kifu__board">
     <GoBoard
       signMap={gameState.displaySignMap}
       markerMap={gameState.markerMap}
       {size}
-      {vertexSize}
       showCoords={true}
       {currentSign}
       {highlightVertex}

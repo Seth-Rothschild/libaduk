@@ -11,7 +11,6 @@
     setAutoNext
   } from '$lib/game/puzzleSession.svelte.js';
   import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
-  import { computeVertexSize } from '$lib/game/layout.js';
   import { onMount } from 'svelte';
 
   let { data } = $props();
@@ -27,12 +26,6 @@
   });
 
   startChip(data.puzzle.id);
-
-  let boardContainerWidth = $state(0);
-  let boardContainerHeight = $state(0);
-  const vertexSize = $derived(
-    computeVertexSize(boardContainerWidth, boardContainerHeight, puzzle.size)
-  );
 
   const chips = $derived(getChips());
 
@@ -176,18 +169,13 @@
   </aside>
 
   <!-- CENTER: board -->
-  <div
-    class="puzzle__board main-board"
-    bind:clientWidth={boardContainerWidth}
-    bind:clientHeight={boardContainerHeight}
-  >
+  <div class="puzzle__board main-board">
     <GoBoard
       signMap={puzzle.signMap}
       lastMove={puzzle.lastMove}
       shiftMap={boardSettings.fuzzyPlacement ? puzzle.shiftMap : null}
       animatedVertex={puzzle.animatedVertex}
       size={puzzle.size}
-      {vertexSize}
       showCoords={boardSettings.showCoords}
       currentSign={puzzle.currentSign}
       onVertexClick={(x, y) => puzzle.onVertexClick(x, y)}

@@ -11,7 +11,6 @@
   import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
   import { getGuestId } from '$lib/state/guestId.js';
   import { getMe } from '$lib/state/user.svelte.js';
-  import { computeVertexSize } from '$lib/game/layout.js';
   import { ogsLiveGame } from '$lib/lobby/ogsLiveGame.svelte.js';
   import { formatOgsRank } from '$lib/lobby/ogsSeekGraph.svelte.js';
   import { replayMoves } from '$lib/game/board/board.js';
@@ -43,8 +42,6 @@
   const username = $derived(getMe()?.username ?? '');
   const displayName = $derived(username || getGuestId());
 
-  let boardContainerWidth = $state(0);
-  let boardContainerHeight = $state(0);
   let chatMessages = $state([]);
   let chatViewers = $state([]);
   let chatHighlightVertex = $state(null);
@@ -65,9 +62,6 @@
     return m && m.x >= 0 ? [m.x, m.y] : null;
   });
   const signMap = $derived(displayBoard?.signMap ?? []);
-  const vertexSize = $derived(
-    computeVertexSize(boardContainerWidth, boardContainerHeight, boardSize)
-  );
 
   function nameWithRank(player) {
     if (!player?.username) return null;
@@ -297,11 +291,7 @@
   <div class="round__app">
     <div class="round__app__table"></div>
 
-    <div
-      class="round__app__board"
-      bind:clientWidth={boardContainerWidth}
-      bind:clientHeight={boardContainerHeight}
-    >
+    <div class="round__app__board">
       {#if displayBoard}
         <GoBoard
           {signMap}
@@ -309,7 +299,6 @@
           shiftMap={boardSettings.fuzzyPlacement ? ogsLiveGame.shiftMap : null}
           animatedVertex={ogsLiveGame.animatedVertex}
           size={boardSize}
-          {vertexSize}
           showCoords={boardSettings.showCoords}
           interactive={false}
           onVertexClick={null}

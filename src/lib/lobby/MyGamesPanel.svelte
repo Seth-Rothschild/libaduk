@@ -17,10 +17,6 @@
     return replayMoves(game.moves, size, initialBoard).signMap;
   }
 
-  function miniVertexSize(boardGridSize) {
-    return Math.floor(160 / (boardGridSize + 0.8));
-  }
-
   function lastMove(moves) {
     const last = moves.at(-1);
     if (!last || last.type === 'pass') return null;
@@ -35,7 +31,6 @@
         <GoBoard
           signMap={signMapForGame(game)}
           size={game.size ?? 19}
-          vertexSize={miniVertexSize(game.size ?? 19)}
           lastMove={lastMove(game.moves)}
           interactive={false}
         />
