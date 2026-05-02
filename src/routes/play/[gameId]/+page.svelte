@@ -14,6 +14,7 @@
   import { gameSocket } from '$lib/state/socket.svelte.js';
   import GameChat from '$lib/game/GameChat.svelte';
   import GameMeta from '$lib/game/GameMeta.svelte';
+  import AnalysisInfo from '$lib/game/AnalysisInfo.svelte';
   import GameStatusMessage from '$lib/game/GameStatusMessage.svelte';
   import AnalysisControls from '$lib/game/AnalysisControls.svelte';
   import AnalysisMoves from '$lib/game/AnalysisMoves.svelte';
@@ -727,6 +728,19 @@
       gameUrl={page.url.href}
       ogsGameId={data.game.ogsGameId}
     />
+    {#if analysisMode}
+      <AnalysisInfo
+        blackCaptures={analysis.blackCaptures}
+        whiteCaptures={analysis.whiteCaptures}
+        currentNode={analysis.currentNode}
+        boardSize={gs.boardSize}
+        comment={analysis.currentComment}
+        onCommentChange={(text) => {
+          analysis.setComment(text);
+          persistAnalysisTree();
+        }}
+      />
+    {/if}
     <GameChat
       {username}
       {gameId}

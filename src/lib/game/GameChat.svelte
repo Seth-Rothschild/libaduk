@@ -164,7 +164,7 @@
       </ol>
       <input
         class="mchat__say"
-        placeholder="Talk in chat"
+        placeholder="Please be nice in the chat!"
         aria-label="Chat message"
         bind:value={inputText}
         onkeydown={handleKeydown}
