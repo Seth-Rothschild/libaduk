@@ -1,4 +1,8 @@
 <script>
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { page } from '$app/state';
+  import { getMe } from '$lib/state/user.svelte.js';
   import GoBoard from '$lib/game/GoBoard.svelte';
   import {
     createBoard,
@@ -10,8 +14,9 @@
     emptyMarkerMap
   } from '$lib/game/board';
 
-  let size = $state(19);
+  const gameId = $derived(page.params.gameId ?? null);
 
+  let size = $state(19);
   let blackName = $state('');
   let whiteName = $state('');
   let notes = $state('');
@@ -38,6 +43,22 @@
   }
   function navLast() {
     if (moves.length > 0) cursor = moves.length;
+  }
+
+  function loadMovesFromGame(game) {
+    const dbMoves = game.moves ?? [];
+    const result = [];
+    let sign = 1;
+    for (const m of dbMoves) {
+      if (m.type === 'pass') {
+        sign = sign === 1 ? -1 : 1;
+        continue;
+      }
+      if (m.x == null || m.y == null) continue;
+      result.push({ x: m.x, y: m.y, sign, number: result.length + 1 });
+      sign = sign === 1 ? -1 : 1;
+    }
+    return result;
   }
 
   function buildGameState(moves, size) {
@@ -81,16 +102,45 @@
       const line = `${newNumber} is at ${previousNumber}`;
       notes = notes ? `${notes}\n${line}` : line;
     }
-    moves = [...moves, { x, y, sign: currentSign, number: newNumber }];
+    const updatedMoves = [...moves, { x, y, sign: currentSign, number: newNumber }];
+    moves = updatedMoves;
+    if (gameId) syncMoves(updatedMoves);
   }
 
   function undo() {
     if (moves.length === 0) return;
-    moves = moves.slice(0, -1);
+    const updatedMoves = moves.slice(0, -1);
+    moves = updatedMoves;
     if (cursor > moves.length) cursor = moves.length;
+    if (gameId) syncMoves(updatedMoves);
   }
 
-  let fileInput;
+  async function syncMoves(updatedMoves) {
+    const dbMoves = updatedMoves.map(({ x, y }) => ({ type: 'move', x, y }));
+    await fetch('/api/game/moves', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId, moves: dbMoves })
+    });
+  }
+
+  async function createGameRecord() {
+    const dbMoves = moves.map(({ x, y }) => ({ type: 'move', x, y }));
+    const res = await fetch('/api/game/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        moves: dbMoves,
+        blackName,
+        whiteName,
+        size,
+        komi: 6.5,
+        username: getMe()?.username ?? null
+      })
+    });
+    const { id } = await res.json();
+    goto(`/kifu/${id}`);
+  }
 
   function buildSgfTree(moves, size, comment) {
     const root = {
@@ -128,6 +178,8 @@
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  let fileInput;
 
   function importSgfFile(e) {
     const file = e.target.files[0];
@@ -169,6 +221,17 @@
     moves = newMoves;
     cursor = 0;
   }
+
+  onMount(async () => {
+    if (!gameId) return;
+    const res = await fetch(`/api/game/${gameId}`);
+    if (!res.ok) return;
+    const game = await res.json();
+    size = game.size ?? 19;
+    blackName = game.blackName ?? '';
+    whiteName = game.whiteName ?? '';
+    moves = loadMovesFromGame(game);
+  });
 </script>
 
 <div class="kifu">
@@ -207,7 +270,10 @@
     ></button>
     <button onclick={undo} disabled={moves.length === 0}>Undo</button>
     <button onclick={downloadSgf} disabled={moves.length === 0}>Download SGF</button>
-    <button onclick={() => fileInput.click()}>Upload SGF</button>
+    {#if !gameId}
+      <button onclick={() => fileInput.click()}>Upload SGF</button>
+      <button onclick={createGameRecord} disabled={moves.length === 0}>Create game record</button>
+    {/if}
     <span>Move {moves.length}</span>
   </div>
   <div class="kifu__names">
@@ -224,10 +290,12 @@
   <textarea class="kifu__notes" placeholder="Notes..." bind:value={notes}></textarea>
 </div>
 
-<input
-  type="file"
-  accept=".sgf"
-  style="display: none"
-  bind:this={fileInput}
-  onchange={importSgfFile}
-/>
+{#if !gameId}
+  <input
+    type="file"
+    accept=".sgf"
+    style="display: none"
+    bind:this={fileInput}
+    onchange={importSgfFile}
+  />
+{/if}
