@@ -14,6 +14,7 @@
     makeAnalysisNode,
     getAnalysisMoveName
   } from '$lib/game/analysisState.svelte.js';
+  import { MemorizeState } from '$lib/game/memorizeState.svelte.js';
   import { page } from '$app/state';
   import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
   import {
@@ -46,6 +47,8 @@
   let whiteName = $state(gameData?.whiteName ?? 'White');
 
   let fileInput;
+
+  const memorize = new MemorizeState(analysis, SIZE);
 
   function downloadSgf() {
     const sgf = exportSgf(analysis.root, SIZE, { playerBlack: blackName, playerWhite: whiteName });
@@ -141,6 +144,7 @@
       ArrowLeft: 'prev-variation',
       ArrowRight: 'next-variation'
     };
+    if (memorize.active) return;
     const action = keyMap[e.key];
     if (action) {
       e.preventDefault();
@@ -174,7 +178,7 @@
   <div class="round__app">
     <div class="round__app__table"></div>
 
-    <div class="round__app__board round__app__board--with-editbar">
+    <div class="round__app__board" class:round__app__board--with-editbar={!memorize.active}>
       <div class="round__app__board__inner">
         <GoBoard
           signMap={analysis.signMap}
@@ -183,14 +187,17 @@
           size={SIZE}
           showCoords={boardSettings.showCoords}
           currentSign={analysis.hoverSign}
-          markerMap={analysis.markerMap}
-          childrenMap={analysis.childrenMap}
+          markerMap={memorize.markerMap}
+          childrenMap={memorize.active ? null : analysis.childrenMap}
           areaMap={analysis.displayAreaMap}
           deadStones={analysis.displayDeadStones}
-          onVertexClick={(x, y) => analysis.onVertexClick(x, y)}
+          onVertexClick={(x, y) =>
+            memorize.active ? memorize.click(x, y) : analysis.onVertexClick(x, y)}
         />
       </div>
-      <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
+      {#if !memorize.active}
+        <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
+      {/if}
     </div>
 
     <PlayerStrip color="white" name={whiteName} position="top" />
@@ -200,12 +207,14 @@
         analysisMoveRows={analysis.moveRows}
         analysisNode={analysis.currentNode}
         boardSize={SIZE}
-        onSelectNode={(node) => {
-          analysis.currentNode = node;
-          analysis.animatedVertex = null;
-        }}
+        onSelectNode={memorize.active
+          ? null
+          : (node) => {
+              analysis.currentNode = node;
+              analysis.animatedVertex = null;
+            }}
       />
-      {#if analysis.variationCount > 1}
+      {#if analysis.variationCount > 1 && !memorize.active}
         <div class="variation-nav">
           Variation {analysis.variationIndex + 1} of {analysis.variationCount}
           <button
@@ -222,41 +231,71 @@
       {/if}
     </div>
 
-    <div class="rgraph">
-      <GameGraph
-        root={analysis.root}
-        currentNode={analysis.currentNode}
-        version={analysis.version}
-        onSelectNode={(node) => {
-          analysis.currentNode = node;
-          analysis.animatedVertex = null;
-        }}
-      />
-    </div>
+    {#if !memorize.active}
+      <div class="rgraph">
+        <GameGraph
+          root={analysis.root}
+          currentNode={analysis.currentNode}
+          version={analysis.version}
+          onSelectNode={(node) => {
+            analysis.currentNode = node;
+            analysis.animatedVertex = null;
+          }}
+        />
+      </div>
+    {/if}
 
     <div class="rcontrols">
-      <AnalysisControls
-        status={analysis.status}
-        score={analysis.score}
-        estimatedScore={analysis.estimatedScore}
-        showEstimate={analysis.showEstimate}
-        onStartScoring={() => analysis.startScoring()}
-        onStopScoring={() => analysis.stopScoring()}
-        onToggleEstimate={() => (analysis.showEstimate = !analysis.showEstimate)}
-        onClear={clearBoard}
-        onDownloadSgf={downloadSgf}
-        onImportSgf={() => fileInput.click()}
-      />
+      {#if memorize.active}
+        <div
+          class="memorize-status"
+          class:flash-correct={memorize.flash === 'correct'}
+          class:flash-wrong={memorize.flash === 'wrong'}
+        >
+          {#if memorize.done}
+            Done — {memorize.total} moves
+          {:else}
+            Move {memorize.index + 1} / {memorize.total}
+            {#if memorize.hintText}<span class="hint-text">· {memorize.hintText}</span>{/if}
+          {/if}
+        </div>
+        <fieldset class="hint-fieldset">
+          <legend>Hint</legend>
+          <div class="hint-buttons">
+            <button class="hint-btn" onclick={() => memorize.applyHint('quadrant')}>Quadrant</button>
+            <button class="hint-btn" onclick={() => memorize.applyHint('grid16')}>16</button>
+            <button class="hint-btn" onclick={() => memorize.applyHint('grid9')}>9</button>
+            <button class="hint-btn" onclick={() => memorize.applyHint('grid4')}>4</button>
+          </div>
+        </fieldset>
+        <button class="button button-metal" onclick={() => memorize.exit()}>Back to game</button>
+      {:else}
+        <AnalysisControls
+          status={analysis.status}
+          score={analysis.score}
+          estimatedScore={analysis.estimatedScore}
+          showEstimate={analysis.showEstimate}
+          onStartScoring={() => analysis.startScoring()}
+          onStopScoring={() => analysis.stopScoring()}
+          onToggleEstimate={() => (analysis.showEstimate = !analysis.showEstimate)}
+          onClear={clearBoard}
+          onDownloadSgf={downloadSgf}
+          onImportSgf={() => fileInput.click()}
+        />
+        <button class="button button-metal" onclick={() => memorize.enter()}>Memorize</button>
+      {/if}
     </div>
 
-    <NavigationButtons
-      canPrev={analysis.canGoPrev}
-      canNext={analysis.canGoNext}
-      onFirst={() => analysis.navigate('first')}
-      onPrev={() => analysis.navigate('prev')}
-      onNext={() => analysis.navigate('next')}
-      onLast={() => analysis.navigate('last')}
-    />
+    {#if !memorize.active}
+      <NavigationButtons
+        canPrev={analysis.canGoPrev}
+        canNext={analysis.canGoNext}
+        onFirst={() => analysis.navigate('first')}
+        onPrev={() => analysis.navigate('prev')}
+        onNext={() => analysis.navigate('next')}
+        onLast={() => analysis.navigate('last')}
+      />
+    {/if}
 
     <PlayerStrip color="black" name={blackName} position="bottom" active={true} />
   </div>
@@ -305,5 +344,77 @@
   .var-nav-btn[disabled] {
     opacity: 0.4;
     cursor: default;
+  }
+
+  .hint-fieldset {
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    margin: 0.4em;
+    padding: 0 0.4em 0.4em;
+  }
+
+  .hint-fieldset legend {
+    padding: 0 0.3em;
+    font-size: 0.75em;
+    color: var(--c-font-dim);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .hint-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em;
+  }
+
+  .hint-btn {
+    flex: 1;
+    padding: 0.35em 0.5em;
+    font-size: 0.8em;
+    font-weight: 600;
+    background: var(--c-bg-zebra);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    color: var(--c-font);
+    cursor: pointer;
+    transition:
+      background 0.1s,
+      border-color 0.1s;
+    white-space: nowrap;
+  }
+
+  .hint-btn:hover {
+    background: var(--c-accent, #5c8a5c);
+    border-color: var(--c-accent, #5c8a5c);
+    color: #fff;
+  }
+
+  .hint-text {
+    color: var(--c-font-dim);
+    font-style: italic;
+  }
+
+  .memorize-status {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    padding: 0.4em 0.6em;
+    font-size: 0.85em;
+    color: var(--c-font);
+    background: var(--c-bg-zebra);
+    border-radius: 3px;
+    margin: 0.3em 0.4em;
+    transition: background 0.15s;
+  }
+
+  .memorize-status.flash-correct {
+    background: #2d6a2d;
+    color: #fff;
+  }
+
+  .memorize-status.flash-wrong {
+    background: #7a2020;
+    color: #fff;
   }
 </style>
