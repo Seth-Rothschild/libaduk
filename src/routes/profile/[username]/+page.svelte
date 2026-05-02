@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import GoBoard from '$lib/game/GoBoard.svelte';
   import { replayMoves, placeStones, createBoard } from '$lib/game/board';
+  import { getMe } from '$lib/state/user.svelte.js';
 
   let { data } = $props();
 
@@ -168,6 +169,22 @@
   let activeCategory = $state(null);
   let activeResult = $state('all');
   let view = $state('games');
+  let deletedGameIds = $state(new Set());
+
+  const isOwnProfile = $derived(getMe()?.username === data.profile.username);
+  const serverGames = $derived(data.games.filter((g) => g.gameType !== 'uploaded'));
+  const uploadedGames = $derived(
+    data.games.filter((g) => g.gameType === 'uploaded' && !deletedGameIds.has(g.id))
+  );
+
+  async function deleteUploadedGame(gameId) {
+    deletedGameIds = new Set([...deletedGameIds, gameId]);
+    await fetch('/api/game/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId })
+    });
+  }
 
   function utcDayKey(ts) {
     const d = new Date(ts);
@@ -199,7 +216,7 @@
     return game.winner === myGameColor(game);
   }
 
-  const timeline = $derived(buildTimeline(data.games, data.attempts));
+  const timeline = $derived(buildTimeline(serverGames, data.attempts));
 
   function buildTimeline(games, attempts) {
     const dayMap = new Map();
@@ -237,14 +254,14 @@
   const categoryCounts = $derived(
     CATEGORIES.map((cat) => ({
       ...cat,
-      count: data.games.filter((g) => cat.match(g.timeControl)).length
+      count: serverGames.filter((g) => cat.match(g.timeControl)).length
     }))
   );
 
   const categoryGames = $derived(
     activeCategory === null
-      ? data.games
-      : data.games.filter((g) => activeCategory.match(g.timeControl))
+      ? serverGames
+      : serverGames.filter((g) => activeCategory.match(g.timeControl))
   );
 
   const totalGames = $derived(categoryGames.length);
@@ -337,54 +354,90 @@
           class:active={activeResult === 'losses'}
           onclick={() => (activeResult = 'losses')}><strong>{losses}</strong> Losses</span
         >
+        <span
+          class="nm-item"
+          class:active={activeResult === 'imported'}
+          onclick={() => (activeResult = 'imported')}
+          ><strong>{uploadedGames.length}</strong> Imported</span
+        >
       </div>
 
       <div class="games">
-        {#each visibleGames as game}
-          {@const size = game.size ?? 19}
-          <article class="game-row">
-            <a class="game-row__overlay" href="/play/{game.id}"></a>
-            <div class="game-row__board mini-board" style="margin-right: 14px;">
-              <GoBoard signMap={signMapForGame(game)} {size} />
-            </div>
-            <div class="game-row__infos">
-              <div class="header" data-icon={gameIcon(game.timeControl)}>
-                <div class="header__text">
-                  <strong
-                    >{formatClock(game.timeControl)} • {gameLabel(game.timeControl)} • {game.size} x {game.size}</strong
-                  >
-                  <span>{formatDate(game.createdAt)}</span>
+        {#if activeResult === 'imported'}
+          {#each uploadedGames as game}
+            {@const size = game.size ?? 19}
+            <article class="game-row">
+              <a class="game-row__overlay" href="/play/{game.id}"></a>
+              <div class="game-row__board mini-board" style="margin-right: 14px;">
+                <GoBoard signMap={signMapForGame(game)} {size} />
+              </div>
+              <div class="game-row__infos">
+                <div class="header">
+                  <div class="header__text">
+                    <strong>{game.blackName} vs {game.whiteName} • {size}×{size}</strong>
+                    <span>{formatDate(game.createdAt)}</span>
+                  </div>
                 </div>
+                <div class="result"><span>Imported</span></div>
               </div>
-              <div class="versus">
-                <div class="player white">
-                  {#if isLinkable(game.whiteName, game.gameType)}
-                    <a href="/profile/{game.whiteName}">{game.whiteName}</a>
-                  {:else}
-                    <span>{game.whiteName ?? 'Guest'}</span>
-                  {/if}
-                </div>
-                <div class="swords" data-icon="&#xe033;"></div>
-                <div class="player black">
-                  {#if isLinkable(game.blackName, game.gameType)}
-                    <a href="/profile/{game.blackName}">{game.blackName}</a>
-                  {:else}
-                    <span>{game.blackName ?? 'Guest'}</span>
-                  {/if}
-                </div>
-              </div>
-              <div class="result">
-                <span class={resultClass(game)}>{resultText(game)}</span>
-              </div>
-              <div class="opening">
-                <!-- <strong>{size}×{size}</strong> -->
-                <div class="pgn">{formatOpeningMoves(game.moves)}</div>
-              </div>
-            </div>
-          </article>
+              {#if isOwnProfile}
+                <button
+                  class="delete-btn"
+                  aria-label="Delete imported game"
+                  onclick={() => deleteUploadedGame(game.id)}>✕</button
+                >
+              {/if}
+            </article>
+          {:else}
+            <div class="no-games">No imported games yet.</div>
+          {/each}
         {:else}
-          <div class="no-games">No games yet.</div>
-        {/each}
+          {#each visibleGames as game}
+            {@const size = game.size ?? 19}
+            <article class="game-row">
+              <a class="game-row__overlay" href="/play/{game.id}"></a>
+              <div class="game-row__board mini-board" style="margin-right: 14px;">
+                <GoBoard signMap={signMapForGame(game)} {size} />
+              </div>
+              <div class="game-row__infos">
+                <div class="header" data-icon={gameIcon(game.timeControl)}>
+                  <div class="header__text">
+                    <strong
+                      >{formatClock(game.timeControl)} • {gameLabel(game.timeControl)} • {game.size} x
+                      {game.size}</strong
+                    >
+                    <span>{formatDate(game.createdAt)}</span>
+                  </div>
+                </div>
+                <div class="versus">
+                  <div class="player white">
+                    {#if isLinkable(game.whiteName, game.gameType)}
+                      <a href="/profile/{game.whiteName}">{game.whiteName}</a>
+                    {:else}
+                      <span>{game.whiteName ?? 'Guest'}</span>
+                    {/if}
+                  </div>
+                  <div class="swords" data-icon="&#xe033;"></div>
+                  <div class="player black">
+                    {#if isLinkable(game.blackName, game.gameType)}
+                      <a href="/profile/{game.blackName}">{game.blackName}</a>
+                    {:else}
+                      <span>{game.blackName ?? 'Guest'}</span>
+                    {/if}
+                  </div>
+                </div>
+                <div class="result">
+                  <span class={resultClass(game)}>{resultText(game)}</span>
+                </div>
+                <div class="opening">
+                  <div class="pgn">{formatOpeningMoves(game.moves)}</div>
+                </div>
+              </div>
+            </article>
+          {:else}
+            <div class="no-games">No games yet.</div>
+          {/each}
+        {/if}
       </div>
     {/if}
 

@@ -262,7 +262,8 @@
         <fieldset class="hint-fieldset">
           <legend>Hint</legend>
           <div class="hint-buttons">
-            <button class="hint-btn" onclick={() => memorize.applyHint('quadrant')}>Quadrant</button>
+            <button class="hint-btn" onclick={() => memorize.applyHint('quadrant')}>Quadrant</button
+            >
             <button class="hint-btn" onclick={() => memorize.applyHint('grid16')}>16</button>
             <button class="hint-btn" onclick={() => memorize.applyHint('grid9')}>9</button>
             <button class="hint-btn" onclick={() => memorize.applyHint('grid4')}>4</button>

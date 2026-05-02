@@ -410,6 +410,26 @@
    Profile page utilities
    ------------------------------------------------------------- */
 
+.delete-btn {
+  position: relative;
+  z-index: 3;
+  margin-left: auto;
+  padding: 0.3em 0.6em;
+  background: none;
+  border: 1px solid var(--c-border);
+  border-radius: 3px;
+  color: var(--c-font-dim);
+  cursor: pointer;
+  font-size: 0.85em;
+  flex-shrink: 0;
+}
+
+.delete-btn:hover {
+  background: var(--c-bad);
+  color: #fff;
+  border-color: var(--c-bad);
+}
+
 .no-games {
   padding: 2em;
   text-align: center;

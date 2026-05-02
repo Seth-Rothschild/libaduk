@@ -40,6 +40,7 @@
     <div role="group">
       <a href="/analysis" data-sveltekit-preload-data="off">Analysis board</a>
       <a href="/kifu" data-sveltekit-preload-data="off">Kifu</a>
+      <a href="/import">Import game</a>
     </div>
   </section>
 </nav>

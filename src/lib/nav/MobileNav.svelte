@@ -59,6 +59,7 @@
     <div role="group">
       <a href="/analysis" onclick={onClose}>Analysis board</a>
       <a href="/kifu" onclick={onClose}>Kifu</a>
+      <a href="/import" onclick={onClose}>Import game</a>
     </div>
   </section>
 </nav>

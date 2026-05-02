@@ -247,6 +247,16 @@ export async function addOwner(gameId, username) {
   }
 }
 
+export async function deleteGame(id) {
+  try {
+    const d = await getDb();
+    await d.collection('games').deleteOne({ _id: id });
+  } catch (err) {
+    console.error('[db] deleteGame failed:', err.message);
+    throw err;
+  }
+}
+
 export async function appendMove(id, moveEntry) {
   try {
     const d = await getDb();
