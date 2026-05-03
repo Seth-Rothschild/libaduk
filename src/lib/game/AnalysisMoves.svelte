@@ -55,6 +55,6 @@
       </tbody>
     </table>
   {:else}
-    <div class="analysis-empty">Click the board to start analyzing</div>
+    <div class="analysis-empty">No moves yet.</div>
   {/if}
 </div>

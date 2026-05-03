@@ -9,6 +9,7 @@ export class MemorizeState {
   active = $state(false);
   flash = $state(null);
   hintText = $state(null);
+  side = $state('both');
 
   markerMap = $derived.by(() => {
     const hint = this.#hintMarkers;
@@ -27,9 +28,10 @@ export class MemorizeState {
   }
 
   enter() {
-    this.#line = this.#mainLine(this.#analysis.root);
-    this.#index = 0;
-    this.#analysis.currentNode = this.#analysis.root;
+    const ancestors = this.#ancestors(this.#analysis.currentNode);
+    const descendants = this.#mainLine(this.#analysis.currentNode);
+    this.#line = [...ancestors, ...descendants];
+    this.#index = ancestors.length;
     this.#analysis.animatedVertex = null;
     this.#clearHints();
     this.active = true;
@@ -39,12 +41,30 @@ export class MemorizeState {
     this.active = false;
   }
 
+  prev() {
+    if (this.#index === 0) return;
+    this.#index--;
+    this.#analysis.currentNode =
+      this.#index === 0 ? this.#analysis.root : this.#line[this.#index - 1];
+    this.#analysis.animatedVertex = null;
+    this.#clearHints();
+  }
+
+  next() {
+    if (this.done) return;
+    this.#analysis.currentNode = this.#line[this.#index];
+    this.#analysis.animatedVertex = this.#line[this.#index].lastMove ?? null;
+    this.#index++;
+    this.#clearHints();
+  }
+
   click(x, y) {
     if (this.done) return;
     const expected = this.#line[this.#index];
     if (!expected.lastMove) {
       this.#analysis.currentNode = expected;
       this.#index++;
+      this.#autoPlayIfNeeded();
       return;
     }
     const [ex, ey] = expected.lastMove;
@@ -54,6 +74,7 @@ export class MemorizeState {
       this.#index++;
       this.#clearHints();
       this.#setFlash('correct');
+      this.#autoPlayIfNeeded();
     } else {
       this.#setFlash('wrong');
     }
@@ -83,6 +104,16 @@ export class MemorizeState {
     const labels = { grid16: '16 locations', grid9: '9 locations', grid4: '4 locations' };
     this.hintText = labels[type];
     this.#hintMarkers = this.#markerMap(this.#hintPool[pools[type]]);
+  }
+
+  #ancestors(node) {
+    const chain = [];
+    let current = node;
+    while (current.parent) {
+      chain.push(current);
+      current = current.parent;
+    }
+    return chain.reverse();
   }
 
   #mainLine(root) {
@@ -143,6 +174,28 @@ export class MemorizeState {
       .sort(() => Math.random() - 0.5)
       .slice(0, count - 1);
     return [...others, required].sort(() => Math.random() - 0.5);
+  }
+
+  #shouldAutoPlay(node) {
+    if (this.side === 'both') return false;
+    const moverSign = -node.signToPlay;
+    if (this.side === 'black') return moverSign === -1;
+    if (this.side === 'white') return moverSign === 1;
+    return false;
+  }
+
+  #autoPlayIfNeeded() {
+    if (this.done) return;
+    const next = this.#line[this.#index];
+    if (!this.#shouldAutoPlay(next)) return;
+    setTimeout(() => {
+      if (!this.active || this.done) return;
+      const node = this.#line[this.#index];
+      this.#analysis.currentNode = node;
+      if (node.lastMove) this.#analysis.animatedVertex = node.lastMove;
+      this.#index++;
+      this.#autoPlayIfNeeded();
+    }, 500);
   }
 
   #clearHints() {

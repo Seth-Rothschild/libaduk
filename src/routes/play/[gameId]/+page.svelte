@@ -11,12 +11,12 @@
   import { getMe } from '$lib/state/user.svelte.js';
   import { GameState } from '$lib/game/GameState.svelte.js';
   import { AnalysisState, serializeTree, getNodePath } from '$lib/game/analysisState.svelte.js';
+  import { MemorizeState } from '$lib/game/memorizeState.svelte.js';
   import { gameSocket } from '$lib/state/socket.svelte.js';
   import GameChat from '$lib/game/GameChat.svelte';
   import GameMeta from '$lib/game/GameMeta.svelte';
   import AnalysisInfo from '$lib/game/AnalysisInfo.svelte';
   import GameStatusMessage from '$lib/game/GameStatusMessage.svelte';
-  import AnalysisControls from '$lib/game/AnalysisControls.svelte';
   import AnalysisMoves from '$lib/game/AnalysisMoves.svelte';
   import EditBar from '$lib/game/EditBar.svelte';
   import GameGraph from '$lib/game/GameGraph.svelte';
@@ -277,6 +277,7 @@
   // --- Analysis mode ---
 
   let analysis = $state(null);
+  let memorize = $state(null);
   const analysisMode = $derived(analysis !== null);
 
   // Tracks the latest analysis tree. data.game.analysisTree is a page-load snapshot
@@ -297,6 +298,7 @@
   function enterAnalysisFromTree(tree, path = null) {
     analysis = new AnalysisState(gs.boardSize, komi);
     analysis.loadTree(tree, path);
+    memorize = new MemorizeState(analysis, gs.boardSize);
   }
 
   function enterAnalysisFromMoves() {
@@ -312,6 +314,7 @@
       }
     }
     analysis.loadMoves(moves, handicapStones);
+    memorize = new MemorizeState(analysis, gs.boardSize);
   }
 
   function enterAnalysis() {
@@ -344,6 +347,7 @@
     savedAnalysisTree = serializeTree(analysis.root);
     savedAnalysisPath = getNodePath(analysis.currentNode);
     analysis = null;
+    memorize = null;
     gameSocket.send({ type: 'analysis-exit' });
   }
 
@@ -530,6 +534,16 @@
   function handleKeydown(e) {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     if (analysisMode) {
+      if (memorize?.active) {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          memorize.prev();
+        } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          memorize.next();
+        }
+        return;
+      }
       const keyMap = {
         ArrowUp: 'prev',
         ArrowDown: 'next',
@@ -640,7 +654,7 @@
           analysis = null;
         }
         if (msg.type === 'analysis-tree' && analysis) {
-          if (analysis.status === 'scoring' || analysis.showEstimate) {
+          if (analysis.status === 'scoring' || analysis.showEstimate || memorize?.active) {
             pendingAnalysisTree = { tree: msg.tree, path: msg.path ?? null };
             return;
           }
@@ -766,12 +780,13 @@
             size={gs.boardSize}
             showCoords={boardSettings.showCoords}
             currentSign={analysis.currentSign}
-            childrenMap={analysis.childrenMap}
-            markerMap={analysis.markerMap}
+            childrenMap={memorize?.active ? null : analysis.childrenMap}
+            markerMap={memorize?.active ? memorize.markerMap : analysis.markerMap}
             areaMap={analysis.displayAreaMap}
             deadStones={analysis.displayDeadStones}
             highlightVertex={chatHighlightVertex}
-            onVertexClick={(x, y) => onAnalysisVertexClick(x, y)}
+            onVertexClick={(x, y) =>
+              memorize?.active ? memorize.click(x, y) : onAnalysisVertexClick(x, y)}
           />
         {:else}
           <GoBoard
@@ -795,7 +810,48 @@
         {/if}
       </div>
       {#if analysisMode}
-        <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
+        {#if memorize?.active}
+          <div
+            class="memorize-bar"
+            class:flash-correct={memorize.flash === 'correct'}
+            class:flash-wrong={memorize.flash === 'wrong'}
+          >
+            <span class="memorize-progress">
+              {#if memorize.done}
+                Done — {memorize.total} moves
+              {:else}
+                {memorize.index + 1} / {memorize.total}
+                {#if memorize.hintText}<span class="hint-text"> · {memorize.hintText}</span>{/if}
+              {/if}
+            </span>
+            <div class="memorize-side">
+              {#each ['both', 'black', 'white'] as s}
+                <button
+                  class="side-btn"
+                  class:side-btn--active={memorize.side === s}
+                  onclick={() => (memorize.side = s)}>{s}</button
+                >
+              {/each}
+            </div>
+            <div class="memorize-hints">
+              <button class="hint-btn" onclick={() => memorize.applyHint('quadrant')}
+                >Quadrant</button
+              >
+              <button class="hint-btn" onclick={() => memorize.applyHint('grid16')}>16</button>
+              <button class="hint-btn" onclick={() => memorize.applyHint('grid9')}>9</button>
+              <button class="hint-btn" onclick={() => memorize.applyHint('grid4')}>4</button>
+            </div>
+            <button
+              class="button button-metal"
+              onclick={() => {
+                memorize.exit();
+                flushPendingAnalysisTree();
+              }}>Exit</button
+            >
+          </div>
+        {:else}
+          <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
+        {/if}
       {/if}
     </div>
 
@@ -826,7 +882,7 @@
           analysisMoveRows={analysis.moveRows}
           analysisNode={analysis.currentNode}
           boardSize={gs.boardSize}
-          onSelectNode={navigateAnalysisTo}
+          onSelectNode={memorize?.active ? null : navigateAnalysisTo}
         />
       {:else}
         {#if gs.isViewingHistory}
@@ -856,7 +912,7 @@
       {/if}
     </div>
 
-    {#if analysisMode}
+    {#if analysisMode & !memorize?.active}
       <div class="rgraph">
         <GameGraph
           root={analysis.root}
@@ -869,23 +925,53 @@
 
     <div class="rcontrols">
       {#if analysisMode}
-        <AnalysisControls
-          status={analysis.status}
-          score={analysis.score}
-          estimatedScore={analysis.estimatedScore}
-          showEstimate={analysis.showEstimate}
-          onStartScoring={() => analysis.startScoring()}
-          onStopScoring={() => {
-            analysis.stopScoring();
-            flushPendingAnalysisTree();
-          }}
-          onToggleEstimate={() => {
-            analysis.showEstimate = !analysis.showEstimate;
-            flushPendingAnalysisTree();
-          }}
-          onDownloadSgf={downloadSgf}
-          onExit={exitAnalysis}
-        />
+        {#if !memorize?.active}
+          {#if analysis.status === 'scoring'}
+            <button
+              class="button button-green"
+              onclick={() => {
+                analysis.stopScoring();
+                flushPendingAnalysisTree();
+              }}>Back to analysis</button
+            >
+            {#if analysis.score}
+              <div class="score-display">
+                <span class="color-icon is black text">{analysis.score.blackArea}</span>
+                <span class="color-icon is white text">
+                  {analysis.score.whiteArea} + {komi} = {analysis.score.whiteScore.toFixed(1)}
+                </span>
+                <strong>{scoreVerdictShort(analysis.score)}</strong>
+              </div>
+            {/if}
+          {:else}
+            <button class="button button-metal" onclick={() => analysis.startScoring()}
+              >Score</button
+            >
+            <button
+              class="button"
+              class:button-green={analysis.showEstimate}
+              class:button-metal={!analysis.showEstimate}
+              onclick={() => {
+                analysis.showEstimate = !analysis.showEstimate;
+                flushPendingAnalysisTree();
+              }}>Estimate</button
+            >
+            <button class="button button-metal" onclick={downloadSgf}>Download SGF</button>
+            {#if analysis.estimatedScore}
+              <div class="score-display">
+                <span class="color-icon is black text">{analysis.estimatedScore.blackArea}</span>
+                <span class="color-icon is white text">
+                  {analysis.estimatedScore.whiteArea} + {komi} = {analysis.estimatedScore.whiteScore.toFixed(
+                    1
+                  )}
+                </span>
+                <strong>{scoreVerdictShort(analysis.estimatedScore)}</strong>
+              </div>
+            {/if}
+          {/if}
+          <button class="button button-metal" onclick={exitAnalysis}>Back to game</button>
+          <button class="button button-metal" onclick={() => memorize.enter()}>Memorize</button>
+        {/if}
       {:else}
         {#if !isSpectator && gs.status === 'waiting'}
           <button class="button button-red" onclick={cancel}>Cancel Game</button>
@@ -921,7 +1007,20 @@
       {/if}
     </div>
 
-    {#if analysisMode}
+    {#if memorize?.active}
+      <NavigationButtons
+        canPrev={memorize.index > 0}
+        canNext={!memorize.done}
+        onFirst={() => {
+          while (memorize.index > 0) memorize.prev();
+        }}
+        onPrev={() => memorize.prev()}
+        onNext={() => memorize.next()}
+        onLast={() => {
+          while (!memorize.done) memorize.next();
+        }}
+      />
+    {:else if analysisMode}
       <NavigationButtons
         canPrev={analysis.canGoPrev}
         canNext={analysis.canGoNext}
@@ -977,3 +1076,83 @@
 {#if showJoinModal}
   <JoinGameModal game={data.game} joinerName={displayName} onJoined={handleJoined} />
 {/if}
+
+<style>
+  .memorize-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.3em 0.5em;
+    background: var(--c-bg-zebra);
+    border-top: 1px solid var(--c-border);
+    transition: background 0.15s;
+    flex-wrap: wrap;
+  }
+
+  .memorize-bar.flash-correct {
+    background: #2d6a2d;
+    color: #fff;
+  }
+
+  .memorize-bar.flash-wrong {
+    background: #7a2020;
+    color: #fff;
+  }
+
+  .memorize-progress {
+    font-size: 0.85em;
+    min-width: 6em;
+  }
+
+  .hint-text {
+    color: var(--c-font-dim);
+    font-style: italic;
+  }
+
+  .memorize-side {
+    display: flex;
+    gap: 0.2em;
+  }
+
+  .side-btn {
+    flex: 1;
+    padding: 0.25em 0.5em;
+    font-size: 0.8em;
+    font-weight: 600;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: 3px;
+    color: var(--c-font-dim);
+    cursor: pointer;
+    text-transform: capitalize;
+  }
+
+  .side-btn--active {
+    background: var(--c-accent, #5c8a5c);
+    border-color: var(--c-accent, #5c8a5c);
+    color: #fff;
+  }
+
+  .memorize-hints {
+    display: flex;
+    gap: 0.3em;
+  }
+
+  .hint-btn {
+    flex: 1;
+    padding: 0.25em 0.4em;
+    font-size: 0.8em;
+    font-weight: 600;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: 3px;
+    color: var(--c-font);
+    cursor: pointer;
+  }
+
+  .hint-btn:hover {
+    background: var(--c-accent, #5c8a5c);
+    border-color: var(--c-accent, #5c8a5c);
+    color: #fff;
+  }
+</style>
