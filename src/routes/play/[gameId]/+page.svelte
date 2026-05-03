@@ -693,10 +693,6 @@
       const ogsToken = isOgs ? getOgsToken() : null;
       gameSocket.join(currentGameId, data.viewerColor ?? null, ogsToken);
 
-      if (data.game.gameType === 'uploaded' && data.game.analysisTree) {
-        enterAnalysisFromTree(data.game.analysisTree, data.game.analysisPath ?? null);
-      }
-
       if (data.game.gameType === 'ai') {
         initAiEngine();
       }

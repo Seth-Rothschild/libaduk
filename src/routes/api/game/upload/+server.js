@@ -19,7 +19,7 @@ export async function POST({ request }) {
     timeControl: { type: 'none' }
   });
 
-  await updateGame(id, { moves, analysisTree });
+  await updateGame(id, { moves, analysisTree, analysisActive: true });
 
   return json({ id });
 }
