@@ -55,10 +55,10 @@
     </div>
   </section>
   <section>
-    <a href="/analysis" onclick={onClose}>Tools</a>
+    <a href="/scratch" onclick={onClose}>Tools</a>
     <div role="group">
-      <a href="/analysis" onclick={onClose}>Analysis board</a>
-      <a href="/kifu" onclick={onClose}>Kifu</a>
+      <a href="/scratch" onclick={onClose}>Scratch board</a>
+      <a href="/kifu" onclick={onClose}>Create Kifu</a>
       <a href="/import" onclick={onClose}>Import game</a>
     </div>
   </section>

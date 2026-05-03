@@ -107,6 +107,12 @@
     if (gameId) syncMoves(updatedMoves);
   }
 
+  function changeSize(newSize) {
+    size = newSize;
+    moves = [];
+    cursor = 0;
+  }
+
   function undo() {
     if (moves.length === 0) return;
     const updatedMoves = moves.slice(0, -1);
@@ -277,6 +283,18 @@
     <span>Move {moves.length}</span>
   </div>
   <div class="kifu__names">
+    <label class="kifu__name">
+      <span>Size</span>
+      <select
+        value={size}
+        onchange={(e) => changeSize(Number(e.target.value))}
+        disabled={!!gameId || moves.length > 0}
+      >
+        <option value={9}>9×9</option>
+        <option value={13}>13×13</option>
+        <option value={19}>19×19</option>
+      </select>
+    </label>
     <label class="kifu__name">
       <span>Black</span>
       <input type="text" placeholder="player name" bind:value={blackName} />

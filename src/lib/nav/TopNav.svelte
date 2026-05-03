@@ -36,10 +36,10 @@
     </div>
   </section>
   <section>
-    <a href="/analysis" data-sveltekit-preload-data="off">Tools</a>
+    <a href="/scratch" data-sveltekit-preload-data="off">Tools</a>
     <div role="group">
-      <a href="/analysis" data-sveltekit-preload-data="off">Analysis board</a>
-      <a href="/kifu" data-sveltekit-preload-data="off">Kifu</a>
+      <a href="/scratch" data-sveltekit-preload-data="off">Scratch board</a>
+      <a href="/kifu" data-sveltekit-preload-data="off">Create Kifu</a>
       <a href="/import">Import game</a>
     </div>
   </section>
