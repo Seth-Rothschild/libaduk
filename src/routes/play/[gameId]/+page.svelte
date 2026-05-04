@@ -359,12 +359,25 @@
     gameSocket.send({ type: 'analysis-tree', tree, path });
   }
 
+  function analysisNavigate(action = null) {
+    if (analysis.status === 'scoring') analysis.stopScoring();
+    else if (analysis.showEstimate) analysis.showEstimate = false;
+    flushPendingAnalysisTree();
+    if (action) {
+      analysis.navigate(action);
+      persistAnalysisTree();
+    }
+  }
+
   function onAnalysisVertexClick(x, y) {
     analysis.onVertexClick(x, y);
     persistAnalysisTree();
   }
 
   function navigateAnalysisTo(node) {
+    if (analysis.status === 'scoring') analysis.stopScoring();
+    else if (analysis.showEstimate) analysis.showEstimate = false;
+    flushPendingAnalysisTree();
     analysis.currentNode = node;
     analysis.animatedVertex = null;
     persistAnalysisTree();
@@ -541,6 +554,21 @@
         } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
           e.preventDefault();
           memorize.next();
+        }
+        return;
+      }
+      if (analysis.status === 'scoring' || analysis.showEstimate) {
+        const isNavKey = [
+          'ArrowUp',
+          'ArrowDown',
+          'ArrowLeft',
+          'ArrowRight',
+          'Home',
+          'End'
+        ].includes(e.key);
+        if (isNavKey) {
+          e.preventDefault();
+          analysisNavigate();
         }
         return;
       }
@@ -845,6 +873,20 @@
               }}>Exit</button
             >
           </div>
+        {:else if analysis.status === 'scoring' || analysis.showEstimate}
+          <div class="score-bar">
+            <span class="score-bar__verdict">
+              {#if analysis.status === 'scoring' && analysis.score}
+                {scoreVerdictShort(analysis.score)}
+              {:else if analysis.showEstimate && analysis.estimatedScore}
+                {scoreVerdictShort(analysis.estimatedScore)}
+              {/if}
+            </span>
+            <span class="score-bar__label">
+              {analysis.status === 'scoring' ? 'Remove dead stones' : 'Toggle group status'}
+            </span>
+            <button class="score-bar__close" onclick={analysisNavigate}>✕</button>
+          </div>
         {:else}
           <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
         {/if}
@@ -923,13 +965,6 @@
       {#if analysisMode}
         {#if !memorize?.active}
           {#if analysis.status === 'scoring'}
-            <button
-              class="button button-green"
-              onclick={() => {
-                analysis.stopScoring();
-                flushPendingAnalysisTree();
-              }}>Back to analysis</button
-            >
             {#if analysis.score}
               <div class="score-display">
                 <span class="color-icon is black text">{analysis.score.blackArea}</span>
@@ -939,20 +974,7 @@
                 <strong>{scoreVerdictShort(analysis.score)}</strong>
               </div>
             {/if}
-          {:else}
-            <button class="button button-metal" onclick={() => analysis.startScoring()}
-              >Score</button
-            >
-            <button
-              class="button"
-              class:button-green={analysis.showEstimate}
-              class:button-metal={!analysis.showEstimate}
-              onclick={() => {
-                analysis.showEstimate = !analysis.showEstimate;
-                flushPendingAnalysisTree();
-              }}>Estimate</button
-            >
-            <button class="button button-metal" onclick={downloadSgf}>Download SGF</button>
+          {:else if analysis.showEstimate}
             {#if analysis.estimatedScore}
               <div class="score-display">
                 <span class="color-icon is black text">{analysis.estimatedScore.blackArea}</span>
@@ -964,9 +986,21 @@
                 <strong>{scoreVerdictShort(analysis.estimatedScore)}</strong>
               </div>
             {/if}
+          {:else}
+            <button class="button button-metal" onclick={() => analysis.startScoring()}
+              >Score</button
+            >
+            <button
+              class="button button-metal"
+              onclick={() => {
+                analysis.showEstimate = !analysis.showEstimate;
+                flushPendingAnalysisTree();
+              }}>Estimate</button
+            >
+            <button class="button button-metal" onclick={downloadSgf}>Download SGF</button>
+            <button class="button button-metal" onclick={exitAnalysis}>Back to game</button>
+            <button class="button button-metal" onclick={() => memorize.enter()}>Memorize</button>
           {/if}
-          <button class="button button-metal" onclick={exitAnalysis}>Back to game</button>
-          <button class="button button-metal" onclick={() => memorize.enter()}>Memorize</button>
         {/if}
       {:else}
         {#if !isSpectator && gs.status === 'waiting'}
@@ -1020,22 +1054,10 @@
       <NavigationButtons
         canPrev={analysis.canGoPrev}
         canNext={analysis.canGoNext}
-        onFirst={() => {
-          analysis.navigate('first');
-          persistAnalysisTree();
-        }}
-        onPrev={() => {
-          analysis.navigate('prev');
-          persistAnalysisTree();
-        }}
-        onNext={() => {
-          analysis.navigate('next');
-          persistAnalysisTree();
-        }}
-        onLast={() => {
-          analysis.navigate('last');
-          persistAnalysisTree();
-        }}
+        onFirst={() => analysisNavigate('first')}
+        onPrev={() => analysisNavigate('prev')}
+        onNext={() => analysisNavigate('next')}
+        onLast={() => analysisNavigate('last')}
       />
     {:else if gs.totalPly > 0}
       <NavigationButtons

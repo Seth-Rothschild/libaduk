@@ -320,7 +320,11 @@ export class AnalysisState {
 
   estimateAreaMap = $derived.by(() => {
     if (!this.showEstimate || this.status === 'scoring' || !this.currentNode) return null;
-    return influence.map(this.currentNode.board.signMap, { discrete: true });
+    const board =
+      this.deadStones.length > 0
+        ? buildScoreBoard(this.currentNode.board, this.deadStones)
+        : this.currentNode.board;
+    return influence.map(board.signMap, { discrete: true });
   });
 
   estimatedScore = $derived(
@@ -328,7 +332,9 @@ export class AnalysisState {
   );
 
   displayAreaMap = $derived(this.status === 'scoring' ? this.areaMap : this.estimateAreaMap);
-  displayDeadStones = $derived(this.status === 'scoring' ? this.deadStones : null);
+  displayDeadStones = $derived(
+    this.status === 'scoring' || this.showEstimate ? this.deadStones : null
+  );
 
   canGoPrev = $derived(!!this.currentNode?.parent);
   canGoNext = $derived((this.currentNode?.children.length ?? 0) > 0);
@@ -447,7 +453,7 @@ export class AnalysisState {
   }
 
   onVertexClick(x, y) {
-    if (this.status === 'scoring') {
+    if (this.status === 'scoring' || this.showEstimate) {
       this.#toggleDeadGroup(x, y);
       return;
     }
@@ -591,8 +597,10 @@ export class AnalysisState {
 
   #toggleDeadGroup(x, y) {
     this.deadStones = toggleDeadStones(this.currentNode.board, this.deadStones, x, y);
-    const scoreBoard = buildScoreBoard(this.currentNode.board, this.deadStones);
-    this.areaMap = influence.areaMap(scoreBoard.signMap);
+    if (this.status === 'scoring') {
+      const scoreBoard = buildScoreBoard(this.currentNode.board, this.deadStones);
+      this.areaMap = influence.areaMap(scoreBoard.signMap);
+    }
   }
 
   #reset() {

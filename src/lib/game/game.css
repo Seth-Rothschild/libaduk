@@ -137,7 +137,11 @@
 }
 
 .round__app__board--with-editbar .round__app__board__inner {
-  max-height: calc(100svh - 162px);
+  max-height: calc(100svh - 200px);
+}
+
+.round__app__board__inner:has(.go-show-coords) {
+  margin-bottom: 0.6em;
 }
 
 @media (min-width: 750px) {
@@ -2244,6 +2248,47 @@ path.go-marker-on-empty {
   border: 3px solid rgba(59, 130, 246, 0.65);
   z-index: 4;
   pointer-events: none;
+}
+
+/* -------------------------------------------------------------
+   Score / estimate mode bar (replaces EditBar in those modes)
+   ------------------------------------------------------------- */
+
+.score-bar {
+  display: flex;
+  align-items: center;
+  padding: 0.5em;
+  background: var(--c-bg-zebra);
+  border-top: 1px solid var(--c-border);
+  width: 100%;
+  max-width: calc(100svh - 200px);
+}
+
+.score-bar__verdict {
+  min-width: 5em;
+  font-size: 0.85em;
+  font-weight: bold;
+}
+
+.score-bar__label {
+  flex: 1;
+  text-align: center;
+  font-size: 0.85em;
+  color: var(--c-font-dim);
+}
+
+.score-bar__close {
+  background: none;
+  border: none;
+  color: var(--c-font-dim);
+  cursor: pointer;
+  font-size: 1em;
+  padding: 0.25em 0.5em;
+  line-height: 1;
+}
+
+.score-bar__close:hover {
+  color: var(--c-font);
 }
 
 /* -------------------------------------------------------------
