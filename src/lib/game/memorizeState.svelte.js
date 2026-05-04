@@ -9,6 +9,7 @@ export class MemorizeState {
   active = $state(false);
   flash = $state(null);
   hintText = $state(null);
+  activeHint = $state(null);
   side = $state('both');
 
   markerMap = $derived.by(() => {
@@ -82,12 +83,17 @@ export class MemorizeState {
 
   applyHint(type) {
     if (this.done) return;
+    if (this.activeHint === type) {
+      this.#clearHints();
+      return;
+    }
     const expected = this.#line[this.#index];
     if (!expected.lastMove) return;
     const [ex, ey] = expected.lastMove;
     const board = this.#analysis.currentNode.board;
 
     if (type === 'quadrant') {
+      this.activeHint = type;
       this.hintText = 'Quadrant';
       this.#hintMarkers = this.#markerMap(this.#quadrantPoints(ex, ey, board));
       return;
@@ -102,6 +108,7 @@ export class MemorizeState {
 
     const pools = { grid16: 'large', grid9: 'medium', grid4: 'small' };
     const labels = { grid16: '16 locations', grid9: '9 locations', grid4: '4 locations' };
+    this.activeHint = type;
     this.hintText = labels[type];
     this.#hintMarkers = this.#markerMap(this.#hintPool[pools[type]]);
   }
@@ -199,6 +206,7 @@ export class MemorizeState {
   }
 
   #clearHints() {
+    this.activeHint = null;
     this.hintText = null;
     this.#hintMarkers = null;
     this.#hintPool = null;

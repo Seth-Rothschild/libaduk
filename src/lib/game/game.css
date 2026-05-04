@@ -417,6 +417,11 @@
   background: linear-gradient(to bottom, var(--c-metal-top-hover), var(--c-metal-bottom-hover));
 }
 
+.seg-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .seg-btn--active {
   background: var(--c-accent);
   color: #fff;
@@ -2413,15 +2418,46 @@ path.go-marker-on-empty {
    Memorize mode bar
    ------------------------------------------------------------- */
 
+.rcontrols .button.button-memorize-active {
+  background: var(--c-accent);
+  color: #fff;
+  text-shadow: none;
+}
+
 .memorize-bar {
   display: flex;
   align-items: center;
-  gap: 0.5em;
-  padding: 0.3em 0.5em;
+  flex-wrap: wrap;
+  gap: 1em;
+  padding: 0.5em;
   background: var(--c-bg-zebra);
   border-top: 1px solid var(--c-border);
+  width: 100%;
+  max-width: calc(100svh - 200px);
   transition: background 0.15s;
-  flex-wrap: wrap;
+}
+
+.memorize-bar__close {
+  margin-left: auto;
+}
+
+.memorize-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  padding: 0.25em 0.7em;
+}
+
+.memorize-group__label {
+  font-size: 0.75em;
+  text-transform: uppercase;
+  color: var(--c-font-dim);
+  user-select: none;
+  white-space: nowrap;
+  padding-right: 0.3em;
+  border-right: 1px solid var(--c-border);
 }
 
 .memorize-bar.flash-correct {
@@ -2470,12 +2506,13 @@ path.go-marker-on-empty {
 
 .memorize-hints {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 0.3em;
 }
 
 .hint-btn {
-  flex: 1;
-  padding: 0.25em 0.4em;
+  padding: 0.25em 0.5em;
   font-size: 0.8em;
   font-weight: 600;
   background: var(--c-bg);
@@ -2483,11 +2520,18 @@ path.go-marker-on-empty {
   border-radius: 3px;
   color: var(--c-font);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .hint-btn:hover {
-  background: var(--c-accent, #5c8a5c);
-  border-color: var(--c-accent, #5c8a5c);
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: #fff;
+}
+
+.hint-btn--active {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
   color: #fff;
 }
 

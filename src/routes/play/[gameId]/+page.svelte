@@ -845,32 +845,51 @@
                 Done — {memorize.total} moves
               {:else}
                 {memorize.index + 1} / {memorize.total}
-                {#if memorize.hintText}<span class="hint-text"> · {memorize.hintText}</span>{/if}
               {/if}
             </span>
-            <div class="memorize-side">
-              {#each ['both', 'black', 'white'] as s}
-                <button
-                  class="side-btn"
-                  class:side-btn--active={memorize.side === s}
-                  onclick={() => (memorize.side = s)}>{s}</button
-                >
-              {/each}
+            <div class="memorize-group">
+              <span class="memorize-group__label">Play as</span>
+              <div class="memorize-side">
+                {#each ['both', 'black', 'white'] as s}
+                  <button
+                    class="side-btn"
+                    class:side-btn--active={memorize.side === s}
+                    onclick={() => (memorize.side = s)}>{s}</button
+                  >
+                {/each}
+              </div>
             </div>
-            <div class="memorize-hints">
-              <button class="hint-btn" onclick={() => memorize.applyHint('quadrant')}
-                >Quadrant</button
-              >
-              <button class="hint-btn" onclick={() => memorize.applyHint('grid16')}>16</button>
-              <button class="hint-btn" onclick={() => memorize.applyHint('grid9')}>9</button>
-              <button class="hint-btn" onclick={() => memorize.applyHint('grid4')}>4</button>
+            <div class="memorize-group">
+              <span class="memorize-group__label">Hint</span>
+              <div class="memorize-hints">
+                <button
+                  class="hint-btn"
+                  class:hint-btn--active={memorize.activeHint === 'quadrant'}
+                  onclick={() => memorize.applyHint('quadrant')}>Quadrant</button
+                >
+                <button
+                  class="hint-btn"
+                  class:hint-btn--active={memorize.activeHint === 'grid16'}
+                  onclick={() => memorize.applyHint('grid16')}>16 moves</button
+                >
+                <button
+                  class="hint-btn"
+                  class:hint-btn--active={memorize.activeHint === 'grid9'}
+                  onclick={() => memorize.applyHint('grid9')}>9 moves</button
+                >
+                <button
+                  class="hint-btn"
+                  class:hint-btn--active={memorize.activeHint === 'grid4'}
+                  onclick={() => memorize.applyHint('grid4')}>4 moves</button
+                >
+              </div>
             </div>
             <button
-              class="button button-metal"
+              class="score-bar__close memorize-bar__close"
               onclick={() => {
                 memorize.exit();
                 flushPendingAnalysisTree();
-              }}>Exit</button
+              }}>✕</button
             >
           </div>
         {:else if analysis.status === 'scoring' || analysis.showEstimate}
@@ -963,49 +982,63 @@
 
     <div class="rcontrols">
       {#if analysisMode}
-        {#if !memorize?.active}
-          {#if analysis.status === 'scoring' && analysis.score}
-            <div class="score-display">
-              <span class="color-icon is black text">{analysis.score.blackArea}</span>
-              <span class="color-icon is white text">
-                {analysis.score.whiteArea} + {komi} = {analysis.score.whiteScore.toFixed(1)}
-              </span>
-              <strong>{scoreVerdictShort(analysis.score)}</strong>
-            </div>
-          {:else if analysis.showEstimate && analysis.estimatedScore}
-            <div class="score-display">
-              <span class="color-icon is black text">{analysis.estimatedScore.blackArea}</span>
-              <span class="color-icon is white text">
-                {analysis.estimatedScore.whiteArea} + {komi} = {analysis.estimatedScore.whiteScore.toFixed(
-                  1
-                )}
-              </span>
-              <strong>{scoreVerdictShort(analysis.estimatedScore)}</strong>
-            </div>
-          {:else}
-            <div class="score-display score-display--empty"></div>
-          {/if}
-          <div class="segmented">
-            <button
-              class="seg-btn"
-              class:seg-btn--active={analysis.status === 'scoring'}
-              onclick={() => {
-                analysis.showEstimate = false;
-                analysis.status === 'scoring' ? analysis.stopScoring() : analysis.startScoring();
-              }}>Score</button
-            >
-            <button
-              class="seg-btn"
-              class:seg-btn--active={analysis.showEstimate}
-              onclick={() => {
-                if (analysis.status === 'scoring') analysis.stopScoring();
-                analysis.showEstimate = !analysis.showEstimate;
-                flushPendingAnalysisTree();
-              }}>Estimate</button
-            >
+        {#if analysis.status === 'scoring' && analysis.score && !memorize?.active}
+          <div class="score-display">
+            <span class="color-icon is black text">{analysis.score.blackArea}</span>
+            <span class="color-icon is white text">
+              {analysis.score.whiteArea} + {komi} = {analysis.score.whiteScore.toFixed(1)}
+            </span>
+            <strong>{scoreVerdictShort(analysis.score)}</strong>
           </div>
-          <button class="button button-metal" onclick={() => memorize.enter()}>Memorize</button>
+        {:else if analysis.showEstimate && analysis.estimatedScore && !memorize?.active}
+          <div class="score-display">
+            <span class="color-icon is black text">{analysis.estimatedScore.blackArea}</span>
+            <span class="color-icon is white text">
+              {analysis.estimatedScore.whiteArea} + {komi} = {analysis.estimatedScore.whiteScore.toFixed(
+                1
+              )}
+            </span>
+            <strong>{scoreVerdictShort(analysis.estimatedScore)}</strong>
+          </div>
+        {:else}
+          <div class="score-display score-display--empty"></div>
         {/if}
+        <div class="segmented">
+          <button
+            class="seg-btn"
+            class:seg-btn--active={analysis.status === 'scoring'}
+            disabled={memorize?.active}
+            onclick={() => {
+              analysis.showEstimate = false;
+              analysis.status === 'scoring' ? analysis.stopScoring() : analysis.startScoring();
+            }}>Score</button
+          >
+          <button
+            class="seg-btn"
+            class:seg-btn--active={analysis.showEstimate}
+            disabled={memorize?.active}
+            onclick={() => {
+              if (analysis.status === 'scoring') analysis.stopScoring();
+              analysis.showEstimate = !analysis.showEstimate;
+              flushPendingAnalysisTree();
+            }}>Estimate</button
+          >
+        </div>
+        <button
+          class="button"
+          class:button-memorize-active={memorize?.active}
+          class:button-metal={!memorize?.active}
+          onclick={() => {
+            if (memorize?.active) {
+              memorize.exit();
+              flushPendingAnalysisTree();
+            } else {
+              if (analysis.status === 'scoring') analysis.stopScoring();
+              analysis.showEstimate = false;
+              memorize.enter();
+            }
+          }}>Memorize</button
+        >
       {:else}
         {#if !isSpectator && gs.status === 'waiting'}
           <button class="button button-red" onclick={cancel}>Cancel Game</button>
