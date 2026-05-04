@@ -2461,13 +2461,13 @@ path.go-marker-on-empty {
 }
 
 .memorize-bar.flash-correct {
-  background: #2d6a2d;
-  color: #fff;
+  background: var(--m-good_bg--mix-30);
+  color: var(--c-font-clearer);
 }
 
 .memorize-bar.flash-wrong {
-  background: #7a2020;
-  color: #fff;
+  background: var(--m-bad_bg--mix-25);
+  color: var(--c-font-clearer);
 }
 
 .memorize-progress {

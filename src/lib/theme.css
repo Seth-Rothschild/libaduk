@@ -76,6 +76,8 @@ html {
   --c-error: hsl(0, 60%, 50%);
   --c-contours: rgb(167.9328, 118.16632, 38.1072);
   --m-primary_bg--mix-20: hsl(208, 28%, 22%);
+  --m-good_bg--mix-90: hsl(88, 60%, 35%);
+  --m-good_bg--mix-30: hsl(84, 35%, 21%);
 
   /* — unused — available when needed */
   /*
@@ -242,8 +244,6 @@ html {
   --m-good--fade-30:              hsla(88, 62%, 37%, 0.7);
   --m-good--fade-90:              hsla(88, 62%, 37%, 0.1);
   --m-good_bg--mix-20:            hsl(82, 28%, 18%);
-  --m-good_bg--mix-30:            hsl(84, 35%, 21%);
-  --m-good_bg--mix-90:            hsl(88, 60%, 35%);
   --m-inaccuracy_bg--mix-30:      hsl(201, 29%, 28%);
   --m-inaccuracy_font--mix-70:    hsl(202, 60%, 65%);
   --m-interesting_bg--mix-30:     hsl(313, 24%, 31%);
@@ -386,6 +386,8 @@ html.light {
   --c-error: hsl(0, 60%, 50%);
   --c-contours: rgb(213.2208, 157.66752, 68.2992);
   --m-primary_bg--mix-20: hsl(209, 66%, 89%);
+  --m-good_bg--mix-90: hsl(88, 48%, 43%);
+  --m-good_bg--mix-30: hsl(88, 36%, 81%);
 
   /* — unused — available when needed */
   /*
@@ -552,8 +554,6 @@ html.light {
   --m-good--fade-30:              hsla(88, 62%, 37%, 0.7);
   --m-good--fade-90:              hsla(88, 62%, 37%, 0.1);
   --m-good_bg--mix-20:            hsl(88, 36%, 87%);
-  --m-good_bg--mix-30:            hsl(88, 36%, 81%);
-  --m-good_bg--mix-90:            hsl(88, 48%, 43%);
   --m-inaccuracy_bg--mix-30:      hsl(202, 52%, 82%);
   --m-inaccuracy_font--mix-70:    hsl(202, 59%, 37%);
   --m-interesting_bg--mix-30:     hsl(307, 80%, 88%);
