@@ -46,7 +46,7 @@
       if (verifyRes.ok) {
         await fetchMe();
         await invalidateAll();
-        goto('/');
+        goto('/about');
       } else {
         error = verifyData.error ?? 'Something went wrong';
       }
