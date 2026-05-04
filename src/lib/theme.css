@@ -67,6 +67,7 @@ html {
   --c-font-clear: hsl(0, 0%, 80%);
   --c-font-dimmer: hsl(0, 0%, 42%);
   --m-secondary_bg--mix-30: hsl(84, 35%, 21%);
+  --m-secondary_bg--mix-75: hsl(88, 56%, 31%);
   --m-bad_bg--mix-25: hsl(3, 36%, 23%);
   --m-bad_bg--mix-50: hsl(1, 48%, 32%);
   --m-accent_bg--mix-15: hsl(24, 39%, 18%);
@@ -377,6 +378,7 @@ html.light {
   --c-font-clear: hsl(0, 0%, 12%);
   --c-font-dimmer: hsl(0, 0%, 70%);
   --m-secondary_bg--mix-30: hsl(88, 36%, 81%);
+  --m-secondary_bg--mix-75: hsl(88, 36%, 53%);
   --m-bad_bg--mix-25: hsl(0, 60%, 88%);
   --m-bad_bg--mix-50: hsl(0, 60%, 75%);
   --m-accent_bg--mix-15: hsl(22, 72%, 91%);

@@ -282,6 +282,7 @@
   justify-content: stretch;
   background: var(--c-bg-zebra);
   height: 2.5rem;
+  position: relative;
 }
 
 .rbuttons .fbt {
@@ -292,6 +293,79 @@
   border: none;
   background: none;
   padding: 0;
+}
+
+.rbuttons .fbt:not(:disabled):hover {
+  background: var(--m-secondary_bg--mix-75);
+}
+
+.rbuttons-menu-wrap {
+  display: flex;
+  flex: 1 1 25%;
+}
+
+.rbuttons-menu-wrap .fbt {
+  flex: 1;
+}
+
+.rbuttons-menu-btn {
+  position: relative;
+}
+
+.rbuttons-menu-btn::before {
+  content: '';
+  display: block;
+  width: 16px;
+  height: 3px;
+  background: var(--c-font-dim);
+  margin: auto;
+  box-shadow:
+    0 6px 0 var(--c-font-dim),
+    0 -6px 0 var(--c-font-dim);
+}
+
+.rbuttons-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: var(--c-bg-zebra);
+  border: 1px solid var(--c-border);
+  border-radius: 6px 6px 0 0;
+  overflow: hidden;
+  z-index: 10;
+  box-shadow: 0 -4px 12px hsla(0, 0%, 0%, 0.2);
+}
+
+.rbuttons-menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.9em 1em;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--c-font-dim);
+  font-family: Roboto, sans-serif;
+  font-weight: 500;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  text-decoration: none;
+  box-sizing: border-box;
+  transition: background 0.1s ease;
+}
+
+.rbuttons-menu-item + .rbuttons-menu-item {
+  border-top: 1px solid var(--c-border);
+}
+
+.rbuttons-menu-item:hover {
+  background: var(--m-secondary_bg--mix-75);
+  color: var(--c-font);
+}
+
+.rbuttons-menu-btn.open {
+  background: var(--m-secondary_bg--mix-75);
 }
 
 /* -------------------------------------------------------------
@@ -308,6 +382,50 @@
 
 .rcontrols .button {
   width: 100%;
+}
+
+.segmented {
+  display: flex;
+  box-shadow: 0 2px 5px 0 hsla(0, 0%, 0%, 0.225);
+  border-radius: 6px;
+}
+.seg-btn {
+  flex: 1;
+  padding: 0.8em 1em;
+  background: linear-gradient(to bottom, var(--c-metal-top), var(--c-metal-bottom));
+  border: none;
+  color: var(--c-font-dim);
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+  cursor: pointer;
+  font-family: Roboto, sans-serif;
+  font-weight: 500;
+  font-size: inherit;
+  text-transform: uppercase;
+  text-align: center;
+  transition: background 0.15s ease;
+}
+.seg-btn:first-child {
+  border-radius: 6px 0 0 6px;
+}
+.seg-btn:last-child {
+  border-radius: 0 6px 6px 0;
+}
+.seg-btn:first-child + .seg-btn {
+  border-left: 1px solid var(--c-border);
+}
+.seg-btn:hover {
+  background: linear-gradient(to bottom, var(--c-metal-top-hover), var(--c-metal-bottom-hover));
+}
+
+.seg-btn--active {
+  background: var(--c-accent);
+  color: #fff;
+  text-shadow: none;
+}
+
+.seg-btn--active:hover {
+  background: var(--c-accent);
+  filter: brightness(1.1);
 }
 
 .button.button-confirm {

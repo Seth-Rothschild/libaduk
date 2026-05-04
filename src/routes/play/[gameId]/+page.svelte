@@ -964,43 +964,47 @@
     <div class="rcontrols">
       {#if analysisMode}
         {#if !memorize?.active}
-          {#if analysis.status === 'scoring'}
-            {#if analysis.score}
-              <div class="score-display">
-                <span class="color-icon is black text">{analysis.score.blackArea}</span>
-                <span class="color-icon is white text">
-                  {analysis.score.whiteArea} + {komi} = {analysis.score.whiteScore.toFixed(1)}
-                </span>
-                <strong>{scoreVerdictShort(analysis.score)}</strong>
-              </div>
-            {/if}
-          {:else if analysis.showEstimate}
-            {#if analysis.estimatedScore}
-              <div class="score-display">
-                <span class="color-icon is black text">{analysis.estimatedScore.blackArea}</span>
-                <span class="color-icon is white text">
-                  {analysis.estimatedScore.whiteArea} + {komi} = {analysis.estimatedScore.whiteScore.toFixed(
-                    1
-                  )}
-                </span>
-                <strong>{scoreVerdictShort(analysis.estimatedScore)}</strong>
-              </div>
-            {/if}
+          {#if analysis.status === 'scoring' && analysis.score}
+            <div class="score-display">
+              <span class="color-icon is black text">{analysis.score.blackArea}</span>
+              <span class="color-icon is white text">
+                {analysis.score.whiteArea} + {komi} = {analysis.score.whiteScore.toFixed(1)}
+              </span>
+              <strong>{scoreVerdictShort(analysis.score)}</strong>
+            </div>
+          {:else if analysis.showEstimate && analysis.estimatedScore}
+            <div class="score-display">
+              <span class="color-icon is black text">{analysis.estimatedScore.blackArea}</span>
+              <span class="color-icon is white text">
+                {analysis.estimatedScore.whiteArea} + {komi} = {analysis.estimatedScore.whiteScore.toFixed(
+                  1
+                )}
+              </span>
+              <strong>{scoreVerdictShort(analysis.estimatedScore)}</strong>
+            </div>
           {:else}
-            <button class="button button-metal" onclick={() => analysis.startScoring()}
-              >Score</button
+            <div class="score-display score-display--empty"></div>
+          {/if}
+          <div class="segmented">
+            <button
+              class="seg-btn"
+              class:seg-btn--active={analysis.status === 'scoring'}
+              onclick={() => {
+                analysis.showEstimate = false;
+                analysis.status === 'scoring' ? analysis.stopScoring() : analysis.startScoring();
+              }}>Score</button
             >
             <button
-              class="button button-metal"
+              class="seg-btn"
+              class:seg-btn--active={analysis.showEstimate}
               onclick={() => {
+                if (analysis.status === 'scoring') analysis.stopScoring();
                 analysis.showEstimate = !analysis.showEstimate;
                 flushPendingAnalysisTree();
               }}>Estimate</button
             >
-            <button class="button button-metal" onclick={downloadSgf}>Download SGF</button>
-            <button class="button button-metal" onclick={exitAnalysis}>Back to game</button>
-            <button class="button button-metal" onclick={() => memorize.enter()}>Memorize</button>
-          {/if}
+          </div>
+          <button class="button button-metal" onclick={() => memorize.enter()}>Memorize</button>
         {/if}
       {:else}
         {#if !isSpectator && gs.status === 'waiting'}
@@ -1049,6 +1053,11 @@
         onLast={() => {
           while (!memorize.done) memorize.next();
         }}
+        menuItems={[
+          { label: 'Export SGF', onclick: downloadSgf },
+          { label: 'Open as Kifu', href: `/kifu/${gameId}` },
+          { label: 'Back to game', onclick: exitAnalysis }
+        ]}
       />
     {:else if analysisMode}
       <NavigationButtons
@@ -1058,6 +1067,11 @@
         onPrev={() => analysisNavigate('prev')}
         onNext={() => analysisNavigate('next')}
         onLast={() => analysisNavigate('last')}
+        menuItems={[
+          { label: 'Export SGF', onclick: downloadSgf },
+          { label: 'Open in Kifu', href: `/kifu/${gameId}` },
+          { label: 'Back to game', onclick: exitAnalysis }
+        ]}
       />
     {:else if gs.totalPly > 0}
       <NavigationButtons
@@ -1067,6 +1081,13 @@
         onPrev={() => gs.jumpPrev()}
         onNext={() => gs.jumpNext()}
         onLast={() => gs.jumpLast()}
+        menuItems={analysisMode
+          ? [
+              { label: 'Export SGF', onclick: downloadSgf },
+              { label: 'Open in Kifu', href: `/kifu/${gameId}` },
+              { label: 'Back to game', onclick: exitAnalysis }
+            ]
+          : []}
       />
     {/if}
 
