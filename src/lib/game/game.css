@@ -293,6 +293,7 @@
   border: none;
   background: none;
   padding: 0;
+  touch-action: manipulation;
 }
 
 .rbuttons .fbt:not(:disabled):hover {
