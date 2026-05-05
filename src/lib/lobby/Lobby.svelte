@@ -29,6 +29,7 @@
   let activeTab = $state(VALID_TABS.includes(storedTab) ? storedTab : 'pools');
 
   function switchTab(tab) {
+    ogsSeekGraph.cancelPendingChallenge();
     activeTab = tab;
     localStorage.setItem('lobby-tab', tab);
   }
