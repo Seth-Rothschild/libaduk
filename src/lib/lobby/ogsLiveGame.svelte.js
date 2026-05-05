@@ -48,7 +48,7 @@ class OgsLiveGame {
         this.#send('gamelist/query', {
           list: 'live',
           sort_by: 'rank',
-          where: {},
+          where: { hide_bot_games: true },
           from: 0,
           limit: 1,
           channel: ''
