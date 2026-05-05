@@ -92,7 +92,7 @@
   name="Send message via Enter"
   args={{ messages: [] }}
   play={async ({ args, canvas }) => {
-    const input = canvas.getByPlaceholderText('Talk in chat');
+    const input = canvas.getByPlaceholderText('Please be nice in the chat!');
     await userEvent.type(input, 'Good game!{Enter}');
     await expect(args.onSend).toHaveBeenCalledWith('Good game!');
   }}

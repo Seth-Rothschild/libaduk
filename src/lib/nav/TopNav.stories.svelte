@@ -64,10 +64,11 @@
 />
 
 <Story
-  name="Analysis board link"
+  name="Scratch board link"
   play={async ({ canvasElement }) => {
-    const link = canvasElement.querySelector('a[href="/analysis"]');
+    const link = canvasElement.querySelector('a[href="/scratch"]');
     await expect(link).not.toBeNull();
+    await expect(link.textContent).toBe('Tools');
   }}
 />
 

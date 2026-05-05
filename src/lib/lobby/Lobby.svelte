@@ -69,7 +69,7 @@
 
   async function createGame(pool = null) {
     const ogsSettings = getMe()?.settings;
-    const useOgs = ogsSettings?.createOGSGames ?? true;
+    const useOgs = ogsSettings?.createOGSGames ?? false;
     const body = { size: pool?.size ?? 19, color: 'random', creatorName: displayName };
     if (pool) {
       body.timeControl = pool.timeControl;

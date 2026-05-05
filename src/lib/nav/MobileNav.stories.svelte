@@ -31,7 +31,7 @@
     await expect(nav).not.toHaveAttribute('inert');
     await expect(canvas.getByRole('button', { name: 'Create a game' })).toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: 'Challenge a friend' })).toBeInTheDocument();
-    await expect(canvas.getByRole('link', { name: 'Analysis board' })).toBeInTheDocument();
+    await expect(canvas.getByRole('link', { name: 'Scratch board' })).toBeInTheDocument();
   }}
 />
 
@@ -94,10 +94,10 @@
 />
 
 <Story
-  name="Analysis board link"
+  name="Scratch board link"
   args={{ open: true }}
   play={async ({ canvas }) => {
-    const link = canvas.getByRole('link', { name: 'Analysis board' });
-    await expect(link).toHaveAttribute('href', '/analysis');
+    const link = canvas.getByRole('link', { name: 'Scratch board' });
+    await expect(link).toHaveAttribute('href', '/scratch');
   }}
 />

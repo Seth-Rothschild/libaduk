@@ -287,6 +287,7 @@ test('analysis mode after game shows score and estimate buttons', async ({ brows
 
   await expect(black.locator('button', { hasText: 'Score' })).toBeVisible();
   await expect(black.locator('button', { hasText: 'Estimate' })).toBeVisible();
+  await black.locator('button[aria-label="More options"]').click();
   await expect(black.locator('button', { hasText: 'Back to game' })).toBeVisible();
 });
 
@@ -300,7 +301,8 @@ test('closing analysis exits both players and refresh does not re-enter', async 
   await expect(white.locator('.analysis-moves')).toBeVisible();
 
   // Black closes analysis — both players should leave analysis
-  await black.locator('button', { hasText: 'Close analysis' }).click();
+  await black.locator('button[aria-label="More options"]').click();
+  await black.locator('button', { hasText: 'Back to game' }).click();
   await expect(black.locator('.analysis-moves')).not.toBeVisible();
   await expect(white.locator('.analysis-moves')).not.toBeVisible();
 
@@ -325,7 +327,8 @@ test('re-entering analysis after closing preserves analysis state', async ({ bro
   await expect(black.locator('[data-x="4"][data-y="4"] .go-stone')).toBeVisible();
 
   // Close analysis, then re-enter — the analysis move should still be there
-  await black.locator('button', { hasText: 'Close analysis' }).click();
+  await black.locator('button[aria-label="More options"]').click();
+  await black.locator('button', { hasText: 'Back to game' }).click();
   await expect(black.locator('.analysis-moves')).not.toBeVisible();
 
   await black.locator('button', { hasText: 'Analysis board' }).click();

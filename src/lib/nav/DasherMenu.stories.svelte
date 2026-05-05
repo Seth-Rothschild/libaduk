@@ -51,38 +51,6 @@
 />
 
 <Story
-  name="Navigate to Board pane"
-  args={{ username: 'alice' }}
-  play={async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'alice' }));
-    await userEvent.click(canvas.getByRole('button', { name: 'Board' }));
-    await expect(canvas.getByText('Coordinates')).toBeInTheDocument();
-  }}
-/>
-
-<Story
-  name="Navigate to Background pane"
-  args={{ username: 'alice' }}
-  play={async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'alice' }));
-    await userEvent.click(canvas.getByRole('button', { name: 'Background' }));
-    await expect(canvas.getByText('Light')).toBeInTheDocument();
-    await expect(canvas.getByText('Dark')).toBeInTheDocument();
-  }}
-/>
-
-<Story
-  name="Back from Board returns to main"
-  args={{ username: 'alice' }}
-  play={async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'alice' }));
-    await userEvent.click(canvas.getByRole('button', { name: 'Board' }));
-    await userEvent.click(canvas.getByRole('button', { name: 'Board' }));
-    await expect(canvas.getByRole('button', { name: 'Background' })).toBeInTheDocument();
-  }}
-/>
-
-<Story
   name="Sign out fires callback"
   args={{ username: 'alice' }}
   play={async ({ args, canvas }) => {

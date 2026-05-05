@@ -21,8 +21,8 @@
 <Story
   name="Mobile: site name is hidden"
   parameters={{ viewport: { defaultViewport: 'mobile' } }}
-  play={async ({ canvas }) => {
-    const homeSpan = canvas.getByText('libaduk.com');
+  play={async ({ canvasElement }) => {
+    const homeSpan = canvasElement.querySelector('.home');
     await expect(homeSpan).not.toBeVisible();
   }}
 />
