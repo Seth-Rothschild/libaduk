@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
 
   import { computeVertexSize } from '$lib/game/layout.js';
+  import { stoneTheme } from '$lib/nav/stoneTheme.svelte.js';
 
   let {
     signMap,
@@ -93,6 +94,17 @@
     deadStones ? new Set(deadStones.map(([x, y]) => `${x},${y}`)) : new Set()
   );
 
+  const activeUrls = $derived(
+    stoneTheme.activeId !== null ? stoneTheme.urlsFor(stoneTheme.activeId) : null
+  );
+
+  function stoneUrl(sign, x, y) {
+    const list = sign === 1 ? activeUrls?.black : activeUrls?.white;
+    if (!list?.length) return null;
+    const url = list[(x * 7 + y * 3) % list.length];
+    return `url('${url}')`;
+  }
+
   let coordMode = $state(false);
 
   onMount(() => {
@@ -147,6 +159,9 @@
       class:go-turn-white={currentSign === -1}
       class:go-interactive={interactive && !coordMode}
       class:go-coord-mode={coordMode}
+      style:background={activeUrls?.board
+        ? `url('${activeUrls.board}') center/cover no-repeat`
+        : (activeUrls?.boardColor ?? null)}
       style="display: inline-grid; line-height: 1em;"
       onclick={handleClick}
       role="img"
@@ -263,7 +278,10 @@
                     class:go-dead={isDead}
                     style="position: absolute; z-index: 2;"
                   >
-                    <div class="go-inner go-sign_{sign}"></div>
+                    <div
+                      class="go-inner go-sign_{sign}"
+                      style:background-image={stoneUrl(sign, x, y)}
+                    ></div>
                     {#if isLast && !isDead}
                       <svg class="go-last-marker" viewBox="0 0 1 1">
                         <circle

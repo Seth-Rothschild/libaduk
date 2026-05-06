@@ -13,6 +13,7 @@
   import { pingState } from '$lib/state/ping.svelte.js';
   import { themeState } from '$lib/nav/theme.svelte.js';
   import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
+  import { stoneTheme } from '$lib/nav/stoneTheme.svelte.js';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
@@ -27,6 +28,7 @@
   onMount(() => {
     themeState.init();
     boardSettings.init();
+    stoneTheme.init();
     pingState.start();
     fetchMe();
     return () => pingState.stop();

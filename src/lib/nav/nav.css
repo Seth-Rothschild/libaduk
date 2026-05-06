@@ -692,15 +692,69 @@ body.clinput #clinput input {
 }
 
 .site-buttons .dasher .dropdown .board-settings {
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0;
 }
 
-.site-buttons .dasher .dropdown .board-setting-toggle {
+.site-buttons .dasher .dropdown .board-setting {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
+  padding: 0.4rem 0.5rem;
+}
+
+.site-buttons .dasher .dropdown .board-setting h2 {
   font-size: 0.9rem;
+  font-weight: normal;
+  margin: 0;
+}
+
+.site-buttons .dasher .dropdown .radio {
+  display: flex;
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.site-buttons .dasher .dropdown .radio input[type='radio'] {
+  display: none;
+}
+
+.site-buttons .dasher .dropdown .radio label {
+  display: block;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.site-buttons .dasher .dropdown .radio div + div label {
+  border-left: 1px solid var(--c-border);
+}
+
+.site-buttons .dasher .dropdown .radio input[type='radio']:checked + label {
+  background: var(--c-dasher);
+  color: var(--c-over);
+}
+
+.site-buttons .dasher .dropdown .board-settings-divider {
+  border: none;
+  border-top: 1px solid var(--c-border);
+  margin: 0.25rem 0;
+}
+
+.site-buttons .dasher .dropdown .board-setting.stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding-top: 0.8rem;
+}
+
+.site-buttons .dasher .dropdown .board-setting.stacked .radio {
+  width: 100%;
+}
+
+.site-buttons .dasher .dropdown .board-setting.stacked .radio div {
+  flex: 1;
+  text-align: center;
 }
 
 .site-buttons .dasher .dropdown .selector button {
@@ -734,6 +788,92 @@ body.clinput #clinput input {
 .site-buttons .dasher .dropdown .signout:hover {
   background: var(--c-bad) !important;
   color: #fff !important;
+}
+
+/* -------------------------------------------------------------
+   Stone/board theme picker
+   ------------------------------------------------------------- */
+
+.site-buttons .dasher .dropdown .stone-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 0.5rem 0;
+}
+
+.site-buttons .dasher .dropdown .stone-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.site-buttons .dasher .dropdown .stone-btn {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  border-radius: 6px;
+  padding: 4px;
+  border: 2px solid transparent;
+  background-color: #f1b458;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.site-buttons .dasher .dropdown .stone-btn.active {
+  border-color: var(--c-dasher);
+}
+
+.site-buttons .dasher .dropdown .stone-btn stone {
+  display: block;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.site-buttons .dasher .dropdown .stone-delete {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--c-bad, #c00);
+  color: #fff;
+  border: none;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.site-buttons .dasher .dropdown .stone-wrap:hover .stone-delete {
+  display: flex;
+}
+
+.site-buttons .dasher .dropdown .stone-upload {
+  display: block;
+  width: 100%;
+  padding: 0.4em 1em;
+  margin: 0 0 0.25rem;
+  text-align: center;
+  cursor: pointer;
+  text-transform: none;
+}
+
+.site-buttons .dasher .dropdown .stone-upload input {
+  display: none;
 }
 
 /* -------------------------------------------------------------
