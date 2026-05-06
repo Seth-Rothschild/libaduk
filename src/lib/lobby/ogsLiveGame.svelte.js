@@ -24,6 +24,7 @@ class OgsLiveGame {
   #latency = 0;
   #gameId = null;
   #moveCount = 0;
+  #firstColor = 1;
   #endedFired = false;
   #periodMs = 0;
 
@@ -141,6 +142,7 @@ class OgsLiveGame {
     this.result = null;
     this.#gameId = null;
     this.#moveCount = 0;
+    this.#firstColor = 1;
     this.#endedFired = false;
     this.#periodMs = 0;
   }
@@ -170,6 +172,7 @@ class OgsLiveGame {
       };
     }
     this.#periodMs = (data.time_control?.period_time ?? 0) * 1000;
+    this.#firstColor = data.initial_player === 'white' ? -1 : 1;
     const size = data.width;
     let board = GoBoardLib.fromDimensions(size);
     let shifts = emptyShiftMap(size);
@@ -179,11 +182,17 @@ class OgsLiveGame {
     for (let i = 0; i < moves.length; i++) {
       const x = moves[i][0];
       const y = moves[i][1];
-      const color = i % 2 === 0 ? 1 : -1;
+      const color = i % 2 === 0 ? this.#firstColor : -this.#firstColor;
       if (x >= 0 && y >= 0) {
-        const result = applyMoveWithShifts(board, shifts, color, x, y);
-        board = result.board;
-        shifts = result.shiftMap;
+        try {
+          const result = applyMoveWithShifts(board, shifts, color, x, y);
+          board = result.board;
+          shifts = result.shiftMap;
+        } catch {
+          const signMap = board.signMap.map((row) => [...row]);
+          signMap[y][x] = color;
+          board = new GoBoardLib(signMap);
+        }
         recordedMoves.push({ x, y, color });
       } else {
         recordedMoves.push({ x: -1, y: -1, color });
@@ -222,7 +231,7 @@ class OgsLiveGame {
     if (!this.board || !this.shiftMap) return;
     const x = data.move[0];
     const y = data.move[1];
-    const color = this.#moveCount % 2 === 0 ? 1 : -1;
+    const color = this.#moveCount % 2 === 0 ? this.#firstColor : -this.#firstColor;
     this.#moveCount++;
     if (x >= 0 && y >= 0) {
       const result = applyMoveWithShifts(this.board, this.shiftMap, color, x, y);
