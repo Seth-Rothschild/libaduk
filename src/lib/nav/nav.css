@@ -466,7 +466,15 @@ body > header {
   color: var(--c-over) !important;
 }
 
-.site-buttons .shown .toggle {
+.site-buttons .dropdown a:not(.status):hover::before,
+.site-buttons .dropdown a:not(.status):hover::after,
+.site-buttons .dropdown button:not(.theme-btn):hover::before,
+.site-buttons .dropdown button:not(.theme-btn):hover::after {
+  color: var(--c-over);
+}
+
+.site-buttons .shown .toggle,
+.site-buttons .shown #user_tag {
   background: var(--c-bg-header-dropdown);
   color: var(--c-header-dropdown);
 }
@@ -504,6 +512,10 @@ body > header {
   display: flex;
   align-items: center;
   gap: 0.5em;
+}
+
+.site-buttons .dropdown .profile-link:hover .online-dot {
+  background: var(--c-over);
 }
 
 .site-buttons .dropdown .profile-link::before {
@@ -665,8 +677,18 @@ body.clinput #clinput input {
   font-weight: 600;
 }
 
+.site-buttons .dasher .dropdown .sub-head:hover {
+  background: none !important;
+  color: inherit !important;
+  cursor: pointer;
+}
+
+.site-buttons .dasher .dropdown .sub-head:hover::before {
+  color: var(--c-good);
+}
+
 .site-buttons .dasher .dropdown .sub-head::before {
-  color: var(--c-dasher);
+  color: var(--c-good);
 }
 
 .site-buttons .dasher .dropdown .board-settings {
@@ -681,13 +703,18 @@ body.clinput #clinput input {
   font-size: 0.9rem;
 }
 
-.site-buttons .dasher .dropdown .selector {
-  margin: 0.5rem 0;
+.site-buttons .dasher .dropdown .selector button {
+  padding: 1em;
 }
 
 .site-buttons .dasher .dropdown .selector button::before {
   margin-inline-end: 8px;
   opacity: 0;
+}
+
+.site-buttons .dasher .dropdown .selector button:hover {
+  background: var(--c-dasher-light) !important;
+  color: var(--c-over) !important;
 }
 
 .site-buttons .dasher .dropdown .selector button.active {
@@ -753,7 +780,8 @@ signal > i.off {
    [data-icon] — lichess icon font, used in nav buttons
    ------------------------------------------------------------- */
 
-[data-icon]::before {
+[data-icon]::before,
+[data-icon-right]::after {
   font-size: 1.2em;
   vertical-align: middle;
   font-family: lichess;
@@ -761,13 +789,28 @@ signal > i.off {
   font-weight: normal;
   text-transform: none;
   speak: none;
-  content: attr(data-icon);
   opacity: 0.9;
   unicode-bidi: isolate;
 }
 
+[data-icon]::before {
+  content: attr(data-icon);
+}
+
+[data-icon-right]::after {
+  content: attr(data-icon-right);
+  font-size: 0.85em;
+  color: var(--c-good);
+}
+
 .text[data-icon]::before {
   margin-inline: 0 0.4em;
+}
+
+.site-buttons .dropdown button.text[data-icon-right] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 /* -------------------------------------------------------------

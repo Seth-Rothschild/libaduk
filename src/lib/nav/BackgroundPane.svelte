@@ -10,7 +10,7 @@
   ];
 </script>
 
-<button class="sub-head text" data-icon="&#xe047;" onclick={onBack}>Background</button>
+<button class="sub-head text" data-icon="&#xe027;" onclick={onBack}>Background</button>
 <div class="selector">
   {#each themes as [value, label]}
     <button

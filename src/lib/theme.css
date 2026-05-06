@@ -28,6 +28,7 @@ html {
   --c-body-gradient: hsl(37, 12%, 16%);
   --c-border: hsl(0, 0%, 25%);
   --c-dasher: hsl(88, 62%, 43%);
+  --c-dasher-light: rgb(81.68908, 105.26298, 47.9706);
   --c-font: hsl(0, 0%, 73%);
   --c-font-clearer: hsl(0, 0%, 89%);
   --c-font-dim: hsl(0, 0%, 65%);
@@ -101,7 +102,6 @@ html {
   --c-chat-mention-bg:            rgba(59, 92, 22, 0.4);
   --c-clearer:                    #fff;
   --c-dark:                       #333;
-  --c-dasher-light:               rgb(81.68908, 105.26298, 47.9706);
   --c-dimmer:                     #000;
   --c-fancy:                      hsl(294, 62%, 48%);
   --c-font-clear:                 hsl(0, 0%, 80%);
@@ -339,6 +339,7 @@ html.light {
   --c-body-gradient: hsl(37, 12%, 84%);
   --c-border: hsl(0, 0%, 85%);
   --c-dasher: hsl(88, 62%, 43%);
+  --c-dasher-light: rgb(181.84288, 207.2232, 152.8368);
   --c-font: hsl(0, 0%, 30%);
   --c-font-clearer: hsl(0, 0%, 0%);
   --c-font-dim: hsl(0, 0%, 47%);
@@ -411,7 +412,6 @@ html.light {
   --c-chat-mention-bg:            rgba(161, 194, 124, 0.4);
   --c-clearer:                    #000;
   --c-dark:                       #333;
-  --c-dasher-light:               rgb(181.84288, 207.2232, 152.8368);
   --c-dimmer:                     #fff;
   --c-fancy:                      hsl(294, 61%, 62%);
   --c-font-clear:                 hsl(0, 0%, 12%);

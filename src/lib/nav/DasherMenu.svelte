@@ -53,9 +53,11 @@
         <a class="text" data-icon="&#xe005;" href="/account/profile" onclick={close}>Preferences</a>
         <button class="text signout" data-icon="&#xe055;" onclick={signOut}>Sign out</button>
         <hr />
-        <button class="text" data-icon="&#xe028;" onclick={() => (pane = 'board')}>Board</button>
-        <button class="text" data-icon="&#xe061;" onclick={() => (pane = 'background')}
+        <button class="text" data-icon-right="&#xe026;" onclick={() => (pane = 'background')}
           >Background</button
+        >
+        <button class="text" data-icon-right="&#xe026;" onclick={() => (pane = 'board')}
+          >Board</button
         >
         <hr />
         <PingStatus />
@@ -81,8 +83,10 @@
       {:else if pane === 'board'}
         <BoardPane onBack={() => (pane = 'main')} />
       {:else}
-        <button class="text" data-icon="&#xe028;" onclick={() => (pane = 'board')}>Board</button>
-        <button class="text" data-icon="&#xe061;" onclick={() => (pane = 'background')}
+        <button class="text" data-icon-right="&#xe026;" onclick={() => (pane = 'board')}
+          >Board</button
+        >
+        <button class="text" data-icon-right="&#xe026;" onclick={() => (pane = 'background')}
           >Background</button
         >
       {/if}
