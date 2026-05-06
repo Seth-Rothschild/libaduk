@@ -2574,7 +2574,8 @@ path.go-marker-on-empty {
   font-size: 1.05em;
 }
 
-.kifu__name input {
+.kifu__name input,
+.kifu__name select {
   background: var(--c-bg-box);
   border: 1px solid var(--c-border);
   color: var(--c-font);
@@ -2582,6 +2583,10 @@ path.go-marker-on-empty {
   padding: 0.3em 0.5em;
   border-radius: 4px;
   width: 14em;
+}
+
+.kifu__name input[type='number'] {
+  width: 5em;
 }
 
 .kifu__board {

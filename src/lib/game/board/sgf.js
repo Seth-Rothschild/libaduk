@@ -52,7 +52,7 @@ function stringifyNode(node, size, isRoot, options) {
     parts.push('GM[1]');
     parts.push('FF[4]');
     parts.push('SZ[' + size + ']');
-    parts.push('KM[6.5]');
+    parts.push('KM[' + (options.komi ?? 6.5) + ']');
     if (options.playerBlack) parts.push('PB[' + escapeSgf(options.playerBlack) + ']');
     if (options.playerWhite) parts.push('PW[' + escapeSgf(options.playerWhite) + ']');
   } else if (node.lastMove) {

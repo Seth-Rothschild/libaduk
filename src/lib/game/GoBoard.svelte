@@ -19,7 +19,8 @@
     childrenMap = null,
     interactive = true,
     highlightVertex = null,
-    pendingVertex = null
+    pendingVertex = null,
+    useTheme = true
   } = $props();
 
   let containerWidth = $state(0);
@@ -95,7 +96,7 @@
   );
 
   const activeUrls = $derived(
-    stoneTheme.activeId !== null ? stoneTheme.urlsFor(stoneTheme.activeId) : null
+    useTheme && stoneTheme.activeId !== null ? stoneTheme.urlsFor(stoneTheme.activeId) : null
   );
 
   function stoneUrl(sign, x, y) {

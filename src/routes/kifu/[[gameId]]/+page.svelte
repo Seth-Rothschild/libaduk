@@ -7,10 +7,12 @@
   import {
     createBoard,
     applyMove,
+    applySetup,
     exportSgf,
     parseSgf,
     sgfNodeToMove,
     sgfNodeComment,
+    sgfNodeSetup,
     emptyMarkerMap
   } from '$lib/game/board';
 
@@ -19,16 +21,24 @@
   let size = $state(19);
   let blackName = $state('');
   let whiteName = $state('');
+  let komi = $state(6.5);
   let notes = $state('');
   let moves = $state([]);
+  let setup = $state([]);
+  let handicapMode = $state(false);
 
-  const gameState = $derived.by(() => buildGameState(moves, size));
-  const currentSign = $derived(moves.length % 2 === 0 ? 1 : -1);
+  const gameState = $derived.by(() => buildGameState(moves, setup, size));
+  const currentSign = $derived.by(() => {
+    if (handicapMode) return 1;
+    const hasHandicap = setup.length >= 2;
+    return hasHandicap ? (moves.length % 2 === 0 ? -1 : 1) : moves.length % 2 === 0 ? 1 : -1;
+  });
 
   let cursor = $state(0);
   const highlightVertex = $derived.by(() => {
     if (cursor < 1 || cursor >= moves.length) return null;
     const move = moves[cursor - 1];
+    if (move.type === 'pass') return null;
     return [move.x, move.y];
   });
 
@@ -48,25 +58,31 @@
   function loadMovesFromGame(game) {
     const dbMoves = game.moves ?? [];
     const result = [];
-    let sign = 1;
+    const hasHandicap = (game.handicapStones ?? []).length >= 2;
+    let sign = hasHandicap ? -1 : 1;
     for (const m of dbMoves) {
       if (m.type === 'pass') {
+        result.push({ type: 'pass', sign, number: result.length + 1 });
         sign = sign === 1 ? -1 : 1;
         continue;
       }
       if (m.x == null || m.y == null) continue;
-      result.push({ x: m.x, y: m.y, sign, number: result.length + 1 });
+      result.push({ type: 'move', x: m.x, y: m.y, sign, number: result.length + 1 });
       sign = sign === 1 ? -1 : 1;
     }
     return result;
   }
 
-  function buildGameState(moves, size) {
-    let board = createBoard(size);
+  function buildGameState(moves, setup, size) {
+    let board = applySetup(createBoard(size), setup);
     const numberAt = new Map();
     const displaySignMap = Array.from({ length: size }, () => Array(size).fill(0));
+    for (const { x, y, sign } of setup) {
+      displaySignMap[y][x] = sign;
+    }
 
     for (const move of moves) {
+      if (move.type === 'pass') continue;
       let nextBoard;
       try {
         nextBoard = applyMove(board, move.sign, move.x, move.y);
@@ -90,7 +106,20 @@
     return { board, displaySignMap, markerMap, numberAt };
   }
 
+  function placeSetupStone(x, y) {
+    const alreadyPlaced = setup.some((s) => s.x === x && s.y === y);
+    if (alreadyPlaced) {
+      setup = setup.filter((s) => s.x !== x || s.y !== y);
+    } else {
+      setup = [...setup, { x, y, sign: 1 }];
+    }
+  }
+
   function placeStone(x, y) {
+    if (handicapMode) {
+      placeSetupStone(x, y);
+      return;
+    }
     try {
       applyMove(gameState.board, currentSign, x, y);
     } catch {
@@ -102,15 +131,34 @@
       const line = `${newNumber} is at ${previousNumber}`;
       notes = notes ? `${notes}\n${line}` : line;
     }
-    const updatedMoves = [...moves, { x, y, sign: currentSign, number: newNumber }];
+    const updatedMoves = [...moves, { type: 'move', x, y, sign: currentSign, number: newNumber }];
     moves = updatedMoves;
     if (gameId) syncMoves(updatedMoves);
+  }
+
+  function pass() {
+    const updatedMoves = [...moves, { type: 'pass', sign: currentSign, number: moves.length + 1 }];
+    moves = updatedMoves;
+    if (gameId) syncMoves(updatedMoves);
+  }
+
+  function startHandicap() {
+    setup = [];
+    moves = [];
+    cursor = 0;
+    handicapMode = true;
+  }
+
+  function doneHandicap() {
+    handicapMode = false;
   }
 
   function changeSize(newSize) {
     size = newSize;
     moves = [];
+    setup = [];
     cursor = 0;
+    handicapMode = false;
   }
 
   function undo() {
@@ -122,7 +170,9 @@
   }
 
   async function syncMoves(updatedMoves) {
-    const dbMoves = updatedMoves.map(({ x, y }) => ({ type: 'move', x, y }));
+    const dbMoves = updatedMoves.map((m) =>
+      m.type === 'pass' ? { type: 'pass' } : { type: 'move', x: m.x, y: m.y }
+    );
     await fetch('/api/game/moves', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -131,16 +181,20 @@
   }
 
   async function createGameRecord() {
-    const dbMoves = moves.map(({ x, y }) => ({ type: 'move', x, y }));
+    const dbMoves = moves.map((m) =>
+      m.type === 'pass' ? { type: 'pass' } : { type: 'move', x: m.x, y: m.y }
+    );
+    const handicapStones = setup.map(({ x, y }) => ({ x, y }));
     const res = await fetch('/api/game/upload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         moves: dbMoves,
+        handicapStones,
         blackName,
         whiteName,
         size,
-        komi: 6.5,
+        komi,
         username: getMe()?.username ?? null
       })
     });
@@ -148,19 +202,19 @@
     goto(`/kifu/${id}`);
   }
 
-  function buildSgfTree(moves, size, comment) {
+  function buildSgfTree(moves, setup, size, comment) {
     const root = {
       lastMove: null,
-      signToPlay: 1,
+      signToPlay: setup.length >= 2 ? -1 : 1,
       markerMap: emptyMarkerMap(size),
       comment,
-      setup: [],
+      setup,
       children: []
     };
     let current = root;
     for (const move of moves) {
       const node = {
-        lastMove: [move.x, move.y],
+        lastMove: move.type === 'pass' ? null : [move.x, move.y],
         signToPlay: move.sign === 1 ? -1 : 1,
         markerMap: emptyMarkerMap(size),
         comment: '',
@@ -174,8 +228,8 @@
   }
 
   function downloadSgf() {
-    const root = buildSgfTree(moves, size, notes);
-    const sgf = exportSgf(root, size, { playerBlack: blackName, playerWhite: whiteName });
+    const root = buildSgfTree(moves, setup, size, notes);
+    const sgf = exportSgf(root, size, { playerBlack: blackName, playerWhite: whiteName, komi });
     const blob = new Blob([sgf], { type: 'application/x-go-sgf' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -200,30 +254,42 @@
     const parsed = parseSgf(text);
     if (!parsed || !parsed.size) return;
 
-    let board = createBoard(parsed.size);
+    const rootSetup = sgfNodeSetup(parsed.root, parsed.size);
+    const hasHandicap = rootSetup.filter((s) => s.sign === 1).length >= 2;
+    let board = applySetup(createBoard(parsed.size), rootSetup);
+    let sign = hasHandicap ? -1 : 1;
     const newMoves = [];
     let node = parsed.root;
     while (node.children.length > 0) {
       node = node.children[0];
       const move = sgfNodeToMove(node);
-      if (move?.type !== 'move') continue;
+      if (!move) continue;
+      if (move.type === 'pass') {
+        newMoves.push({ type: 'pass', sign, number: newMoves.length + 1 });
+        sign = sign === 1 ? -1 : 1;
+        continue;
+      }
       try {
         board = applyMove(board, move.sign, move.x, move.y);
       } catch {
         continue;
       }
       newMoves.push({
+        type: 'move',
         x: move.x,
         y: move.y,
         sign: move.sign,
         number: newMoves.length + 1
       });
+      sign = sign === 1 ? -1 : 1;
     }
 
     blackName = parsed.playerBlack || '';
     whiteName = parsed.playerWhite || '';
+    komi = parsed.root.props.KM ? parseFloat(parsed.root.props.KM[0]) : 6.5;
     notes = sgfNodeComment(parsed.root) || '';
     size = parsed.size;
+    setup = rootSetup;
     moves = newMoves;
     cursor = 0;
   }
@@ -236,6 +302,8 @@
     size = game.size ?? 19;
     blackName = game.blackName ?? '';
     whiteName = game.whiteName ?? '';
+    komi = game.komi ?? 6.5;
+    setup = (game.handicapStones ?? []).map(({ x, y }) => ({ x, y, sign: 1 }));
     moves = loadMovesFromGame(game);
   });
 </script>
@@ -250,6 +318,7 @@
       {currentSign}
       {highlightVertex}
       onVertexClick={placeStone}
+      useTheme={false}
     />
   </div>
 
@@ -275,8 +344,16 @@
       onclick={navLast}
     ></button>
     <button onclick={undo} disabled={moves.length === 0}>Undo</button>
-    <button onclick={downloadSgf} disabled={moves.length === 0}>Download SGF</button>
+    <button onclick={pass} disabled={handicapMode}>Pass</button>
+    <button onclick={downloadSgf} disabled={moves.length === 0 && setup.length === 0}
+      >Download SGF</button
+    >
     {#if !gameId}
+      {#if handicapMode}
+        <button onclick={doneHandicap}>Done placing</button>
+      {:else if moves.length === 0}
+        <button onclick={startHandicap}>Set handicap</button>
+      {/if}
       <button onclick={() => fileInput.click()}>Upload SGF</button>
       <button onclick={createGameRecord} disabled={moves.length === 0}>Create game record</button>
     {/if}
@@ -288,7 +365,7 @@
       <select
         value={size}
         onchange={(e) => changeSize(Number(e.target.value))}
-        disabled={!!gameId || moves.length > 0}
+        disabled={!!gameId || moves.length > 0 || setup.length > 0}
       >
         <option value={9}>9×9</option>
         <option value={13}>13×13</option>
@@ -302,6 +379,10 @@
     <label class="kifu__name">
       <span>White</span>
       <input type="text" placeholder="player name" bind:value={whiteName} />
+    </label>
+    <label class="kifu__name">
+      <span>Komi</span>
+      <input type="number" step="0.5" bind:value={komi} />
     </label>
   </div>
 
