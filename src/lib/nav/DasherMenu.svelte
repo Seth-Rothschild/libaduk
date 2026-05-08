@@ -2,6 +2,8 @@
   import PingStatus from './PingStatus.svelte';
   import BackgroundPane from './BackgroundPane.svelte';
   import BoardPane from './BoardPane.svelte';
+  import LanguagePane from './LanguagePane.svelte';
+  import { t } from '$lib/i18n/i18n.svelte.js';
 
   let { username, onSignOut } = $props();
 
@@ -45,19 +47,26 @@
         <BackgroundPane onBack={() => (pane = 'main')} />
       {:else if pane === 'board'}
         <BoardPane onBack={() => (pane = 'main')} />
+      {:else if pane === 'language'}
+        <LanguagePane onBack={() => (pane = 'main')} />
       {:else}
         <a class="text profile-link" href="/profile/{username}" onclick={close}>
           <span class="online-dot"></span>
-          Profile
+          {t('Profile')}
         </a>
-        <a class="text" data-icon="&#xe005;" href="/account/profile" onclick={close}>Preferences</a>
-        <button class="text signout" data-icon="&#xe055;" onclick={signOut}>Sign out</button>
+        <a class="text" data-icon="&#xe005;" href="/account/profile" onclick={close}
+          >{t('Preferences')}</a
+        >
+        <button class="text signout" data-icon="&#xe055;" onclick={signOut}>{t('Sign out')}</button>
         <hr />
+        <button class="text" data-icon-right="&#xe026;" onclick={() => (pane = 'language')}
+          >{t('Language')}</button
+        >
         <button class="text" data-icon-right="&#xe026;" onclick={() => (pane = 'background')}
-          >Background</button
+          >{t('Background')}</button
         >
         <button class="text" data-icon-right="&#xe026;" onclick={() => (pane = 'board')}
-          >Board</button
+          >{t('Board')}</button
         >
         <hr />
         <PingStatus />
@@ -66,15 +75,15 @@
   </div>
 {:else}
   <div class="signin-or-signup">
-    <a href="/signup" class="button button-metal signup">Register</a>
-    <a href="/login" class="button button-metal">Sign in</a>
+    <a href="/signup" class="button button-metal signup">{t('Register')}</a>
+    <a href="/login" class="button button-metal">{t('Sign in')}</a>
   </div>
   <div class="dasher" class:shown={open} bind:this={dasherEl}>
     <button
       class="toggle link anon"
       data-icon="&#xe005;"
-      aria-label="Settings"
-      title="Settings"
+      aria-label={t('Settings')}
+      title={t('Settings')}
       onclick={toggle}
     ></button>
     <div class="dropdown">
@@ -82,12 +91,17 @@
         <BackgroundPane onBack={() => (pane = 'main')} />
       {:else if pane === 'board'}
         <BoardPane onBack={() => (pane = 'main')} />
+      {:else if pane === 'language'}
+        <LanguagePane onBack={() => (pane = 'main')} />
       {:else}
         <button class="text" data-icon-right="&#xe026;" onclick={() => (pane = 'board')}
-          >Board</button
+          >{t('Board')}</button
         >
         <button class="text" data-icon-right="&#xe026;" onclick={() => (pane = 'background')}
-          >Background</button
+          >{t('Background')}</button
+        >
+        <button class="text" data-icon-right="&#xe026;" onclick={() => (pane = 'language')}
+          >{t('Language')}</button
         >
       {/if}
       <PingStatus />

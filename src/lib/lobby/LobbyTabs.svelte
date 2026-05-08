@@ -1,4 +1,6 @@
 <script>
+  import { t } from '$lib/i18n/i18n.svelte.js';
+
   const TABS = [
     { id: 'pools', label: 'Quick pairing' },
     { id: 'lobby', label: 'Lobby' },
@@ -11,7 +13,7 @@
 <div class="tabs-horiz">
   {#each TABS as tab}
     <button class:active={activeTab === tab.id} onclick={() => onTabChange?.(tab.id)}>
-      {tab.label}
+      {t(tab.label)}
     </button>
   {/each}
   {#if myGamesCount > 0}

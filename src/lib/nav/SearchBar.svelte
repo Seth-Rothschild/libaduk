@@ -1,6 +1,7 @@
 <script>
   import { onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
+  import { t } from '$lib/i18n/i18n.svelte.js';
 
   let expanded = $state(false);
   let query = $state('');
@@ -76,14 +77,19 @@
 </script>
 
 <div id="clinput" onmouseenter={onMouseEnter} onmouseleave={onMouseLeave}>
-  <button type="button" data-icon="&#xe057;" aria-label="Search" class="link" onclick={onIconClick}
+  <button
+    type="button"
+    data-icon="&#xe057;"
+    aria-label={t('Search')}
+    class="link"
+    onclick={onIconClick}
   ></button>
   <input
     type="text"
     spellcheck="false"
     autocomplete="off"
-    aria-label="Search"
-    placeholder="Search players"
+    aria-label={t('Search')}
+    placeholder={t('Search players')}
     enterkeyhint="search"
     bind:this={inputEl}
     value={query}

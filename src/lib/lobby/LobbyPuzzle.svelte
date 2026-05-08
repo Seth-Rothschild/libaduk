@@ -1,6 +1,7 @@
 <script>
   import GoBoard from '$lib/game/GoBoard.svelte';
   import { createBoard, placeStones, parseSgf, sgfNodeSetup } from '$lib/game/board';
+  import { t } from '$lib/i18n/i18n.svelte.js';
 
   let { puzzle } = $props();
 
@@ -14,9 +15,9 @@
 </script>
 
 <a href="/puzzle/{puzzle.id}" class="lobby__puzzle">
-  <span class="text">Puzzle of the day</span>
+  <span class="text">{t('Puzzle of the day')}</span>
   <div class="lobby__puzzle__board">
     <GoBoard {signMap} {size} interactive={false} />
   </div>
-  <span class="text">Black to play</span>
+  <span class="text">{t('Black to play')}</span>
 </a>

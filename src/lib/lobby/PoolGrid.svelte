@@ -1,5 +1,6 @@
 <script>
   import PoolCard from './PoolCard.svelte';
+  import { t } from '$lib/i18n/i18n.svelte.js';
 
   let { pools, onSelect, onCancel, showCustom = true, onCustom } = $props();
 </script>
@@ -15,6 +16,6 @@
     />
   {/each}
   {#if showCustom}
-    <PoolCard clock="Custom" custom={true} onClick={() => onCustom?.()} />
+    <PoolCard clock={t('Custom')} custom={true} onClick={() => onCustom?.()} />
   {/if}
 </div>

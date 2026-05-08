@@ -30,6 +30,7 @@
     exportSgf
   } from '$lib/game/board';
   import { initEngine, generateMove, hasModel, isReady, dispose } from '$lib/ai/engine.js';
+  import { t } from '$lib/i18n/i18n.svelte.js';
   import ModelManager from '$lib/ai/ModelManager.svelte';
 
   function getOgsToken() {
@@ -530,13 +531,14 @@
 
   function resolveStripName(targetColor) {
     const storedName = targetColor === 'black' ? blackName : whiteName;
-    const fallback = gs.status === 'waiting' ? 'Waiting...' : targetColor;
+    const fallback =
+      gs.status === 'waiting' ? t('Waiting...') : t(targetColor === 'black' ? 'Black' : 'White');
     if (isOgs) {
       const myOgsUsername = getMe()?.ogs?.username;
       if (myOgsUsername && storedName === myOgsUsername) return displayName;
       return storedName ?? fallback;
     }
-    if (isSpectator) return storedName ?? (targetColor === 'black' ? 'Black' : 'White');
+    if (isSpectator) return storedName ?? t(targetColor === 'black' ? 'Black' : 'White');
     if (targetColor === myColor) return displayName;
     return storedName ?? fallback;
   }
@@ -741,8 +743,8 @@
 
 {#if showModelPrompt}
   <dialog class="ai-model-dialog" open oncancel={(e) => e.preventDefault()}>
-    <h2>AI Model Required</h2>
-    <p>To play against the AI, download a KataGo ONNX model.</p>
+    <h2>{t('AI Model Required')}</h2>
+    <p>{t('To play against the AI, download a KataGo ONNX model.')}</p>
     <ModelManager onSaved={onModelSaved} />
   </dialog>
 {/if}
@@ -848,39 +850,39 @@
               {/if}
             </span>
             <div class="memorize-group">
-              <span class="memorize-group__label">Play as</span>
+              <span class="memorize-group__label">{t('Play as')}</span>
               <div class="memorize-side">
-                {#each ['both', 'black', 'white'] as s}
+                {#each [['both', 'Both'], ['black', 'Black'], ['white', 'White']] as [s, label]}
                   <button
                     class="side-btn"
                     class:side-btn--active={memorize.side === s}
-                    onclick={() => (memorize.side = s)}>{s}</button
+                    onclick={() => (memorize.side = s)}>{t(label)}</button
                   >
                 {/each}
               </div>
             </div>
             <div class="memorize-group">
-              <span class="memorize-group__label">Hint</span>
+              <span class="memorize-group__label">{t('Hint')}</span>
               <div class="memorize-hints">
                 <button
                   class="hint-btn"
                   class:hint-btn--active={memorize.activeHint === 'quadrant'}
-                  onclick={() => memorize.applyHint('quadrant')}>Quadrant</button
+                  onclick={() => memorize.applyHint('quadrant')}>{t('Quadrant')}</button
                 >
                 <button
                   class="hint-btn"
                   class:hint-btn--active={memorize.activeHint === 'grid16'}
-                  onclick={() => memorize.applyHint('grid16')}>16 moves</button
+                  onclick={() => memorize.applyHint('grid16')}>{t('16 moves')}</button
                 >
                 <button
                   class="hint-btn"
                   class:hint-btn--active={memorize.activeHint === 'grid9'}
-                  onclick={() => memorize.applyHint('grid9')}>9 moves</button
+                  onclick={() => memorize.applyHint('grid9')}>{t('9 moves')}</button
                 >
                 <button
                   class="hint-btn"
                   class:hint-btn--active={memorize.activeHint === 'grid4'}
-                  onclick={() => memorize.applyHint('grid4')}>4 moves</button
+                  onclick={() => memorize.applyHint('grid4')}>{t('4 moves')}</button
                 >
               </div>
             </div>
@@ -902,7 +904,7 @@
               {/if}
             </span>
             <span class="score-bar__label">
-              {analysis.status === 'scoring' ? 'Remove dead stones' : 'Toggle group status'}
+              {t(analysis.status === 'scoring' ? 'Remove dead stones' : 'Toggle group status')}
             </span>
             <button class="score-bar__close" onclick={analysisNavigate}>✕</button>
           </div>
@@ -945,9 +947,9 @@
         {#if gs.isViewingHistory}
           <div class="history-indicator">Move {gs.currentViewPly} of {gs.totalPly}</div>
         {:else if isAI && engineLoading}
-          <div class="ai-status">Loading AI engine...</div>
+          <div class="ai-status">{t('Loading AI engine...')}</div>
         {:else if isAI && aiThinking}
-          <div class="ai-status">AI is thinking...</div>
+          <div class="ai-status">{t('AI is thinking...')}</div>
         {/if}
         <GameStatusMessage
           status={gs.status}
@@ -1011,7 +1013,7 @@
             onclick={() => {
               analysis.showEstimate = false;
               analysis.status === 'scoring' ? analysis.stopScoring() : analysis.startScoring();
-            }}>Score</button
+            }}>{t('Score')}</button
           >
           <button
             class="seg-btn"
@@ -1021,7 +1023,7 @@
               if (analysis.status === 'scoring') analysis.stopScoring();
               analysis.showEstimate = !analysis.showEstimate;
               flushPendingAnalysisTree();
-            }}>Estimate</button
+            }}>{t('Estimate')}</button
           >
         </div>
         <button
@@ -1037,21 +1039,24 @@
               analysis.showEstimate = false;
               memorize.enter();
             }
-          }}>Memorize</button
+          }}>{t('Memorize')}</button
         >
       {:else}
         {#if !isSpectator && gs.status === 'waiting'}
-          <button class="button button-red" onclick={cancel}>Cancel Game</button>
+          <button class="button button-red" onclick={cancel}>{t('Cancel Game')}</button>
         {:else if !isSpectator && gs.status === 'playing'}
           {#if pendingMove && boardSettings.moveConfirmation === 'button'}
-            <button class="button button-confirm" onclick={confirmMove}>Confirm move</button>
+            <button class="button button-confirm" onclick={confirmMove}>{t('Confirm move')}</button>
           {:else}
-            <button class="button button-metal" onclick={pass} disabled={!isMyTurn}>Pass</button>
+            <button class="button button-metal" onclick={pass} disabled={!isMyTurn}
+              >{t('Pass')}</button
+            >
           {/if}
           {#if opponentOnline === false}
-            <button class="button button-red" onclick={forceResign}>Force Resignation</button>
+            <button class="button button-red" onclick={forceResign}>{t('Force Resignation')}</button
+            >
           {:else}
-            <button class="button button-red" onclick={resign}>Resign</button>
+            <button class="button button-red" onclick={resign}>{t('Resign')}</button>
           {/if}
         {:else if !isSpectator && gs.status === 'scoring'}
           {@const myApproved = myColor === 'black' ? gs.blackApproved : gs.whiteApproved}
@@ -1062,13 +1067,15 @@
             onclick={approveScore}
             disabled={myApproved}
           >
-            {myApproved ? 'Score accepted' : 'Accept score'}
+            {t(myApproved ? 'Score accepted' : 'Accept score')}
           </button>
-          <button class="button button-metal" onclick={resumePlay}>Resume play</button>
+          <button class="button button-metal" onclick={resumePlay}>{t('Resume play')}</button>
         {/if}
         {#if gs.status === 'gameover'}
           {#if !analysisMode}
-            <button class="button button-green" onclick={enterAnalysis}>Analysis board</button>
+            <button class="button button-green" onclick={enterAnalysis}
+              >{t('Analysis board')}</button
+            >
           {/if}
         {/if}
       {/if}
@@ -1087,9 +1094,9 @@
           while (!memorize.done) memorize.next();
         }}
         menuItems={[
-          { label: 'Export SGF', onclick: downloadSgf },
-          { label: 'Open as Kifu', href: `/kifu/${gameId}` },
-          { label: 'Back to game', onclick: exitAnalysis }
+          { label: t('Export SGF'), onclick: downloadSgf },
+          { label: t('Open as Kifu'), href: `/kifu/${gameId}` },
+          { label: t('Back to game'), onclick: exitAnalysis }
         ]}
       />
     {:else if analysisMode}
@@ -1101,9 +1108,9 @@
         onNext={() => analysisNavigate('next')}
         onLast={() => analysisNavigate('last')}
         menuItems={[
-          { label: 'Export SGF', onclick: downloadSgf },
-          { label: 'Open in Kifu', href: `/kifu/${gameId}` },
-          { label: 'Back to game', onclick: exitAnalysis }
+          { label: t('Export SGF'), onclick: downloadSgf },
+          { label: t('Open as Kifu'), href: `/kifu/${gameId}` },
+          { label: t('Back to game'), onclick: exitAnalysis }
         ]}
       />
     {:else if gs.totalPly > 0}
@@ -1116,7 +1123,7 @@
         onLast={() => gs.jumpLast()}
         menuItems={analysisMode
           ? [
-              { label: 'Export SGF', onclick: downloadSgf },
+              { label: t('Export SGF'), onclick: downloadSgf },
               { label: 'Open in Kifu', href: `/kifu/${gameId}` },
               { label: 'Back to game', onclick: exitAnalysis }
             ]

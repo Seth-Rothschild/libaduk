@@ -1,4 +1,6 @@
 <script>
+  import { t } from '$lib/i18n/i18n.svelte.js';
+
   let { clock, label, size, custom = false, onClick, onCancel } = $props();
   let spinning = $state(false);
 </script>
@@ -34,7 +36,7 @@
       <span class="board-size">{size}×{size}</span>
     {/if}
     {#if label}
-      <span class="perf">{label}</span>
+      <span class="perf">{t(label)}</span>
     {/if}
   {/if}
 </div>

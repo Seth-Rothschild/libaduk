@@ -1,6 +1,7 @@
 <script>
   import ScoreBreakdown from './ScoreBreakdown.svelte';
-  const ICON_INFO = '\ue060';
+  import { t } from '$lib/i18n/i18n.svelte.js';
+  const ICON_INFO = '';
 
   function formatCorrDeadline(deadline) {
     if (!deadline) return '';
@@ -16,8 +17,8 @@
 
   function resultLabel(result) {
     if (!result) return null;
-    if (result.endsWith('+R')) return 'by Resignation';
-    if (result.endsWith('+T')) return 'by Time';
+    if (result.endsWith('+R')) return t('by Resignation');
+    if (result.endsWith('+T')) return t('by Time');
     return result;
   }
 
@@ -44,10 +45,10 @@
   <div class="message" data-icon={ICON_INFO}>
     <div>
       {#if isSpectator}
-        Waiting for players...
+        {t('Waiting for players...')}
       {:else}
-        You are <strong>{myColor}</strong><br />
-        Share this link to invite a friend.
+        {t(myColor === 'black' ? 'You play Black' : 'You play White')}<br />
+        {t('Share this link to invite a friend.')}
       {/if}
     </div>
   </div>
@@ -55,11 +56,13 @@
   <div class="message" data-icon={ICON_INFO}>
     <div>
       {#if isSpectator}
-        Spectating<br />{currentSign === 1 ? 'Black' : 'White'} to play
+        {t('Spectating')}<br />{t(currentSign === 1 ? 'Black to play' : 'White to play')}
       {:else if isMyTurn}
-        You play the {myColor} stones<br /><strong>It's your turn!</strong>
+        {t(myColor === 'black' ? 'You play Black' : 'You play White')}<br /><strong
+          >{t("It's your turn!")}</strong
+        >
       {:else}
-        It's your opponent's turn
+        {t("It's your opponent's turn")}
       {/if}
       {#if isCorrGame && corrDeadline}
         <br /><span class="corr-deadline">{formatCorrDeadline(corrDeadline)}</span>
@@ -69,8 +72,8 @@
 {:else if status === 'scoring'}
   <div class="message" data-icon={ICON_INFO}>
     <div>
-      Counting territory<br />
-      <strong>Click stones to mark dead</strong>
+      {t('Counting territory')}<br />
+      <strong>{t('Click stones to mark dead')}</strong>
     </div>
   </div>
   <ScoreBreakdown {score} {komi} {blackApproved} {whiteApproved} showApprovals={true} />
@@ -78,27 +81,27 @@
   <div class="message" data-icon={ICON_INFO}>
     <div>
       {#if isSpectator}
-        {winner === 1 ? 'Black' : 'White'} wins
+        {t(winner === 1 ? 'Black wins' : 'White wins')}
       {:else}
-        {winner === mySign ? 'You win' : 'You lose'}
+        {t(winner === mySign ? 'You win' : 'You lose')}
       {/if}
       {#if winnerResult}
         <br />{resultLabel(winnerResult)}
       {:else if finalScore}
         <br />{finalScore.blackScore.toFixed(1)} &ndash; {finalScore.whiteScore.toFixed(1)}
       {:else}
-        <br />by resignation
+        <br />{t('by resignation')}
       {/if}
     </div>
   </div>
 {:else if status === 'abandoned'}
   <div class="message" data-icon={ICON_INFO}>
     <div>
-      {isSpectator ? 'A player has left the game.' : 'Your opponent has left the game.'}
+      {t(isSpectator ? 'A player has left the game.' : 'Your opponent has left the game.')}
     </div>
   </div>
 {:else if status === 'cancelled'}
   <div class="message" data-icon={ICON_INFO}>
-    <div>This game was cancelled.</div>
+    <div>{t('This game was cancelled.')}</div>
   </div>
 {/if}

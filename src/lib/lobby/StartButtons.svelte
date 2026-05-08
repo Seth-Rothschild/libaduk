@@ -1,4 +1,6 @@
 <script>
+  import { t } from '$lib/i18n/i18n.svelte.js';
+
   let {
     playersOnline = 0,
     gamesInPlay = 0,
@@ -13,19 +15,19 @@
     class="button button-metal lobby__start__button lobby__start__button--hook"
     onclick={() => onCreateGame?.()}
   >
-    Create a game
+    {t('Create a game')}
   </button>
   <button
     class="button button-metal lobby__start__button lobby__start__button--friend"
     onclick={() => onChallengeFriend?.()}
   >
-    Challenge a friend
+    {t('Challenge a friend')}
   </button>
   <button
     class="button button-metal lobby__start__button lobby__start__button--ai"
     onclick={() => onPlayLocally?.()}
   >
-    Play against computer
+    {t('Play against computer')}
   </button>
 
   <div class="lobby__counters">

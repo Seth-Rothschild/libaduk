@@ -1,5 +1,6 @@
 <script>
   import { goto } from '$app/navigation';
+  import { t } from '$lib/i18n/i18n.svelte.js';
 
   let { gameType, onClose, creatorName = null } = $props();
 
@@ -178,15 +179,15 @@
 <dialog bind:this={dialog} class="game-setup" onclose={onClose} onclick={onDialogClick}>
   <div class="scrollable">
     <div class="close-button-anchor">
-      <button class="close-button" data-icon="" onclick={close} aria-label="Close"></button>
+      <button class="close-button" data-icon="" onclick={close} aria-label={t('Close')}></button>
     </div>
 
-    <h2>Game Setup</h2>
+    <h2>{t('Game Setup')}</h2>
 
     <div class="setup-content">
       <!-- Board size -->
       <div class="config-group">
-        <div class="label">Board size</div>
+        <div class="label">{t('Board size')}</div>
         <div class="size-choices">
           {#each SIZE_OPTIONS as size}
             <button
@@ -204,22 +205,22 @@
       <div class="config-group time-control-tabs">
         <div class="tabs-horiz">
           <button class:active={timeMode === 'byoyomi'} onclick={() => switchTimeMode('byoyomi')}>
-            Byo-yomi
+            {t('Byo-yomi')}
           </button>
           <button class:active={timeMode === 'realtime'} onclick={() => switchTimeMode('realtime')}>
-            Fischer
+            {t('Fischer')}
           </button>
           <button
             class:active={timeMode === 'correspondence'}
             onclick={() => switchTimeMode('correspondence')}
           >
-            Correspondence
+            {t('Correspondence')}
           </button>
           <button
             class:active={timeMode === 'unlimited'}
             onclick={() => switchTimeMode('unlimited')}
           >
-            Unlimited
+            {t('Unlimited')}
           </button>
         </div>
 
@@ -227,7 +228,7 @@
           <div class="time-panel">
             <div class="sliders">
               <div class="slider-row">
-                <label class="slider-label" for="byo-min">Minutes per side</label>
+                <label class="slider-label" for="byo-min">{t('Minutes per side')}</label>
                 <input
                   id="byo-min"
                   class="range"
@@ -240,7 +241,7 @@
                 <span class="val-box">{byoMin}</span>
               </div>
               <div class="slider-row">
-                <label class="slider-label" for="byo-periods">Byo-yomi periods</label>
+                <label class="slider-label" for="byo-periods">{t('Byo-yomi periods')}</label>
                 <input
                   id="byo-periods"
                   class="range"
@@ -253,7 +254,7 @@
                 <span class="val-box">{byoPeriods}</span>
               </div>
               <div class="slider-row">
-                <label class="slider-label" for="byo-sec">Period time (seconds)</label>
+                <label class="slider-label" for="byo-sec">{t('Period time (seconds)')}</label>
                 <input
                   id="byo-sec"
                   class="range"
@@ -288,7 +289,7 @@
             <div class="sliders-grid">
               <div class="slider-container">
                 <div class="label-row">
-                  <label for="fischer-min">Minutes per side</label>
+                  <label for="fischer-min">{t('Minutes per side')}</label>
                   <span class="val-box">{fischerMin}</span>
                 </div>
                 <input
@@ -305,7 +306,7 @@
               <div class="slider-container">
                 <div class="label-row">
                   <span class="val-box">{fischerInc}s</span>
-                  <label for="fischer-inc">Increment (seconds)</label>
+                  <label for="fischer-inc">{t('Increment (seconds)')}</label>
                 </div>
                 <input
                   id="fischer-inc"
@@ -337,7 +338,7 @@
           <div class="time-panel">
             <div class="slider-container">
               <div class="label-row">
-                <label for="corr-days">Days per turn</label>
+                <label for="corr-days">{t('Days per turn')}</label>
                 <span class="val-box">{corrLabel(corrDays)}</span>
               </div>
               <input
@@ -364,13 +365,13 @@
           </div>
         {:else}
           <div class="time-panel">
-            <p class="unlimited-label">No time limit</p>
+            <p class="unlimited-label">{t('No time limit')}</p>
           </div>
         {/if}
       </div>
       {#if isAi}
         <div class="config-group">
-          <div class="label" style="text-align: center;">Strength</div>
+          <div class="label" style="text-align: center;">{t('Strength')}</div>
           <group class="radio ai-strength">
             {#each [1, 2, 3, 4, 5, 6, 7, 8] as level}
               <div>
@@ -390,7 +391,7 @@
       {/if}
       <!-- Handicap -->
       <div class="config-group">
-        <div class="label" style="text-align: center;">Handicap</div>
+        <div class="label" style="text-align: center;">{t('Handicap')}</div>
         <group class="radio ai-strength">
           {#each [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as stones}
             <div>
@@ -410,12 +411,12 @@
 
       <!-- Color picker -->
       <div class="config-group">
-        <div class="label">Side</div>
+        <div class="label">{t('Side')}</div>
         <div class="color-choices">
           {#each [['black', 'Black'], ['random', 'Random'], ['white', 'White']] as [key, name]}
             <button class="color-choice" class:active={color === key} onclick={() => (color = key)}>
               <div class="color-picker__button {key}"><i></i></div>
-              <span class="text">{name}</span>
+              <span class="text">{t(name)}</span>
             </button>
           {/each}
         </div>
@@ -429,7 +430,7 @@
         disabled={loading}
         class:disabled={loading}
       >
-        {BUTTON_LABELS[gameType]}
+        {t(BUTTON_LABELS[gameType])}
       </button>
       {#if loading}
         <div class="spinner"></div>

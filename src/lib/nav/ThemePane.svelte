@@ -1,6 +1,7 @@
 <script>
   import { stoneTheme } from './stoneTheme.svelte.js';
   import { extractAsar } from './asar.js';
+  import { t } from '$lib/i18n/i18n.svelte.js';
 
   function extractBoardColor(cssText) {
     const varMatch = cssText.match(/--shudan-board-background-color\s*:\s*([^;}\n]+)/);
@@ -66,7 +67,7 @@
   <button
     class="stone-btn"
     class:active={stoneTheme.activeId === null}
-    title="Default"
+    title={t('Default')}
     onclick={() => stoneTheme.setActive(null)}
     style="background: url('/images/go/board.png') center/cover no-repeat"
   >
@@ -93,13 +94,13 @@
       </button>
       <button
         class="stone-delete"
-        aria-label="Delete {theme.name}"
+        aria-label={t('Delete') + ' ' + theme.name}
         onclick={() => stoneTheme.removeTheme(theme.id)}>×</button
       >
     </div>
   {/each}
 </div>
 <label class="button stone-upload">
-  Import Theme
+  {t('Import Theme')}
   <input type="file" accept=".asar" onchange={handleAsarUpload} />
 </label>

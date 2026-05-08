@@ -1,46 +1,48 @@
 <script>
+  import { t } from '$lib/i18n/i18n.svelte.js';
+
   let { onCreateGame, onChallengeAFriend } = $props();
 </script>
 
 <nav id="topnav" class="hover" aria-label="Main">
   <section>
     <a href="/">
-      <span class="play">Play</span>
+      <span class="play">{t('Play')}</span>
       <span class="home">libaduk.com</span>
     </a>
     <div role="group">
-      <button onclick={onCreateGame}>Create a game</button>
-      <button onclick={onChallengeAFriend}>Challenge a friend</button>
+      <button onclick={onCreateGame}>{t('Create a game')}</button>
+      <button onclick={onChallengeAFriend}>{t('Challenge a friend')}</button>
     </div>
   </section>
   <section>
-    <a href="/puzzle">Puzzles</a>
+    <a href="/puzzle">{t('Puzzles')}</a>
     <div role="group">
-      <a href="/puzzle">Random puzzle</a>
-      <a href="/puzzle/daily">Puzzle of the day</a>
+      <a href="/puzzle">{t('Random puzzle')}</a>
+      <a href="/puzzle/daily">{t('Puzzle of the day')}</a>
     </div>
   </section>
   <section>
-    <a href="/tv">Watch</a>
+    <a href="/tv">{t('Watch')}</a>
     <div role="group">
-      <a href="/tv">TV</a>
+      <a href="/tv">{t('TV')}</a>
     </div>
   </section>
   <section>
-    <a href="/player">Community</a>
+    <a href="/player">{t('Community')}</a>
     <div role="group">
-      <a href="/player">Players</a>
-      <a href="/player/activity">Activity</a>
-      <a href="https://online-go.com/group/16370">OGS Group</a>
-      <a href="https://github.com/Seth-Rothschild/libaduk/issues">Github Issues</a>
+      <a href="/player">{t('Players')}</a>
+      <a href="/player/activity">{t('Activity')}</a>
+      <a href="https://online-go.com/group/16370">{t('OGS Group')}</a>
+      <a href="https://github.com/Seth-Rothschild/libaduk/issues">{t('Github Issues')}</a>
     </div>
   </section>
   <section>
-    <a href="/scratch" data-sveltekit-preload-data="off">Tools</a>
+    <a href="/scratch" data-sveltekit-preload-data="off">{t('Tools')}</a>
     <div role="group">
-      <a href="/scratch" data-sveltekit-preload-data="off">Scratch board</a>
-      <a href="/kifu" data-sveltekit-preload-data="off">Create Kifu</a>
-      <a href="/import">Import game</a>
+      <a href="/scratch" data-sveltekit-preload-data="off">{t('Scratch board')}</a>
+      <a href="/kifu" data-sveltekit-preload-data="off">{t('Create Kifu')}</a>
+      <a href="/import">{t('Import game')}</a>
     </div>
   </section>
 </nav>
