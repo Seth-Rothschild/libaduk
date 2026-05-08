@@ -42,6 +42,7 @@
     <TopNav
       onCreateGame={() => onOpenSetup('hook')}
       onChallengeAFriend={() => onOpenSetup('friend')}
+      onPlayLocally={() => onOpenSetup('ai')}
     />
   </div>
 

@@ -1,4 +1,6 @@
 <script>
+  import { t } from '$lib/i18n/i18n.svelte.js';
+
   let { open, onClose, onCreateGame, onChallengeAFriend, onPlayLocally } = $props();
 
   const handleCreateGame = () => {
@@ -24,42 +26,43 @@
 
 <nav class="mobile-nav" class:open inert={!open} aria-label="Mobile">
   <section>
-    <a href="/" onclick={onClose}>Play</a>
+    <a href="/" onclick={onClose}>{t('Play')}</a>
     <div role="group">
-      <button onclick={handleCreateGame}>Create a game</button>
-      <button onclick={handleChallengeAFriend}>Challenge a friend</button>
-      <button onclick={handlePlayLocally}>Play against computer</button>
+      <button onclick={handleCreateGame}>{t('Create a game')}</button>
+      <button onclick={handleChallengeAFriend}>{t('Challenge a friend')}</button>
+      <button onclick={handlePlayLocally}>{t('Play against computer')}</button>
     </div>
   </section>
   <section>
-    <a href="/player" onclick={onClose}>Community</a>
+    <a href="/puzzle" onclick={onClose}>{t('Puzzles')}</a>
     <div role="group">
-      <a href="/player" onclick={onClose}>Players</a>
-      <a href="/player/activity" onclick={onClose}>Activity</a>
-      <a href="https://online-go.com/group/16370" onclick={onClose}>OGS Group</a>
-      <a href="https://github.com/Seth-Rothschild/libaduk/issues" onclick={onClose}>Github Issues</a
+      <a href="/puzzle" onclick={onClose}>{t('Random puzzle')}</a>
+      <a href="/puzzle/daily" onclick={onClose}>{t('Puzzle of the day')}</a>
+    </div>
+  </section>
+  <section>
+    <a href="/tv" onclick={onClose}>{t('Watch')}</a>
+    <div role="group">
+      <a href="/tv" onclick={onClose}>{t('TV')}</a>
+    </div>
+  </section>
+  <section>
+    <a href="/player" onclick={onClose}>{t('Community')}</a>
+    <div role="group">
+      <a href="/player" onclick={onClose}>{t('Players')}</a>
+      <a href="/player/activity" onclick={onClose}>{t('Activity')}</a>
+      <a href="https://online-go.com/group/16370" onclick={onClose}>{t('OGS Group')}</a>
+      <a href="https://github.com/Seth-Rothschild/libaduk/issues" onclick={onClose}
+        >{t('Github Issues')}</a
       >
     </div>
   </section>
   <section>
-    <a href="/puzzle" onclick={onClose}>Puzzles</a>
+    <a href="/scratch" onclick={onClose}>{t('Tools')}</a>
     <div role="group">
-      <a href="/puzzle" onclick={onClose}>Random puzzle</a>
-      <a href="/puzzle/daily" onclick={onClose}>Puzzle of the day</a>
-    </div>
-  </section>
-  <section>
-    <a href="/tv" onclick={onClose}>Watch</a>
-    <div role="group">
-      <a href="/tv" onclick={onClose}>TV</a>
-    </div>
-  </section>
-  <section>
-    <a href="/scratch" onclick={onClose}>Tools</a>
-    <div role="group">
-      <a href="/scratch" onclick={onClose}>Scratch board</a>
-      <a href="/kifu" onclick={onClose}>Create Kifu</a>
-      <a href="/import" onclick={onClose}>Import game</a>
+      <a href="/scratch" onclick={onClose}>{t('Scratch board')}</a>
+      <a href="/kifu" onclick={onClose}>{t('Create Kifu')}</a>
+      <a href="/import" onclick={onClose}>{t('Import game')}</a>
     </div>
   </section>
 </nav>

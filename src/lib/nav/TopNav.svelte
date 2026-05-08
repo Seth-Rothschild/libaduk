@@ -1,7 +1,7 @@
 <script>
   import { t } from '$lib/i18n/i18n.svelte.js';
 
-  let { onCreateGame, onChallengeAFriend } = $props();
+  let { onCreateGame, onChallengeAFriend, onPlayLocally } = $props();
 </script>
 
 <nav id="topnav" class="hover" aria-label="Main">
@@ -13,6 +13,7 @@
     <div role="group">
       <button onclick={onCreateGame}>{t('Create a game')}</button>
       <button onclick={onChallengeAFriend}>{t('Challenge a friend')}</button>
+      <button onclick={onPlayLocally}>{t('Play against computer')}</button>
     </div>
   </section>
   <section>
