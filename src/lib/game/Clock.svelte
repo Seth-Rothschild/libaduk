@@ -85,8 +85,10 @@
   }
 
   const isHour = $derived(displayMs >= 3600000);
-  const isEmerg = $derived(displayMs > 0 && displayMs < 30000);
+  const isEmerg = $derived(displayMs > 0 && displayMs < 5000);
   const isOut = $derived(clockData != null && displayMs <= 0);
+  const emergWhole = $derived(Math.floor(displayMs / 1000));
+  const emergTenths = $derived(Math.floor((displayMs % 1000) / 100));
   const barScale = $derived(
     initialMs && initialMs > 0 ? Math.max(0, Math.min(1, displayMs / initialMs)) : 1
   );
@@ -110,7 +112,11 @@
     role="timer"
   >
     <div class="time" class:hour={isHour}>
-      {formatTime(displayMs)}
+      {#if isEmerg}
+        {emergWhole}<span class="emerg-tenths">.{emergTenths}</span>
+      {:else}
+        {formatTime(displayMs)}
+      {/if}
       {#if byoLabel}
         <span class="byo-label">{byoLabel}</span>
       {/if}
@@ -122,6 +128,9 @@
 {/if}
 
 <style>
+  .emerg-tenths {
+    font-size: 70%;
+  }
   .byo-label {
     font-size: 0.45em;
     align-self: flex-end;
