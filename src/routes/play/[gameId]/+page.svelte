@@ -56,6 +56,7 @@
   let whiteName = $state(data.game.whiteName ?? null);
   let blackOnline = $state(false);
   let whiteOnline = $state(false);
+  let spectators = $state([]);
   let pendingMove = $state(null);
 
   const isAI = $derived(data.game.gameType === 'ai');
@@ -516,6 +517,13 @@
     isAI || isOgs ? null : oppColor === 'black' ? blackOnline : whiteOnline
   );
 
+  const chatViewers = $derived.by(() => {
+    const players = [];
+    if (blackOnline && blackName) players.push(blackName);
+    if (whiteOnline && whiteName) players.push(whiteName);
+    return [...players, ...spectators];
+  });
+
   function resolvePlayerName(targetColor) {
     const storedName = targetColor === 'black' ? blackName : whiteName;
     const fallback = targetColor === 'black' ? 'Black' : 'White';
@@ -666,6 +674,9 @@
           if (msg.color === 'black') blackOnline = msg.online;
           else if (msg.color === 'white') whiteOnline = msg.online;
         }
+        if (msg.type === 'spectators') {
+          spectators = msg.names ?? [];
+        }
         if (msg.type === 'gameover') {
           gs.status = 'gameover';
           if (msg.winner) gs.winner = msg.winner === 'black' ? 1 : -1;
@@ -721,7 +732,7 @@
       });
 
       const ogsToken = isOgs ? getOgsToken() : null;
-      gameSocket.join(currentGameId, data.viewerColor ?? null, ogsToken);
+      gameSocket.join(currentGameId, data.viewerColor ?? null, ogsToken, displayName);
 
       if (data.game.gameType === 'ai') {
         initAiEngine();
@@ -786,6 +797,7 @@
       {gameId}
       gameStatus={gs.status}
       bind:messages={chatMessages}
+      viewers={chatViewers}
       initialNote={data.note ?? ''}
       onSend={handleChatSend}
       boardSize={gs.boardSize}

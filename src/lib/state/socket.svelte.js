@@ -5,6 +5,7 @@ class GameSocket {
   #onMessage = null;
   #gameId = null;
   #color = null;
+  #name = null;
   #ogsToken = null;
   #reconnectTimer = null;
   #reconnectDelay = 1000;
@@ -14,10 +15,11 @@ class GameSocket {
     this.#onMessage = handler;
   }
 
-  join(gameId, color = null, ogsToken = null) {
+  join(gameId, color = null, ogsToken = null, name = null) {
     this.#intentionalClose = false;
     this.#gameId = gameId;
     this.#color = color;
+    this.#name = name;
     this.#ogsToken = ogsToken;
     this.#reconnectDelay = 1000;
     this.#openSocket();
@@ -35,6 +37,7 @@ class GameSocket {
       this.#reconnectDelay = 1000;
       if (this.#gameId) {
         const joinMsg = { type: 'join', gameId: this.#gameId, color: this.#color };
+        if (this.#name) joinMsg.name = this.#name;
         if (this.#ogsToken) joinMsg.ogsToken = this.#ogsToken;
         this.send(joinMsg);
       }

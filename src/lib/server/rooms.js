@@ -254,6 +254,16 @@ function removeFromGame(socket) {
   socket.gameId = null;
 }
 
+function spectatorNames(gameId) {
+  const clients = gameClients.get(gameId);
+  if (!clients) return [];
+  const names = [];
+  for (const c of clients) {
+    if (!c.playerColor && c.spectatorName) names.push(c.spectatorName);
+  }
+  return names;
+}
+
 export function attachWebSocketServer(httpServer) {
   const wss = new WebSocketServer({ noServer: true });
 
@@ -297,8 +307,11 @@ export function attachWebSocketServer(httpServer) {
         removeFromGame(socket);
         addToGame(socket, msg.gameId);
         socket.playerColor = msg.color ?? null;
+        socket.spectatorName = !msg.color && msg.name ? msg.name : null;
         if (socket.playerColor) {
           broadcast(msg.gameId, { type: 'presence', color: socket.playerColor, online: true });
+        } else {
+          broadcast(msg.gameId, { type: 'spectators', names: spectatorNames(msg.gameId) });
         }
         const clients = gameClients.get(msg.gameId);
         for (const other of clients) {
@@ -306,6 +319,7 @@ export function attachWebSocketServer(httpServer) {
             send(socket, { type: 'presence', color: other.playerColor, online: true });
           }
         }
+        send(socket, { type: 'spectators', names: spectatorNames(msg.gameId) });
 
         const game = await db.getGame(msg.gameId);
         if (game?.analysisActive && game?.analysisTree) {
@@ -568,9 +582,12 @@ export function attachWebSocketServer(httpServer) {
       if (socket.tvViewer) tvRoom.removeClient(socket);
       const gameId = socket.gameId;
       const color = socket.playerColor;
+      const wasSpectator = !color && !!socket.spectatorName;
       removeFromGame(socket);
       if (gameId && color) {
         broadcast(gameId, { type: 'presence', color, online: false });
+      } else if (gameId && wasSpectator) {
+        broadcast(gameId, { type: 'spectators', names: spectatorNames(gameId) });
       }
       if (gameId && !gameClients.has(gameId)) {
         const game = await db.getGame(gameId);

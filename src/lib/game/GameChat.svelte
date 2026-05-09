@@ -6,6 +6,7 @@
     gameId = '',
     gameStatus = 'waiting',
     messages = $bindable([]),
+    viewers = [],
     initialNote = '',
     onSend = () => {},
     boardSize = 19,
@@ -16,20 +17,26 @@
 
   function parseMessageParts(text) {
     const isCoord = (word) => /^[A-HJ-Ta-hj-t]\d{1,2}$/i.test(word);
-    const coordSet = new Set(text.split(' ').filter(isCoord));
-    if (coordSet.size === 0) return [{ type: 'text', content: text }];
+    const isURL = (word) => /^https?:\/\/\S+$/.test(word);
+    const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const matchSet = new Set(text.split(' ').filter((w) => isCoord(w) || isURL(w)));
+    if (matchSet.size === 0) return [{ type: 'text', content: text }];
 
-    const pattern = new RegExp(`(${[...coordSet].join('|')})`);
+    const pattern = new RegExp(`(${[...matchSet].map(escapeRegex).join('|')})`);
     return text.split(pattern).map((part, i) => {
       if (i % 2 === 0) return { type: 'text', content: part };
+      if (isURL(part)) return { type: 'url', content: part };
       const x = COL_LETTERS.indexOf(part[0].toUpperCase());
       const y = boardSize - parseInt(part.slice(1));
       return { type: 'coord', content: part, x, y };
     });
   }
 
+  const uniqueViewers = $derived([...new Set(viewers)]);
+
   let activeTab = $state('discussion');
   let inputText = $state('');
+  let sendFailed = $state(false);
   let noteText = $state(initialNote);
   let messagesEl = $state(null);
   let usedStartPresets = $state(new Set());
@@ -62,7 +69,12 @@
 
   function sendMessage(text) {
     if (!text.trim()) return;
-    onSend(text.trim());
+    const sent = onSend(text.trim());
+    if (sent === false) {
+      sendFailed = true;
+      return;
+    }
+    sendFailed = false;
     inputText = '';
     scrollToBottom();
   }
@@ -129,6 +141,16 @@
 
   {#if activeTab === 'discussion'}
     <div class="mchat__content">
+      {#if uniqueViewers.length > 0}
+        <header class="mchat__viewers">
+          <span class="mchat__viewers-count">In this room: </span>
+          <ul class="mchat__viewers-list">
+            {#each uniqueViewers as viewer}
+              <li>{viewer}</li>
+            {/each}
+          </ul>
+        </header>
+      {/if}
       <ol
         class="mchat__messages"
         aria-live="polite"
@@ -153,6 +175,8 @@
                       onmouseleave={() => onCoordHover(null)}
                       >{part.content}
                     </span>
+                  {:else if part.type === 'url'}
+                    <a href={part.content} target="_blank" rel="noopener">{part.content}</a>
                   {:else}
                     {part.content}
                   {/if}
@@ -164,7 +188,8 @@
       </ol>
       <input
         class="mchat__say"
-        placeholder="Please be nice in the chat!"
+        class:mchat__say--disconnected={sendFailed}
+        placeholder={sendFailed ? 'Disconnected — message not sent' : 'Please be nice in the chat!'}
         aria-label="Chat message"
         bind:value={inputText}
         onkeydown={handleKeydown}

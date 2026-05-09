@@ -1155,6 +1155,56 @@ html.light .color-icon.white::before {
   outline: 1px solid var(--c-primary);
 }
 
+.mchat__say--disconnected {
+  border-color: var(--c-error, #f87171);
+}
+
+.mchat__viewers {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  padding: 0.4em 0.6em;
+  border-bottom: 1px solid var(--c-border);
+  font-size: 0.85em;
+  color: var(--c-font-dim);
+  flex-shrink: 0;
+}
+
+.mchat__viewers-count {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.mchat__viewers-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 0.75em;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mchat__viewers-list::-webkit-scrollbar {
+  display: none;
+}
+
+.mchat__viewers-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  white-space: nowrap;
+}
+
+.mchat__viewers-list li::before {
+  content: '';
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background: var(--c-success, #4ade80);
+  flex-shrink: 0;
+}
+
 .mchat__presets {
   user-select: none;
   display: flex;
