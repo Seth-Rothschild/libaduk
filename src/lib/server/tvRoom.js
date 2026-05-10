@@ -2,11 +2,8 @@ import * as db from './db.js';
 
 const CHAT_CAP = 100;
 
-const room = {
-  currentGameId: null,
-  chat: [],
-  clients: new Set()
-};
+if (!global.__tvRoom) global.__tvRoom = { currentGameId: null, chat: [], clients: new Set() };
+const room = global.__tvRoom;
 
 export async function init() {
   room.chat = await db.loadTvChat();

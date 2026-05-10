@@ -210,6 +210,11 @@ class OgsLiveGame {
     if (data.phase === 'finished') {
       this.result = this.#computeResultFromData(data);
       this.#fireGameEnd();
+      if (!this.onGameEnd)
+        setTimeout(() => {
+          this.stop();
+          this.start(null);
+        }, 0);
     }
   }
 

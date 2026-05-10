@@ -143,11 +143,25 @@
 
   onMount(async () => {
     ogsSeekGraph.start();
-    ogsLiveGame.start();
+    const res = await fetch('/api/topgame');
+    const { gameId } = await res.json();
+    ogsLiveGame.onGameStart = (game) => {
+      fetch('/api/topgame', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId: game.id,
+          blackName: game.black?.username ?? null,
+          whiteName: game.white?.username ?? null
+        })
+      });
+    };
+    ogsLiveGame.start(gameId ?? null);
     await getStreams();
 
     return () => {
       ogsSeekGraph.stop();
+      ogsLiveGame.onGameStart = null;
       ogsLiveGame.stop();
     };
   });
