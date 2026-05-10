@@ -2716,6 +2716,7 @@ html.light .kifu__board .go-inner.go-sign_-1 {
 
 .kifu__actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.6em;
   font-size: 0.9em;
