@@ -79,8 +79,8 @@
 
   const blackClock = $derived(ogsLiveGame.clock?.black ?? null);
   const whiteClock = $derived(ogsLiveGame.clock?.white ?? null);
-  const blackRunning = $derived(ogsLiveGame.clock?.activeColor === 'black');
-  const whiteRunning = $derived(ogsLiveGame.clock?.activeColor === 'white');
+  const blackRunning = $derived(!gameResult && ogsLiveGame.clock?.activeColor === 'black');
+  const whiteRunning = $derived(!gameResult && ogsLiveGame.clock?.activeColor === 'white');
 
   const moveNodes = $derived.by(() =>
     ogsLiveGame.moves.map((m, i) => ({
