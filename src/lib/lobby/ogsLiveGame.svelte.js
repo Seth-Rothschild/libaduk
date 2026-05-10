@@ -18,7 +18,6 @@ class OgsLiveGame {
 
   #ws = null;
   #pingInterval = null;
-  #tickInterval = null;
   #msgId = 1;
   #drift = 0;
   #latency = 0;
@@ -26,7 +25,6 @@ class OgsLiveGame {
   #moveCount = 0;
   #firstColor = 1;
   #endedFired = false;
-  #periodMs = 0;
 
   async start(gameId = null) {
     if (!browser || this.#ws) return;
@@ -124,7 +122,6 @@ class OgsLiveGame {
 
   stop() {
     clearInterval(this.#pingInterval);
-    clearInterval(this.#tickInterval);
     if (this.#ws) {
       if (this.#gameId) {
         this.#send('game/disconnect', { game_id: this.#gameId });
@@ -144,7 +141,6 @@ class OgsLiveGame {
     this.#moveCount = 0;
     this.#firstColor = 1;
     this.#endedFired = false;
-    this.#periodMs = 0;
   }
 
   #handleAck(data) {
@@ -171,7 +167,6 @@ class OgsLiveGame {
         white: data.players?.white
       };
     }
-    this.#periodMs = (data.time_control?.period_time ?? 0) * 1000;
     this.#firstColor = data.initial_player === 'white' ? -1 : 1;
     const size = data.width;
     let board = GoBoardLib.fromDimensions(size);
@@ -251,31 +246,15 @@ class OgsLiveGame {
     this.clock = {
       black: this.#parseTime(data.black_time),
       white: this.#parseTime(data.white_time),
-      activeColor
+      activeColor,
+      turnStartedAt: Date.now()
     };
-    this.#startTick();
-  }
-
-  #startTick() {
-    clearInterval(this.#tickInterval);
-    this.#tickInterval = setInterval(() => {
-      if (!this.clock) return;
-      const side = this.clock[this.clock.activeColor];
-      if (!side) return;
-      if (side.inByoYomi) {
-        side.byoMs = Math.max(0, side.byoMs - 1000);
-      } else {
-        side.mainMs = Math.max(0, side.mainMs - 1000);
-        if (side.mainMs <= 0) side.inByoYomi = true;
-      }
-      this.clock = { ...this.clock };
-    }, 1000);
   }
 
   #parseTime(t) {
     if (!t) return null;
     const mainMs = t.thinking_time * 1000;
-    const periodMs = this.#periodMs || t.period_time * 1000;
+    const periodMs = t.period_time * 1000;
     return {
       mainMs,
       byoMs: t.period_time * 1000,

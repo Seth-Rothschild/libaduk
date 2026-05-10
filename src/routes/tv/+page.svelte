@@ -309,7 +309,12 @@
     </div>
 
     {#if ogsLiveGame.clock}
-      <Clock clockData={whiteClock} running={whiteRunning} position="top" />
+      <Clock
+        clockData={whiteClock}
+        running={whiteRunning}
+        position="top"
+        turnStartedAt={ogsLiveGame.clock.turnStartedAt}
+      />
     {/if}
 
     <PlayerStrip color="white" name={whiteLabel} captures={0} position="top" />
@@ -342,7 +347,12 @@
     <PlayerStrip color="black" name={blackLabel} captures={0} position="bottom" />
 
     {#if ogsLiveGame.clock}
-      <Clock clockData={blackClock} running={blackRunning} position="bottom" />
+      <Clock
+        clockData={blackClock}
+        running={blackRunning}
+        position="bottom"
+        turnStartedAt={ogsLiveGame.clock.turnStartedAt}
+      />
     {/if}
   </div>
 </div>
