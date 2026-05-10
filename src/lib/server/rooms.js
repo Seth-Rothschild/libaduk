@@ -322,6 +322,29 @@ export function attachWebSocketServer(httpServer) {
         send(socket, { type: 'spectators', names: spectatorNames(msg.gameId) });
 
         const game = await db.getGame(msg.gameId);
+        if (
+          game?.status === 'playing' &&
+          game?.timeControl?.type === 'correspondence' &&
+          game?.corrTurnDeadline &&
+          Date.now() > game.corrTurnDeadline
+        ) {
+          const whiteFirst = (game.handicapStones ?? []).length > 0;
+          const moveCount = (game.moves ?? []).length;
+          const blackIsNext = whiteFirst ? moveCount % 2 !== 0 : moveCount % 2 === 0;
+          const timedOutColor = blackIsNext ? 'black' : 'white';
+          const winner = timedOutColor === 'black' ? 'white' : 'black';
+          await db.updateGame(msg.gameId, {
+            status: 'finished',
+            winner,
+            result: `${winner === 'black' ? 'B' : 'W'}+T`,
+            endedAt: Date.now()
+          });
+          broadcast(msg.gameId, {
+            type: 'gameover',
+            winner,
+            result: `${winner === 'black' ? 'B' : 'W'}+T`
+          });
+        }
         if (game?.analysisActive && game?.analysisTree) {
           send(socket, {
             type: 'analysis-enter',
