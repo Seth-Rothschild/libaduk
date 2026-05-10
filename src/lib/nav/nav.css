@@ -31,7 +31,7 @@ body > header {
   display: flex;
   justify-content: space-between;
   position: relative;
-  z-index: 106;
+  z-index: 112;
   max-width: 1800px;
   margin: 0 auto;
 }
