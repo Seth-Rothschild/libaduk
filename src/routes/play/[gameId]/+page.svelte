@@ -1122,6 +1122,7 @@
         menuItems={[
           { label: t('Export SGF'), onclick: downloadSgf },
           { label: t('Open as Kifu'), href: `/kifu/${gameId}` },
+          { label: t('Open scratch board'), href: `/scratch/${gameId}` },
           { label: t('Back to game'), onclick: exitAnalysis }
         ]}
       />

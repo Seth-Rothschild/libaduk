@@ -27,11 +27,13 @@
     sgfNodeSetup
   } from '$lib/game/board';
 
+  const gameId = page.params.gameId ?? null;
+
   const initialSize = clampBoardSize(Number(page.url.searchParams.get('size') ?? 19));
   let size = $state(initialSize);
-  const komi = 6.5;
+  let komi = $state(6.5);
 
-  let analysis = $state(new AnalysisState(initialSize, komi));
+  let analysis = $state(new AnalysisState(initialSize, 6.5));
 
   let blackName = $state('Black');
   let whiteName = $state('White');
@@ -156,7 +158,21 @@
     }
   }
 
-  onMount(() => document.addEventListener('keydown', handleKeydown));
+  onMount(async () => {
+    document.addEventListener('keydown', handleKeydown);
+    if (!gameId) return;
+    const res = await fetch(`/api/game/${gameId}`);
+    if (!res.ok) return;
+    const game = await res.json();
+    size = game.size ?? 19;
+    blackName = game.blackName ?? 'Black';
+    whiteName = game.whiteName ?? 'White';
+    komi = game.komi ?? 6.5;
+    if (game.analysisTree) {
+      analysis = new AnalysisState(size, komi);
+      analysis.loadTree(game.analysisTree, null);
+    }
+  });
   onDestroy(() => document.removeEventListener('keydown', handleKeydown));
 </script>
 
@@ -183,11 +199,11 @@
         </label>
         <label class="scratch-field">
           <span>Black</span>
-          <input type="text" bind:value={blackName} />
+          <input type="text" bind:value={blackName} disabled={!!gameId} />
         </label>
         <label class="scratch-field">
           <span>White</span>
-          <input type="text" bind:value={whiteName} />
+          <input type="text" bind:value={whiteName} disabled={!!gameId} />
         </label>
       </div>
     </div>
@@ -256,7 +272,9 @@
     </div>
 
     <div class="rcontrols">
-      <button class="button button-green" onclick={saveGame}>Save game</button>
+      {#if !gameId}
+        <button class="button button-green" onclick={saveGame}>Save game</button>
+      {/if}
       <button class="button button-metal" onclick={downloadSgf}>Download SGF</button>
       <button class="button button-metal" onclick={() => fileInput.click()}>Import SGF</button>
     </div>
