@@ -4,6 +4,7 @@ class OgsSeekGraph {
   challenges = $state([]);
   token = $state(null);
   userId = $state(null);
+  tokenExpired = $state(false);
 
   #map = new Map();
   #ws = null;
@@ -24,8 +25,15 @@ class OgsSeekGraph {
     const configRes = await fetch('https://online-go.com/api/v1/ui/config/', {
       headers: { Authorization: `Bearer ${this.token}` }
     });
-    if (!configRes.ok) return;
+    if (!configRes.ok) {
+      this.tokenExpired = true;
+      return;
+    }
+    this.tokenExpired = false;
     const config = await configRes.json();
+    if (config.user.anonymous) {
+      this.tokenExpired = true;
+    }
     const jwt = config.user_jwt;
     if (!jwt) return;
     this.userId = config.user?.id ?? null;

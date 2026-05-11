@@ -7,6 +7,7 @@
   import { enhance } from '$app/forms';
   import { page } from '$app/state';
   import { getMe, updateMe } from '$lib/state/user.svelte.js';
+  import { ogsSeekGraph } from '$lib/lobby/ogsSeekGraph.svelte.js';
 
   let { data } = $props();
 
@@ -46,6 +47,14 @@
     Connecting to an OGS account allows you to see and accept unranked OGS games in the lobby. The
     generated token is stored as ogs_token as a cookie in your browser.
   </p>
+  {#if ogsSeekGraph.tokenExpired}
+    <div class="ogs-expired">
+      <p>Your OGS token has expired!</p>
+      <button type="button" class="button button-metal" onclick={connectOgs}
+        >Reconnect OGS Account</button
+      >
+    </div>
+  {/if}
   {#if data.ogs}
     <div class="passkey-item">
       <span>{data.ogs.username} ({formatOgsRank(data.ogs.ranking)})</span>
@@ -107,7 +116,7 @@
       </group>
     </div>
     <form method="POST" action="?/disconnect" use:enhance>
-      <button type="submit" class="button">Disconnect</button>
+      <button type="submit" class="button">Unlink OGS</button>
     </form>
   {:else}
     <button type="button" class="button" onclick={connectOgs}>Connect OGS Account</button>

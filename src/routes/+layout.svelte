@@ -9,6 +9,7 @@
   import './profile/profile.css';
   import './player/player.css';
   import './account/account.css';
+  import { ogsSeekGraph } from '$lib/lobby/ogsSeekGraph.svelte.js';
   import { getMe, fetchMe } from '$lib/state/user.svelte.js';
   import { pingState } from '$lib/state/ping.svelte.js';
   import { themeState } from '$lib/nav/theme.svelte.js';
@@ -24,6 +25,7 @@
   let { children, data } = $props();
 
   let setupModal = $state(null);
+  let ogsWarningDismissed = $state(false);
 
   onMount(() => {
     themeState.init();
@@ -60,4 +62,11 @@
     creatorName={getMe()?.username || getGuestId()}
     onClose={() => (setupModal = null)}
   />
+{/if}
+{#if ogsSeekGraph.tokenExpired && !ogsWarningDismissed}
+  <div class="ogs-token-warning">
+    Your OGS token has expired. Go to <a href="/account/preferences/ogs">OGS Settings</a> to
+    reconnect or disable the connection.
+    <button class="ogs-token-warning__close" onclick={() => (ogsWarningDismissed = true)}>✕</button>
+  </div>
 {/if}

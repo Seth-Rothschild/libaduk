@@ -178,3 +178,16 @@
 .account .config-group {
   margin-bottom: 2.5rem;
 }
+
+.security-section .ogs-expired {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.security-section .ogs-expired p {
+  margin: 0;
+  color: var(--c-warn, #b45309);
+}

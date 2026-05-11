@@ -1006,3 +1006,45 @@ signal > i.off {
   background: var(--m-bad--lighten-11);
   color: #fff;
 }
+
+/* -------------------------------------------------------------
+   .ogs-token-warning — fixed top-right notification
+   ------------------------------------------------------------- */
+
+.ogs-token-warning {
+  position: fixed;
+  top: calc(var(---site-header-height) + 0.75rem);
+  right: 1rem;
+  z-index: 120;
+  background: var(--c-warn, #b45309);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  max-width: 320px;
+}
+
+.ogs-token-warning a {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.ogs-token-warning__close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: #fff;
+  opacity: 0.7;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.ogs-token-warning__close:hover {
+  opacity: 1;
+}
