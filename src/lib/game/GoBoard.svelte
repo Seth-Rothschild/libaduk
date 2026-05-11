@@ -131,6 +131,10 @@
     };
   });
 
+  function handleMouseDown(e) {
+    if (e.ctrlKey || e.metaKey) e.preventDefault();
+  }
+
   function handleClick(e) {
     const vertex = e.target.closest('.go-vertex');
     if (!vertex) return;
@@ -164,6 +168,7 @@
         ? `url('${activeUrls.board}') center/cover no-repeat`
         : (activeUrls?.boardColor ?? null)}
       style="display: inline-grid; line-height: 1em;"
+      onmousedown={handleMouseDown}
       onclick={handleClick}
       role="img"
       aria-label="Go board, {size} by {size}"
