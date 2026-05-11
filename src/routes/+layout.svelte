@@ -32,7 +32,6 @@
     boardSettings.init();
     stoneTheme.init();
     pingState.start();
-    fetchMe();
     return () => pingState.stop();
   });
 
@@ -52,7 +51,10 @@
 
 <div id="main-wrap" class:game-page={isGamePage}>
   <main>
-    {@render children()}
+    {#await fetchMe()}
+    {:then}
+      {@render children()}
+    {/await}
   </main>
 </div>
 
