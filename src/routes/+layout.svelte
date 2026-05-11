@@ -51,8 +51,7 @@
 
 <div id="main-wrap" class:game-page={isGamePage}>
   <main>
-    {#await fetchMe()}
-    {:then}
+    {#await fetchMe() then}
       {@render children()}
     {/await}
   </main>

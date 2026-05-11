@@ -388,7 +388,9 @@ export function attachWebSocketServer(httpServer) {
                   if (game.status !== 'waiting') return;
 
                   socket.playerColor = myColor;
+                  socket.spectatorName = null;
                   broadcast(msg.gameId, { type: 'presence', color: myColor, online: true });
+                  broadcast(msg.gameId, { type: 'spectators', names: spectatorNames(msg.gameId) });
                   const stones = handicapStones.map(([x, y]) => ({ x, y }));
                   db.updateGame(msg.gameId, {
                     blackName,
@@ -417,6 +419,8 @@ export function attachWebSocketServer(httpServer) {
               adapter.connect();
             } else if (adapter.myColor) {
               socket.playerColor = adapter.myColor;
+              socket.spectatorName = null;
+              broadcast(msg.gameId, { type: 'spectators', names: spectatorNames(msg.gameId) });
               send(socket, { type: 'my-color', color: adapter.myColor, handicapStones: [] });
             }
           }
