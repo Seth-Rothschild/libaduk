@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { getMe } from '$lib/state/user.svelte.js';
 
 class OgsSeekGraph {
   challenges = $state([]);
@@ -85,11 +86,16 @@ class OgsSeekGraph {
               this.#onChallengeAccepted?.(entry.game_id);
               this.#onChallengeAccepted = null;
             }
-          } else if (!entry.ranked && entry.time_control_parameters?.speed !== 'correspondence') {
+          } else if (
+            !entry.ranked &&
+            entry.time_control_parameters?.speed !== 'correspondence' &&
+            entry.min_rank <= getMe()?.ogs?.ranking &&
+            getMe()?.ogs?.ranking <= entry.max_rank
+          ) {
             this.#map.set(entry.challenge_id, entry);
           }
         }
-        this.challenges = [...this.#map.values()];
+        this.challenges = [...this.#map.values()].slice(0, 15);
       }
     };
 
