@@ -120,7 +120,7 @@ class OgsSeekGraph {
       initialized: false,
       min_ranking: -1000,
       max_ranking: 1000,
-      challenger_color: 'automatic',
+      challenger_color: 'random',
       rengo_auto_start: 0,
       game: {
         name: 'Friendly Match',
