@@ -8,6 +8,7 @@
   const navLinks = [
     { href: '/account/profile', label: 'Edit Profile' },
     { sep: true },
+    { href: '/account/preferences/game-behavior', label: 'Game behavior' },
     { href: '/account/preferences/ai', label: 'Computer AI' },
     { href: '/account/preferences/ogs', label: 'Link OGS' },
     { sep: true },

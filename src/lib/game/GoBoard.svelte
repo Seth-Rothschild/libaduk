@@ -11,6 +11,7 @@
     shiftMap = null,
     animatedVertex = null,
     onVertexClick,
+    onCtrlClick = null,
     areaMap = null,
     deadStones = null,
     showCoords = false,
@@ -142,7 +143,7 @@
     const y = parseInt(vertex.dataset.y);
     if (e.ctrlKey || e.metaKey) {
       const coord = COL_LETTERS[x] + (size - y);
-      navigator.clipboard?.writeText(coord);
+      onCtrlClick?.(coord);
       return;
     }
     onVertexClick?.(x, y);

@@ -52,6 +52,7 @@
 
   let chatMessages = $state(data.chat ?? []);
   let chatHighlightVertex = $state(null);
+  let chatInputText = $state('');
   let blackName = $state(data.game.blackName ?? null);
   let whiteName = $state(data.game.whiteName ?? null);
   let blackOnline = $state(false);
@@ -66,6 +67,16 @@
   let showModelPrompt = $state(false);
   let engineError = $state(null);
   let engineLoading = $state(false);
+
+  function handleCtrlClick(coord) {
+    if (boardSettings.ctrlClickBehavior === 'nothing') {
+      return;
+    } else if (boardSettings.ctrlClickBehavior === 'chat') {
+      chatInputText = chatInputText ? chatInputText + ' ' + coord : coord;
+    } else if (boardSettings.ctrlClickBehavior === 'clipboard') {
+      navigator.clipboard?.writeText(coord);
+    }
+  }
 
   function handleChatSend(text) {
     chatMessages.push({ user: displayName, text });
@@ -797,6 +808,7 @@
       {gameId}
       gameStatus={gs.status}
       bind:messages={chatMessages}
+      bind:inputText={chatInputText}
       viewers={chatViewers}
       initialNote={data.note ?? ''}
       onSend={handleChatSend}
@@ -823,6 +835,7 @@
             areaMap={analysis.displayAreaMap}
             deadStones={analysis.displayDeadStones}
             highlightVertex={chatHighlightVertex}
+            onCtrlClick={handleCtrlClick}
             onVertexClick={(x, y) =>
               memorize?.active ? memorize.click(x, y) : onAnalysisVertexClick(x, y)}
           />
@@ -840,6 +853,7 @@
             interactive={isMyTurn || gs.status === 'scoring'}
             highlightVertex={chatHighlightVertex}
             pendingVertex={pendingMove}
+            onCtrlClick={handleCtrlClick}
             onVertexClick={!gs.isViewingHistory &&
             (gs.status === 'playing' || gs.status === 'scoring')
               ? onVertexClick

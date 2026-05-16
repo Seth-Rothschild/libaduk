@@ -4,6 +4,7 @@ class BoardSettings {
   showCoords = $state(false);
   fuzzyPlacement = $state(true);
   moveConfirmation = $state('none');
+  ctrlClickBehavior = $state('clipboard');
 
   init() {
     if (!browser) return;
@@ -13,6 +14,8 @@ class BoardSettings {
     if (fuzzy !== null) this.fuzzyPlacement = fuzzy === 'true';
     const confirm = localStorage.getItem('go-moveConfirmation');
     if (confirm !== null) this.moveConfirmation = confirm;
+    const ctrlClick = localStorage.getItem('go-ctrlClickBehavior');
+    if (ctrlClick !== null) this.ctrlClickBehavior = ctrlClick;
   }
 
   toggleCoords = () => {
@@ -28,6 +31,11 @@ class BoardSettings {
   setMoveConfirmation = (value) => {
     this.moveConfirmation = value;
     localStorage.setItem('go-moveConfirmation', value);
+  };
+
+  setCtrlClickBehavior = (value) => {
+    this.ctrlClickBehavior = value;
+    localStorage.setItem('go-ctrlClickBehavior', value);
   };
 }
 

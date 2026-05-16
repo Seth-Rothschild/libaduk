@@ -10,7 +10,8 @@
     initialNote = '',
     onSend = () => {},
     boardSize = 19,
-    onCoordHover = () => {}
+    onCoordHover = () => {},
+    inputText = $bindable('')
   } = $props();
 
   const COL_LETTERS = 'ABCDEFGHJKLMNOPQRST';
@@ -35,7 +36,6 @@
   const uniqueViewers = $derived([...new Set(viewers)]);
 
   let activeTab = $state('discussion');
-  let inputText = $state('');
   let sendFailed = $state(false);
   let noteText = $state(initialNote);
   let messagesEl = $state(null);
