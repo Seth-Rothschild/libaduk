@@ -152,6 +152,56 @@
 }
 
 /* -------------------------------------------------------------
+   .boards-split — wraps multiple analysis boards side by side
+   ------------------------------------------------------------- */
+
+.boards-split {
+  grid-area: board;
+  display: flex;
+  min-width: 0;
+}
+
+.boards-split > .round__app__board {
+  grid-area: unset;
+  flex: 1;
+  min-width: 0;
+}
+
+@media (min-width: 750px) {
+  .boards-split {
+    height: 100%;
+  }
+}
+
+.extra-board {
+  position: relative;
+  border-left: 1px solid var(--c-border);
+}
+
+.extra-board-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--c-border);
+  border-radius: 3px;
+  background: var(--c-bg-box);
+  color: var(--c-font-dim);
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.extra-board-close:hover {
+  background: var(--c-bg-zebra);
+  color: var(--c-font);
+}
+
+/* -------------------------------------------------------------
    .round__app__table — background panel behind right sidebar
    ------------------------------------------------------------- */
 

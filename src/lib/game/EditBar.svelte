@@ -1,5 +1,5 @@
 <script>
-  let { tool, onSetTool } = $props();
+  let { tool, onSetTool, splitMode = false, onToggleSplit = null } = $props();
 
   const tools = [
     { id: 'stone', title: 'Place stones (game order)' },
@@ -68,6 +68,35 @@
       </svg>
     </button>
   {/each}
+  {#if onToggleSplit}
+    <button
+      class="edit-bar-btn edit-bar-split"
+      class:selected={splitMode}
+      title={splitMode ? 'Close split board' : 'Split board'}
+      onclick={onToggleSplit}
+    >
+      <svg width="20" height="20" viewBox="0 0 20 20">
+        <rect
+          x="1"
+          y="2"
+          width="8"
+          height="16"
+          stroke="currentColor"
+          stroke-width="2"
+          fill="none"
+        />
+        <rect
+          x="11"
+          y="2"
+          width="8"
+          height="16"
+          stroke="currentColor"
+          stroke-width="2"
+          fill="none"
+        />
+      </svg>
+    </button>
+  {/if}
 </div>
 
 <style>
@@ -106,5 +135,12 @@
   .edit-bar-btn.selected {
     background: var(--c-accent);
     color: #fff;
+  }
+
+  .edit-bar-split {
+    margin-left: 6px;
+    border-left: 1px solid var(--c-border);
+    border-radius: 0 3px 3px 0;
+    padding-left: 8px;
   }
 </style>

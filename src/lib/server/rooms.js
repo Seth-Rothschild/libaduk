@@ -276,6 +276,14 @@ export function attachWebSocketServer(httpServer) {
           tree: game.analysisTree,
           path: game.currentNodePath ?? null
         });
+        for (const entry of game.extraAnalysisBoards ?? []) {
+          broadcast(gameId, {
+            type: 'analysis-extra-tree',
+            boardIndex: entry.boardIndex,
+            tree: entry.tree,
+            path: entry.path ?? null
+          });
+        }
       }
     }
   }, 5000);
@@ -349,7 +357,8 @@ export function attachWebSocketServer(httpServer) {
           send(socket, {
             type: 'analysis-enter',
             tree: game.analysisTree,
-            path: game.currentNodePath ?? null
+            path: game.currentNodePath ?? null,
+            extraBoards: game.extraAnalysisBoards ?? []
           });
         }
 
@@ -538,7 +547,7 @@ export function attachWebSocketServer(httpServer) {
         });
       }
       if (msg.type === 'analysis-exit' && socket.gameId) {
-        await db.updateGame(socket.gameId, { analysisActive: false });
+        await db.updateGame(socket.gameId, { analysisActive: false, extraAnalysisBoards: [] });
         broadcastToOthers(socket.gameId, socket, { type: 'analysis-exit' });
       }
       if (msg.type === 'analysis-tree' && socket.gameId) {
@@ -548,6 +557,48 @@ export function attachWebSocketServer(httpServer) {
         });
         broadcastToOthers(socket.gameId, socket, {
           type: 'analysis-tree',
+          tree: msg.tree,
+          path: msg.path ?? null
+        });
+      }
+      if (msg.type === 'analysis-extra-add' && socket.gameId) {
+        const game = await db.getGame(socket.gameId);
+        if (!game) return;
+        const boards = (game.extraAnalysisBoards ?? []).filter(
+          (b) => b.boardIndex !== msg.boardIndex
+        );
+        boards.push({ boardIndex: msg.boardIndex, tree: msg.tree, path: msg.path ?? null });
+        await db.updateGame(socket.gameId, { extraAnalysisBoards: boards });
+        broadcastToOthers(socket.gameId, socket, {
+          type: 'analysis-extra-add',
+          boardIndex: msg.boardIndex,
+          tree: msg.tree,
+          path: msg.path ?? null
+        });
+      }
+      if (msg.type === 'analysis-extra-remove' && socket.gameId) {
+        const game = await db.getGame(socket.gameId);
+        if (!game) return;
+        const boards = (game.extraAnalysisBoards ?? []).filter(
+          (b) => b.boardIndex !== msg.boardIndex
+        );
+        await db.updateGame(socket.gameId, { extraAnalysisBoards: boards });
+        broadcastToOthers(socket.gameId, socket, {
+          type: 'analysis-extra-remove',
+          boardIndex: msg.boardIndex
+        });
+      }
+      if (msg.type === 'analysis-extra-tree' && socket.gameId) {
+        const game = await db.getGame(socket.gameId);
+        if (!game) return;
+        const boards = (game.extraAnalysisBoards ?? []).filter(
+          (b) => b.boardIndex !== msg.boardIndex
+        );
+        boards.push({ boardIndex: msg.boardIndex, tree: msg.tree, path: msg.path ?? null });
+        await db.updateGame(socket.gameId, { extraAnalysisBoards: boards });
+        broadcastToOthers(socket.gameId, socket, {
+          type: 'analysis-extra-tree',
+          boardIndex: msg.boardIndex,
           tree: msg.tree,
           path: msg.path ?? null
         });

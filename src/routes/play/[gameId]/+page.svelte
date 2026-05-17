@@ -292,6 +292,9 @@
   let analysis = $state(null);
   let memorize = $state(null);
   const analysisMode = $derived(analysis !== null);
+  let extraBoards = $state([]); // [{ id: number, board: AnalysisState }]
+  let nextBoardId = 0;
+  const splitMode = $derived(extraBoards.length > 0);
 
   // Tracks the latest analysis tree. data.game.analysisTree is a page-load snapshot
   // and goes stale as moves are made, so we keep our own up-to-date copy.
@@ -356,11 +359,36 @@
     URL.revokeObjectURL(url);
   }
 
+  function addExtraBoard() {
+    const board = new AnalysisState(gs.boardSize, komi);
+    const tree = serializeTree(analysis.root);
+    const path = getNodePath(analysis.currentNode);
+    board.loadTree(tree, path);
+    nextBoardId++;
+    const id = nextBoardId;
+    extraBoards = [...extraBoards, { id, board }];
+    gameSocket.send({ type: 'analysis-extra-add', boardIndex: id, tree, path });
+  }
+
+  function removeExtraBoard(id) {
+    extraBoards = extraBoards.filter((b) => b.id !== id);
+    gameSocket.send({ type: 'analysis-extra-remove', boardIndex: id });
+  }
+
+  function persistExtraBoard(id) {
+    const entry = extraBoards.find((b) => b.id === id);
+    if (!entry) return;
+    const tree = serializeTree(entry.board.root);
+    const path = getNodePath(entry.board.currentNode);
+    gameSocket.send({ type: 'analysis-extra-tree', boardIndex: id, tree, path });
+  }
+
   function exitAnalysis() {
     savedAnalysisTree = serializeTree(analysis.root);
     savedAnalysisPath = getNodePath(analysis.currentNode);
     analysis = null;
     memorize = null;
+    extraBoards = [];
     gameSocket.send({ type: 'analysis-exit' });
   }
 
@@ -701,9 +729,17 @@
           savedAnalysisTree = msg.tree;
           savedAnalysisPath = msg.path ?? null;
           enterAnalysisFromTree(msg.tree, msg.path ?? null);
+          extraBoards = (msg.extraBoards ?? []).map(({ boardIndex, tree, path }) => {
+            const board = new AnalysisState(gs.boardSize, komi);
+            board.loadTree(tree, path ?? null);
+            if (boardIndex > nextBoardId) nextBoardId = boardIndex;
+            return { id: boardIndex, board };
+          });
         }
         if (msg.type === 'analysis-exit') {
           analysis = null;
+          extraBoards = [];
+          nextBoardId = 0;
         }
         if (msg.type === 'analysis-tree' && analysis) {
           if (analysis.status === 'scoring' || analysis.showEstimate || memorize?.active) {
@@ -718,6 +754,19 @@
           if (isOneStepForward) {
             analysis.animatedVertex = analysis.currentNode.lastMove ?? null;
           }
+        }
+        if (msg.type === 'analysis-extra-add') {
+          const board = new AnalysisState(gs.boardSize, komi);
+          board.loadTree(msg.tree, msg.path ?? null);
+          if (msg.boardIndex > nextBoardId) nextBoardId = msg.boardIndex;
+          extraBoards = [...extraBoards, { id: msg.boardIndex, board }];
+        }
+        if (msg.type === 'analysis-extra-remove') {
+          extraBoards = extraBoards.filter((b) => b.id !== msg.boardIndex);
+        }
+        if (msg.type === 'analysis-extra-tree') {
+          const entry = extraBoards.find((b) => b.id === msg.boardIndex);
+          if (entry) entry.board.loadTree(msg.tree, msg.path ?? null);
         }
         if (msg.type === 'my-color') {
           gs.mySign = msg.color === 'black' ? 1 : -1;
@@ -820,124 +869,175 @@
   <div class="round__app">
     <div class="round__app__table"></div>
 
-    <div class="round__app__board" class:round__app__board--with-editbar={analysisMode}>
-      <div class="round__app__board__inner">
+    <div class="boards-split">
+      <div class="round__app__board" class:round__app__board--with-editbar={analysisMode}>
+        <div class="round__app__board__inner">
+          {#if analysisMode}
+            <GoBoard
+              signMap={analysis.signMap}
+              lastMove={analysis.currentNode?.lastMove}
+              animatedVertex={analysis.animatedVertex}
+              size={gs.boardSize}
+              showCoords={boardSettings.showCoords}
+              currentSign={analysis.currentSign}
+              childrenMap={memorize?.active ? null : analysis.childrenMap}
+              markerMap={memorize?.active ? memorize.markerMap : analysis.markerMap}
+              areaMap={analysis.displayAreaMap}
+              deadStones={analysis.displayDeadStones}
+              highlightVertex={chatHighlightVertex}
+              onCtrlClick={handleCtrlClick}
+              onVertexClick={(x, y) =>
+                memorize?.active ? memorize.click(x, y) : onAnalysisVertexClick(x, y)}
+            />
+          {:else}
+            <GoBoard
+              {signMap}
+              lastMove={gs.viewLastMove}
+              shiftMap={boardSettings.fuzzyPlacement ? gs.viewShiftMap : null}
+              animatedVertex={gs.isViewingHistory ? null : gs.animatedVertex}
+              size={gs.boardSize}
+              {areaMap}
+              deadStones={displayDeadStones}
+              showCoords={boardSettings.showCoords}
+              currentSign={gs.currentSign}
+              interactive={isMyTurn || gs.status === 'scoring'}
+              highlightVertex={chatHighlightVertex}
+              pendingVertex={pendingMove}
+              onCtrlClick={handleCtrlClick}
+              onVertexClick={!gs.isViewingHistory &&
+              (gs.status === 'playing' || gs.status === 'scoring')
+                ? onVertexClick
+                : null}
+            />
+          {/if}
+        </div>
         {#if analysisMode}
-          <GoBoard
-            signMap={analysis.signMap}
-            lastMove={analysis.currentNode?.lastMove}
-            animatedVertex={analysis.animatedVertex}
-            size={gs.boardSize}
-            showCoords={boardSettings.showCoords}
-            currentSign={analysis.currentSign}
-            childrenMap={memorize?.active ? null : analysis.childrenMap}
-            markerMap={memorize?.active ? memorize.markerMap : analysis.markerMap}
-            areaMap={analysis.displayAreaMap}
-            deadStones={analysis.displayDeadStones}
-            highlightVertex={chatHighlightVertex}
-            onCtrlClick={handleCtrlClick}
-            onVertexClick={(x, y) =>
-              memorize?.active ? memorize.click(x, y) : onAnalysisVertexClick(x, y)}
-          />
-        {:else}
-          <GoBoard
-            {signMap}
-            lastMove={gs.viewLastMove}
-            shiftMap={boardSettings.fuzzyPlacement ? gs.viewShiftMap : null}
-            animatedVertex={gs.isViewingHistory ? null : gs.animatedVertex}
-            size={gs.boardSize}
-            {areaMap}
-            deadStones={displayDeadStones}
-            showCoords={boardSettings.showCoords}
-            currentSign={gs.currentSign}
-            interactive={isMyTurn || gs.status === 'scoring'}
-            highlightVertex={chatHighlightVertex}
-            pendingVertex={pendingMove}
-            onCtrlClick={handleCtrlClick}
-            onVertexClick={!gs.isViewingHistory &&
-            (gs.status === 'playing' || gs.status === 'scoring')
-              ? onVertexClick
-              : null}
-          />
+          {#if memorize?.active}
+            <div
+              class="memorize-bar"
+              class:flash-correct={memorize.flash === 'correct'}
+              class:flash-wrong={memorize.flash === 'wrong'}
+            >
+              <span class="memorize-progress">
+                {#if memorize.done}
+                  Done — {memorize.total} moves
+                {:else}
+                  {memorize.index + 1} / {memorize.total}
+                {/if}
+              </span>
+              <div class="memorize-group">
+                <span class="memorize-group__label">{t('Play as')}</span>
+                <div class="memorize-side">
+                  {#each [['both', 'Both'], ['black', 'Black'], ['white', 'White']] as [s, label]}
+                    <button
+                      class="side-btn"
+                      class:side-btn--active={memorize.side === s}
+                      onclick={() => (memorize.side = s)}>{t(label)}</button
+                    >
+                  {/each}
+                </div>
+              </div>
+              <div class="memorize-group">
+                <span class="memorize-group__label">{t('Hint')}</span>
+                <div class="memorize-hints">
+                  <button
+                    class="hint-btn"
+                    class:hint-btn--active={memorize.activeHint === 'quadrant'}
+                    onclick={() => memorize.applyHint('quadrant')}>{t('Quadrant')}</button
+                  >
+                  <button
+                    class="hint-btn"
+                    class:hint-btn--active={memorize.activeHint === 'grid16'}
+                    onclick={() => memorize.applyHint('grid16')}>{t('16 moves')}</button
+                  >
+                  <button
+                    class="hint-btn"
+                    class:hint-btn--active={memorize.activeHint === 'grid9'}
+                    onclick={() => memorize.applyHint('grid9')}>{t('9 moves')}</button
+                  >
+                  <button
+                    class="hint-btn"
+                    class:hint-btn--active={memorize.activeHint === 'grid4'}
+                    onclick={() => memorize.applyHint('grid4')}>{t('4 moves')}</button
+                  >
+                </div>
+              </div>
+              <button
+                class="score-bar__close memorize-bar__close"
+                onclick={() => {
+                  memorize.exit();
+                  flushPendingAnalysisTree();
+                }}>✕</button
+              >
+            </div>
+          {:else if analysis.status === 'scoring' || analysis.showEstimate}
+            <div class="score-bar">
+              <span class="score-bar__verdict">
+                {#if analysis.status === 'scoring' && analysis.score}
+                  {scoreVerdictShort(analysis.score)}
+                {:else if analysis.showEstimate && analysis.estimatedScore}
+                  {scoreVerdictShort(analysis.estimatedScore)}
+                {/if}
+              </span>
+              <span class="score-bar__label">
+                {t(analysis.status === 'scoring' ? 'Remove dead stones' : 'Toggle group status')}
+              </span>
+              <button class="score-bar__close" onclick={analysisNavigate}>✕</button>
+            </div>
+          {:else}
+            <EditBar
+              tool={analysis.tool}
+              onSetTool={(t) => (analysis.tool = t)}
+              {splitMode}
+              onToggleSplit={addExtraBoard}
+            />
+          {/if}
         {/if}
       </div>
-      {#if analysisMode}
-        {#if memorize?.active}
-          <div
-            class="memorize-bar"
-            class:flash-correct={memorize.flash === 'correct'}
-            class:flash-wrong={memorize.flash === 'wrong'}
-          >
-            <span class="memorize-progress">
-              {#if memorize.done}
-                Done — {memorize.total} moves
-              {:else}
-                {memorize.index + 1} / {memorize.total}
-              {/if}
-            </span>
-            <div class="memorize-group">
-              <span class="memorize-group__label">{t('Play as')}</span>
-              <div class="memorize-side">
-                {#each [['both', 'Both'], ['black', 'Black'], ['white', 'White']] as [s, label]}
-                  <button
-                    class="side-btn"
-                    class:side-btn--active={memorize.side === s}
-                    onclick={() => (memorize.side = s)}>{t(label)}</button
-                  >
-                {/each}
-              </div>
-            </div>
-            <div class="memorize-group">
-              <span class="memorize-group__label">{t('Hint')}</span>
-              <div class="memorize-hints">
-                <button
-                  class="hint-btn"
-                  class:hint-btn--active={memorize.activeHint === 'quadrant'}
-                  onclick={() => memorize.applyHint('quadrant')}>{t('Quadrant')}</button
-                >
-                <button
-                  class="hint-btn"
-                  class:hint-btn--active={memorize.activeHint === 'grid16'}
-                  onclick={() => memorize.applyHint('grid16')}>{t('16 moves')}</button
-                >
-                <button
-                  class="hint-btn"
-                  class:hint-btn--active={memorize.activeHint === 'grid9'}
-                  onclick={() => memorize.applyHint('grid9')}>{t('9 moves')}</button
-                >
-                <button
-                  class="hint-btn"
-                  class:hint-btn--active={memorize.activeHint === 'grid4'}
-                  onclick={() => memorize.applyHint('grid4')}>{t('4 moves')}</button
-                >
-              </div>
-            </div>
-            <button
-              class="score-bar__close memorize-bar__close"
-              onclick={() => {
-                memorize.exit();
-                flushPendingAnalysisTree();
-              }}>✕</button
-            >
+
+      {#each extraBoards as { id, board } (id)}
+        <div class="round__app__board extra-board">
+          <div class="round__app__board__inner">
+            <GoBoard
+              signMap={board.signMap}
+              lastMove={board.currentNode?.lastMove}
+              animatedVertex={board.animatedVertex}
+              size={gs.boardSize}
+              showCoords={boardSettings.showCoords}
+              currentSign={board.currentSign}
+              childrenMap={board.childrenMap}
+              markerMap={board.markerMap}
+              onVertexClick={(x, y) => {
+                board.tool = analysis.tool;
+                board.onVertexClick(x, y);
+                persistExtraBoard(id);
+              }}
+            />
           </div>
-        {:else if analysis.status === 'scoring' || analysis.showEstimate}
-          <div class="score-bar">
-            <span class="score-bar__verdict">
-              {#if analysis.status === 'scoring' && analysis.score}
-                {scoreVerdictShort(analysis.score)}
-              {:else if analysis.showEstimate && analysis.estimatedScore}
-                {scoreVerdictShort(analysis.estimatedScore)}
-              {/if}
-            </span>
-            <span class="score-bar__label">
-              {t(analysis.status === 'scoring' ? 'Remove dead stones' : 'Toggle group status')}
-            </span>
-            <button class="score-bar__close" onclick={analysisNavigate}>✕</button>
-          </div>
-        {:else}
-          <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
-        {/if}
-      {/if}
+          <NavigationButtons
+            canPrev={board.canGoPrev}
+            canNext={board.canGoNext}
+            onFirst={() => {
+              board.navigate('first');
+              persistExtraBoard(id);
+            }}
+            onPrev={() => {
+              board.navigate('prev');
+              persistExtraBoard(id);
+            }}
+            onNext={() => {
+              board.navigate('next');
+              persistExtraBoard(id);
+            }}
+            onLast={() => {
+              board.navigate('last');
+              persistExtraBoard(id);
+            }}
+            menuItems={[]}
+          />
+          <button class="extra-board-close" onclick={() => removeExtraBoard(id)}>✕</button>
+        </div>
+      {/each}
     </div>
 
     {#if hasClock || gs.clockState}
@@ -1005,6 +1105,18 @@
           version={analysis.version}
           onSelectNode={navigateAnalysisTo}
         />
+        {#each extraBoards as { id, board } (id)}
+          <GameGraph
+            root={board.root}
+            currentNode={board.currentNode}
+            version={board.version}
+            onSelectNode={(node) => {
+              board.currentNode = node;
+              board.animatedVertex = null;
+              persistExtraBoard(id);
+            }}
+          />
+        {/each}
       </div>
     {/if}
 
