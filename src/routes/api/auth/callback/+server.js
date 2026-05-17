@@ -6,7 +6,7 @@ import { redirect } from '@sveltejs/kit';
 
 export async function GET({ url, cookies, locals }) {
   const errorPage = locals.user ? '/account/preferences/ogs' : '/login';
-  const successPage = locals.user ? '/account/preferences/ogs' : '/';
+  const successPage = locals.user ? '/account/preferences/ogs' : '/about';
 
   const state = url.searchParams.get('state');
   const savedState = cookies.get('oauth_state');
