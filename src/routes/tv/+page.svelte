@@ -45,6 +45,19 @@
   let chatMessages = $state([]);
   let chatViewers = $state([]);
   let chatHighlightVertex = $state(null);
+  let chatInputText = $state('');
+
+  const coordModeEnabled = $derived(boardSettings.ctrlClickBehavior !== 'nothing');
+
+  function handleCtrlClick(coord) {
+    if (boardSettings.ctrlClickBehavior === 'nothing') {
+      return;
+    } else if (boardSettings.ctrlClickBehavior === 'chat') {
+      chatInputText = chatInputText ? chatInputText + ' ' + coord : coord;
+    } else if (boardSettings.ctrlClickBehavior === 'clipboard') {
+      navigator.clipboard?.writeText(coord);
+    }
+  }
   let movesAreaEl = $state(null);
   let viewedIndex = $state(null);
 
@@ -286,6 +299,7 @@
       onSend={handleChatSend}
       {boardSize}
       onCoordHover={(v) => (chatHighlightVertex = v)}
+      bind:inputText={chatInputText}
     />
   </aside>
 
@@ -304,6 +318,8 @@
           interactive={false}
           onVertexClick={null}
           highlightVertex={chatHighlightVertex}
+          onCtrlClick={handleCtrlClick}
+          {coordModeEnabled}
         />
       {/if}
     </div>
