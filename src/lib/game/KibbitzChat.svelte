@@ -7,7 +7,8 @@
     viewers = [],
     onSend = () => {},
     boardSize = 19,
-    onCoordHover = () => {}
+    onCoordHover = () => {},
+    inputText = $bindable('')
   } = $props();
 
   const COL_LETTERS = 'ABCDEFGHJKLMNOPQRST';
@@ -29,7 +30,6 @@
     });
   }
 
-  let inputText = $state('');
   let messagesEl = $state(null);
   let sendFailed = $state(false);
 
