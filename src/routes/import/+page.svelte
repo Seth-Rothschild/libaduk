@@ -20,6 +20,8 @@
   let fileInputEl;
   let error = $state('');
   let loading = $state(false);
+  let ogsInput = $state('');
+  let ogsFetching = $state(false);
 
   function buildTree(parsed) {
     const size = parsed.size;
@@ -138,6 +140,31 @@
     }
   }
 
+  function parseOgsId(input) {
+    const match = input.trim().match(/(\d+)\s*$/);
+    return match ? match[1] : null;
+  }
+
+  async function fetchFromOgs() {
+    const id = parseOgsId(ogsInput);
+    if (!id) {
+      error = 'Could not parse game ID from that input.';
+      return;
+    }
+    error = '';
+    ogsFetching = true;
+    try {
+      const res = await fetch(`https://online-go.com/api/v1/games/${id}/sgf`);
+      if (!res.ok) {
+        error = 'Could not fetch game from OGS.';
+        return;
+      }
+      sgfText = await res.text();
+    } finally {
+      ogsFetching = false;
+    }
+  }
+
   function handleFileChange(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -169,6 +196,25 @@
         onchange={handleFileChange}
       />
     </div>
+    <div class="form-group ogs-fetch">
+      <label class="form-label" for="ogs-input">Or import from OGS (game ID or URL)</label>
+      <div class="ogs-row">
+        <input
+          id="ogs-input"
+          class="form-control"
+          bind:value={ogsInput}
+          placeholder="https://online-go.com/game/87088060"
+        />
+        <button
+          type="button"
+          class="button"
+          onclick={fetchFromOgs}
+          disabled={!ogsInput.trim() || ogsFetching}
+        >
+          {ogsFetching ? 'Fetching...' : 'Fetch SGF'}
+        </button>
+      </div>
+    </div>
     {#if error}
       <div class="form-error">{error}</div>
     {/if}
@@ -185,5 +231,14 @@
     width: 98%;
     height: 20vh !important;
     padding: 0.5em;
+  }
+
+  .ogs-row {
+    display: flex;
+    gap: 0.5em;
+  }
+
+  .ogs-row .form-control {
+    flex: 1;
   }
 </style>
