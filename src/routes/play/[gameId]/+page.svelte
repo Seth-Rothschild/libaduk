@@ -1078,7 +1078,7 @@
               >{t('Pass')}</button
             >
           {/if}
-          {#if opponentOnline === false}
+          {#if opponentOnline === false && !isCorrGame}
             <button class="button button-red" onclick={forceResign}>{t('Force Resignation')}</button
             >
           {:else}
