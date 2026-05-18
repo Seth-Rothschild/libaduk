@@ -1180,7 +1180,7 @@
           }}>{t('Memorize')}</button
         >
       {:else}
-        {#if !isSpectator && gs.status === 'waiting'}
+        {#if !isSpectator && (gs.status === 'waiting' || (gs.status === 'playing' && gs.totalPly < 2))}
           <button class="button button-red" onclick={cancel}>{t('Cancel Game')}</button>
         {:else if !isSpectator && gs.status === 'playing'}
           {#if pendingMove && boardSettings.moveConfirmation === 'button'}
