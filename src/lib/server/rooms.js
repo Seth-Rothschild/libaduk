@@ -583,7 +583,10 @@ export function attachWebSocketServer(httpServer) {
       }
       if (msg.type === 'cancel' && socket.gameId) {
         const game = await db.getGame(socket.gameId);
-        if (game && game.status === 'waiting') {
+        if (!game || !socket.playerColor) return;
+        const moveCount = (game.moves ?? []).length;
+        const canCancel = game.status === 'waiting' || (game.status === 'playing' && moveCount < 2);
+        if (canCancel) {
           await db.updateGame(socket.gameId, { status: 'cancelled', endedAt: Date.now() });
           broadcast(socket.gameId, { type: 'cancel' });
         }
