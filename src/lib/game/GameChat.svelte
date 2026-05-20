@@ -11,7 +11,8 @@
     onSend = () => {},
     boardSize = 19,
     onCoordHover = () => {},
-    inputText = $bindable('')
+    inputText = $bindable(''),
+    moveCount = 0
   } = $props();
 
   const COL_LETTERS = 'ABCDEFGHJKLMNOPQRST';
@@ -62,9 +63,20 @@
     gameStatus === 'gameover' || gameStatus === 'cancelled' || gameStatus === 'abandoned'
   );
   const activePresets = $derived(isGameOver ? END_PRESETS : START_PRESETS);
-  const usedPresets = $derived(isGameOver ? usedEndPresets : usedStartPresets);
+  const inSessionUsed = $derived(isGameOver ? usedEndPresets : usedStartPresets);
+  const sentPresetKeys = $derived(
+    new Set(
+      activePresets
+        .filter((p) => messages.some((m) => m.user === username && m.text === p.text))
+        .map((p) => p.key)
+    )
+  );
+  const usedPresets = $derived(new Set([...inSessionUsed, ...sentPresetKeys]));
+  const startPresetsExpired = $derived(!isGameOver && moveCount > 4);
   const presetsVisible = $derived(
-    usedPresets.size < 2 && (gameStatus === 'playing' || gameStatus === 'scoring' || isGameOver)
+    !startPresetsExpired &&
+      usedPresets.size < 2 &&
+      (gameStatus === 'playing' || gameStatus === 'scoring' || isGameOver)
   );
 
   function sendMessage(text) {

@@ -814,6 +814,7 @@
       onSend={handleChatSend}
       boardSize={gs.boardSize}
       onCoordHover={(v) => (chatHighlightVertex = v)}
+      moveCount={gs.totalPly}
     />
   </aside>
 
