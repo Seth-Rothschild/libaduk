@@ -10,7 +10,12 @@
     whiteName,
     gameType = null,
     gameUrl = null,
-    ogsGameId = null
+    ogsGameId = null,
+    ranked = false,
+    komi = null,
+    rules = null,
+    timeControl = null,
+    handicap = 0
   } = $props();
 
   function formatResult(result) {
@@ -26,6 +31,19 @@
 
   const showWaiting = $derived(status === 'waiting' && !isSpectator);
   const isLobbyGame = $derived(gameType === 'hook');
+  const setupParts = $derived(
+    [
+      ranked ? 'Ranked' : 'Casual',
+      `${boardSize}×${boardSize}`,
+      rules,
+      timeControl,
+      handicap ? `Handicap ${handicap}` : null,
+      komi != null ? `Komi ${komi}` : null,
+      'Go'
+    ]
+      .filter(Boolean)
+      .join(' • ')
+  );
 </script>
 
 <div class="game__meta">
@@ -33,10 +51,10 @@
     <div class="game__meta__infos" data-icon="&#xe015;">
       {#if ogsGameId}
         <a class="setup" href="https://online-go.com/game/{ogsGameId}" target="_blank"
-          >Casual &bull; {boardSize}&times;{boardSize} &bull; Go</a
+          >{setupParts}</a
         >
       {:else}
-        <div class="setup">Casual &bull; {boardSize}&times;{boardSize} &bull; Go</div>
+        <div class="setup">{setupParts}</div>
       {/if}
     </div>
     <div class="game__meta__players">

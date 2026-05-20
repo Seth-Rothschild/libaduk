@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { formatOgsClock } from '$lib/lobby/ogsSeekGraph.svelte.js';
 import GoBoardLib from '@sabaki/go-board';
 import { applyMoveWithShifts } from '$lib/game/board';
 import { emptyShiftMap } from '$lib/game/board/helpers.js';
@@ -181,11 +182,17 @@ class OgsLiveGame {
 
   #handleGamedata(data) {
     if (!this.game) {
+      const rules = data.rules ? data.rules[0].toUpperCase() + data.rules.slice(1) : null;
       this.game = {
         id: this.#gameId,
         width: data.width,
         black: data.players?.black,
-        white: data.players?.white
+        white: data.players?.white,
+        ranked: data.ranked ?? false,
+        komi: data.komi ?? null,
+        rules,
+        timeControl: formatOgsClock(data.time_control),
+        handicap: data.handicap || 0
       };
     }
     this.#firstColor = data.initial_player === 'white' ? -1 : 1;

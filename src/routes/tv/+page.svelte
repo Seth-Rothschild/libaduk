@@ -292,6 +292,11 @@
       gameType="ogs"
       gameUrl={page.url.href}
       ogsGameId={ogsLiveGame.game?.id ?? null}
+      ranked={ogsLiveGame.game?.ranked ?? false}
+      komi={ogsLiveGame.game?.komi ?? null}
+      rules={ogsLiveGame.game?.rules ?? null}
+      timeControl={ogsLiveGame.game?.timeControl ?? null}
+      handicap={ogsLiveGame.game?.handicap ?? 0}
     />
 
     <KibbitzChat
