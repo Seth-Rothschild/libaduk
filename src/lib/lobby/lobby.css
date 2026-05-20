@@ -70,6 +70,7 @@
 }
 .lobby__topgame {
   grid-area: topgame;
+  max-width: 100vw;
 }
 .lobby__about {
   grid-area: about;
@@ -86,6 +87,7 @@
   text-decoration: none;
   color: var(--c-font);
   overflow: hidden;
+  max-width: 100vw;
 }
 
 .lobby__puzzle .text {
