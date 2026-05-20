@@ -68,7 +68,9 @@
       .slice(0, viewedIndex + 1)
       .map((m) => ({ ...m, type: m.x >= 0 ? 'move' : 'pass' }))
   );
-  const displayBoard = $derived(isLive ? ogsLiveGame.board : replayMoves(movesUpToView, boardSize));
+  const displayBoard = $derived(
+    isLive ? ogsLiveGame.board : replayMoves(movesUpToView, boardSize, ogsLiveGame.initialBoard)
+  );
   const displayLastMove = $derived.by(() => {
     if (isLive) return ogsLiveGame.lastMove;
     const m = ogsLiveGame.moves[viewedIndex];

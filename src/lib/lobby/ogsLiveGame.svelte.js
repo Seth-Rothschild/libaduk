@@ -3,10 +3,30 @@ import GoBoardLib from '@sabaki/go-board';
 import { applyMoveWithShifts } from '$lib/game/board';
 import { emptyShiftMap } from '$lib/game/board/helpers.js';
 
+function parseSgfCoords(sgfString) {
+  if (!sgfString) return [];
+  const coords = [];
+  for (let i = 0; i + 1 < sgfString.length; i += 2) {
+    const x = sgfString.charCodeAt(i) - 97;
+    const y = sgfString.charCodeAt(i + 1) - 97;
+    coords.push([x, y]);
+  }
+  return coords;
+}
+
 class OgsLiveGame {
   game = $state(null);
   board = $state(null);
+  handicapStones = [];
   shiftMap = $state(null);
+
+  get initialBoard() {
+    if (this.handicapStones.length === 0) return null;
+    const size = this.game?.width ?? 19;
+    const signMap = GoBoardLib.fromDimensions(size).signMap.map((row) => [...row]);
+    for (const [x, y] of this.handicapStones) signMap[y][x] = 1;
+    return new GoBoardLib(signMap);
+  }
   clock = $state(null);
   lastMove = $state(null);
   animatedVertex = $state(null);
@@ -131,6 +151,7 @@ class OgsLiveGame {
     }
     this.game = null;
     this.board = null;
+    this.handicapStones = [];
     this.shiftMap = null;
     this.clock = null;
     this.lastMove = null;
@@ -171,6 +192,16 @@ class OgsLiveGame {
     const size = data.width;
     let board = GoBoardLib.fromDimensions(size);
     let shifts = emptyShiftMap(size);
+
+    const handicapStones = parseSgfCoords(data.initial_state?.black ?? '');
+    this.handicapStones = handicapStones;
+    if (handicapStones.length > 0) {
+      const signMap = board.signMap.map((row) => [...row]);
+      for (const [x, y] of handicapStones) {
+        signMap[y][x] = 1;
+      }
+      board = new GoBoardLib(signMap);
+    }
 
     const moves = data.moves || [];
     const recordedMoves = [];
