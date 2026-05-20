@@ -1105,8 +1105,8 @@ group.radio.ai-strength {
    ------------------------------------------------------------- */
 
 .my-games-panel {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.2rem;
   padding: 1.2rem;
   overflow-y: auto;
@@ -1120,6 +1120,7 @@ group.radio.ai-strength {
   gap: 0.4rem;
   text-decoration: none;
   color: var(--c-font);
+  min-width: 0;
 }
 
 .my-game-card__board {
