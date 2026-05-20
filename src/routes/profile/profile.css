@@ -136,8 +136,8 @@
 /* Mobile (< 800px): horizontal grid across top */
 @media (max-width: 799.29px) {
   .sub-ratings {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(9ch, 1fr));
+    display: flex;
+    flex-flow: row wrap;
   }
 
   .sub-ratings hr {
@@ -147,6 +147,7 @@
   .sub-ratings a {
     display: flex;
     justify-content: center;
+    flex: 1 0 33%;
   }
 
   .sub-ratings a::before {
