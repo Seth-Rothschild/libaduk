@@ -291,6 +291,30 @@
       return true;
     })
   );
+
+  let limit = $state(10);
+  const pagedGames = $derived(visibleGames.slice(0, limit));
+
+  $effect(() => {
+    activeCategory;
+    activeResult;
+    view;
+    limit = 10;
+  });
+
+  let sentinel = $state(null);
+
+  $effect(() => {
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) limit += 10;
+      },
+      { rootMargin: '800px' }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  });
 </script>
 
 <main class="page-menu">
@@ -392,7 +416,7 @@
             <div class="no-games">No imported games yet.</div>
           {/each}
         {:else}
-          {#each visibleGames as game}
+          {#each pagedGames as game}
             {@const size = game.size ?? 19}
             <article class="game-row">
               <a class="game-row__overlay" href="/play/{game.id}"></a>
@@ -437,6 +461,9 @@
           {:else}
             <div class="no-games">No games yet.</div>
           {/each}
+          {#if pagedGames.length < visibleGames.length}
+            <div bind:this={sentinel}></div>
+          {/if}
         {/if}
       </div>
     {/if}
