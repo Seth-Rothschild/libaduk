@@ -80,6 +80,22 @@ html {
   --m-good_bg--mix-90: hsl(88, 60%, 35%);
   --m-good_bg--mix-30: hsl(84, 35%, 21%);
 
+  /* — learn — */
+  --c-future: hsl(274, 48%, 60%);
+  --m-future--fade-35: hsla(274, 48%, 60%, 0.65);
+  --m-future--fade-50: hsla(274, 48%, 60%, 0.5);
+  --m-future--fade-60: hsla(274, 48%, 60%, 0.4);
+  --m-future--fade-80: hsla(274, 48%, 60%, 0.2);
+  --m-future--lighten-22: hsl(274, 48%, 82%);
+  --m-primary--fade-50: hsla(209, 79%, 56%, 0.5);
+  --m-primary--fade-60: hsla(209, 79%, 56%, 0.4);
+  --m-primary--fade-80: hsla(209, 79%, 56%, 0.2);
+  --m-primary--lighten-30: hsl(209, 79%, 86%);
+  --m-primary--darken-25: hsl(209, 79%, 31%);
+  --m-secondary--fade-35: hsla(88, 62%, 37%, 0.65);
+  --m-secondary--fade-50: hsla(88, 62%, 37%, 0.5);
+  --m-secondary--fade-80: hsla(88, 62%, 37%, 0.2);
+
   /* — unused — available when needed */
   /*
   --c-accent-clear:               rgb(171.36, 62.832, 0);
@@ -389,6 +405,22 @@ html.light {
   --m-primary_bg--mix-20: hsl(209, 66%, 89%);
   --m-good_bg--mix-90: hsl(88, 48%, 43%);
   --m-good_bg--mix-30: hsl(88, 36%, 81%);
+
+  /* — learn — */
+  --c-future: hsl(274, 65%, 70%);
+  --m-future--fade-35: hsla(274, 65%, 70%, 0.65);
+  --m-future--fade-50: hsla(274, 65%, 70%, 0.5);
+  --m-future--fade-60: hsla(274, 65%, 70%, 0.4);
+  --m-future--fade-80: hsla(274, 65%, 70%, 0.2);
+  --m-future--lighten-22: hsl(274, 65%, 92%);
+  --m-primary--fade-50: hsla(209, 77%, 46%, 0.5);
+  --m-primary--fade-60: hsla(209, 77%, 46%, 0.4);
+  --m-primary--fade-80: hsla(209, 77%, 46%, 0.2);
+  --m-primary--lighten-30: hsl(209, 77%, 76%);
+  --m-primary--darken-25: hsl(209, 77%, 21%);
+  --m-secondary--fade-35: hsla(88, 62%, 37%, 0.65);
+  --m-secondary--fade-50: hsla(88, 62%, 37%, 0.5);
+  --m-secondary--fade-80: hsla(88, 62%, 37%, 0.2);
 
   /* — unused — available when needed */
   /*

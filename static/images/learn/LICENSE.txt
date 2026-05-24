@@ -1,0 +1,14 @@
+Icons from https://game-icons.net, licensed under CC BY 3.0.
+https://creativecommons.org/licenses/by/3.0/
+
+Lorc (http://lorcblog.blogspot.com)
+  bolt-shield.svg, bowman.svg, crystal-ball.svg, fishing-net.svg, globe.svg,
+  robot-golem.svg, scales.svg, spade.svg, sprint.svg, sword-clash.svg,
+  tied-scroll.svg, time-trap.svg
+
+Delapouite (https://delapouite.com)
+  abacus.svg, graduate-cap.svg, id-card.svg, magic-hat.svg, shaking-hands.svg,
+  teacher.svg
+
+Skoll
+  bullseye.svg

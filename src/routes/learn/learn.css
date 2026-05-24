@@ -1,0 +1,748 @@
+@property --border-angle {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0turn;
+}
+
+@keyframes bg-spin {
+  to {
+    --border-angle: 1turn;
+  }
+}
+
+@keyframes soft-hue {
+  50% {
+    filter: hue-rotate(-10deg);
+  }
+}
+
+icon[data-icon]::before {
+  font-family: 'lichess';
+  content: attr(data-icon);
+}
+
+.learn {
+  grid-area: main;
+  display: grid;
+  gap: 10px;
+}
+
+.learn__side {
+  grid-area: side;
+}
+
+.learn__main {
+  grid-area: main;
+}
+
+.learn--map {
+  grid-template-areas: 'side' 'main';
+}
+
+@media (min-width: 800px) {
+  .learn--map {
+    grid-template-areas: 'side main';
+    grid-template-columns: 240px auto;
+  }
+}
+
+@media (min-width: 1400px) {
+  .learn--map {
+    grid-template-columns: 240px 960px;
+  }
+}
+
+.learn--run {
+  grid-template-areas: 'main' 'table' 'side';
+}
+
+@media (min-width: 800px) {
+  .learn--run {
+    grid-template-areas: 'main table' 'side table';
+    grid-template-columns: minmax(0, 1fr) 380px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .learn--run {
+    grid-template-areas: 'side main table';
+    grid-template-columns: 300px minmax(0, 1fr) 380px;
+  }
+}
+
+.learn__side-home {
+  border-radius: 7px;
+  box-shadow:
+    0 2px 2px 0 rgba(0, 0, 0, 0.14),
+    0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+  background: var(--c-bg-box);
+  color: var(--c-font);
+  text-align: center;
+  padding: 1em 0;
+}
+
+.learn__side-home__header {
+  display: flex;
+  flex-flow: column nowrap;
+  align-items: center;
+  padding: 1em 0;
+}
+
+.learn__side-home__header .decoration {
+  width: 200px;
+  height: 200px;
+  opacity: 0.8;
+}
+
+@keyframes fat-glide {
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.learn__side-home:hover .decoration {
+  animation: 1.2s fat-glide ease-in-out infinite;
+}
+
+.learn__side-home h1 {
+  font-size: 2.5em;
+  margin: 0;
+}
+
+.learn__side-home h2 {
+  font-size: 1.8em;
+  margin: 0.4em 0 1em 0;
+}
+
+.learn__side-home .progress {
+  position: relative;
+  width: 100%;
+  height: 30px;
+  background: var(--c-primary);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+@keyframes animated-bar {
+  from {
+    transform: translateX(-100px);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.learn__side-home .progress .bar {
+  height: 100%;
+  background: var(--c-primary-dim);
+  border-radius: 0 5px 5px 0;
+  transform: translateX(-100px);
+  animation: animated-bar 1s forwards;
+}
+
+.learn__side-home .progress .text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  line-height: 30px;
+  z-index: 3;
+}
+
+.learn__side-home .actions {
+  padding: 20px 10px;
+}
+
+html.light .learn__side-home .progress .text {
+  color: var(--c-over);
+}
+
+html.light .learn__side-home__header .decoration {
+  filter: brightness(0.15);
+}
+
+.learn__side-home a {
+  opacity: 0.6;
+  color: var(--c-over);
+  cursor: pointer;
+}
+
+html.light .learn__side-home a {
+  color: var(--c-font);
+}
+
+.learn__side-home a:hover {
+  opacity: 1;
+}
+
+.learn-stages {
+  padding-top: 10px;
+}
+
+.learn-stages .categ > h2 {
+  font-family: Roboto, sans-serif;
+  font-weight: 300;
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+  font-size: 2em;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  color: var(--c-font-dim);
+  text-align: center;
+}
+
+.learn-stages .categ_stages {
+  --min-width: 400px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--min-width), 1fr));
+  gap: 1em;
+  margin: 1.5em 0 3em 0;
+}
+
+@media (max-width: 420px) {
+  .learn-stages .categ_stages {
+    --min-width: calc(100vw - 2em);
+    padding: 0 0.5em;
+  }
+}
+
+.learn-stages .stage {
+  border-radius: 7px;
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  transition: transform 0.15s ease;
+  position: relative;
+  min-height: 90px;
+  color: var(--c-over);
+  box-shadow: 0 3px 5px 0 rgba(0, 0, 0, 0.07);
+  font-size: 1.2em;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg-box);
+  padding-right: 3em;
+}
+
+html.light .learn-stages .stage {
+  color: var(--c-font);
+}
+
+@media (max-width: 420px) {
+  .learn-stages .stage {
+    min-height: fit-content;
+    padding: 6px 3em 6px 0;
+  }
+
+  .learn-stages .stage p {
+    margin-top: 2px;
+  }
+}
+
+.learn-stages .stage img {
+  width: 70px;
+  height: 70px;
+  margin: 0 1em;
+  opacity: 0.6;
+}
+
+html.light .learn-stages .stage img {
+  filter: brightness(0.15);
+}
+
+@media (max-width: 420px) {
+  .learn-stages .stage img {
+    width: 50px;
+    height: 64px;
+  }
+}
+
+.learn-stages .stage h3 {
+  font-size: 1.6em;
+  line-height: 1;
+}
+
+.learn-stages .stage p {
+  margin: 4px 0 0 0;
+  line-height: 1.2;
+  opacity: 0.8;
+}
+
+.learn-stages .stage.ongoing {
+  border-color: var(--m-primary--fade-50);
+  background: linear-gradient(0deg, var(--m-primary--fade-60), var(--m-primary--fade-80) 100px);
+}
+
+html.light .learn-stages .stage.ongoing {
+  background: linear-gradient(180deg, var(--m-primary--fade-60), var(--m-primary--fade-80) 100px);
+}
+
+.learn-stages .stage.done {
+  border-color: var(--m-secondary--fade-35);
+  background: linear-gradient(0deg, var(--m-secondary--fade-60), var(--m-secondary--fade-80) 100px);
+}
+
+.learn-stages .stage.done img {
+  filter: brightness(0) saturate(100%) invert(81%) sepia(42%) saturate(529%) hue-rotate(38deg)
+    brightness(94%) contrast(90%);
+}
+
+html.light .learn-stages .stage.done {
+  background: linear-gradient(
+    180deg,
+    var(--m-secondary--fade-60),
+    var(--m-secondary--fade-80) 100px
+  );
+}
+
+html.light .learn-stages .stage.done img {
+  filter: brightness(0) saturate(100%) invert(41%) sepia(14%) saturate(1540%) hue-rotate(47deg)
+    brightness(97%) contrast(93%);
+}
+
+.learn-stages .stage.future {
+  border-color: var(--m-future--fade-35);
+  background: linear-gradient(0deg, var(--m-future--fade-60), var(--m-future--fade-80) 100px);
+}
+
+html.light .learn-stages .stage.future {
+  background: linear-gradient(180deg, var(--m-future--fade-60), var(--m-future--fade-80) 100px);
+}
+
+.learn-stages .stage.active,
+.learn-stages .stage:hover {
+  transform: scale(1.025);
+}
+
+.learn-stages .attention-effect {
+  --border-angle: 0turn;
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border: 3px solid transparent;
+  border-radius: 7px;
+  background:
+    conic-gradient(
+        from var(--border-angle),
+        transparent 25%,
+        var(--m-primary--lighten-30),
+        var(--m-primary--fade-80)
+      )
+      border-box,
+    transparent border-box;
+  background-position: center center;
+  animation: bg-spin 3.5s linear infinite;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+
+html.light .learn-stages .attention-effect {
+  background:
+    conic-gradient(
+        from var(--border-angle),
+        transparent 25%,
+        var(--m-primary--darken-25),
+        var(--m-primary--fade-80)
+      )
+      border-box,
+    transparent border-box;
+}
+
+.learn-stages .stage .ribbon-wrapper {
+  display: block;
+  width: 88px;
+  height: 88px;
+  overflow: hidden;
+  position: absolute;
+  top: -4px;
+  right: -3px;
+}
+
+.learn-stages .ribbon {
+  --ribbon-fade: #1111116e;
+  display: block;
+  font-size: 15px;
+  font-weight: bold;
+  text-align: center;
+  text-shadow: rgba(255, 255, 255, 0.5) 0 1px 0;
+  transform: rotate(45deg);
+  position: relative;
+  padding: 7px 0;
+  left: -4px;
+  top: 15px;
+  width: 120px;
+  color: #5c5c5c;
+  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.3);
+}
+
+html.light .learn-stages .ribbon {
+  --ribbon-fade: #1111113e;
+}
+
+.learn-stages .ribbon icon {
+  color: var(--c-brag);
+  animation: 0.6s soft-hue ease-in-out infinite;
+  text-shadow: 0 -0.5px 1px rgba(0, 0, 0, 0.5);
+}
+
+.learn-stages .ribbon icon:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.learn-stages .ribbon icon:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.learn-stages .ribbon::before,
+.learn-stages .ribbon::after {
+  content: '';
+  width: 32px;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  mix-blend-mode: overlay;
+}
+
+.learn-stages .ribbon::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--ribbon-fade), transparent);
+}
+
+.learn-stages .ribbon::after {
+  right: 0;
+  background: linear-gradient(270deg, var(--ribbon-fade), transparent);
+}
+
+.learn-stages .ribbon.done {
+  background-color: #c5e791;
+  box-shadow: 1px 0 3px var(--m-secondary--fade-50);
+}
+
+.learn-stages .ribbon.ongoing {
+  background-color: #bddffa;
+  box-shadow: 1px 0 3px var(--m-primary--fade-50);
+}
+
+.learn-stages .ribbon.future {
+  background-color: var(--m-future--lighten-22);
+  box-shadow: 1px 0 3px var(--m-future--fade-50);
+}
+
+.learn-stages .what_next > p {
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+  width: 100%;
+  text-align: center;
+  margin: 0.5em 0 1.5em;
+  font-size: 1.2em;
+}
+
+/* learn--run: side map */
+
+.learn__side-map {
+  user-select: none;
+}
+
+.learn__side-map .back,
+.learn__side-map .categ > h2 {
+  display: block;
+  font-size: 1.3em;
+  height: 50px;
+  line-height: 50px;
+  text-indent: 15px;
+  cursor: pointer;
+  opacity: 0.81;
+}
+
+.learn__side-map .back {
+  display: flex;
+  color: var(--c-font);
+  align-items: center;
+}
+
+.learn__side-map .back img {
+  width: 50px;
+  height: 50px;
+  opacity: 0.9;
+  margin-inline-end: 10px;
+  padding: 10px;
+  background: rgba(120, 120, 120, 1);
+  display: block;
+}
+
+.learn__side-map .back:hover {
+  background: rgba(120, 120, 120, 0.2);
+}
+
+.learn__side-map .categ > h2 {
+  border-top: 1px solid var(--c-border);
+}
+
+.learn__side-map .categ > h2:hover {
+  background: var(--m-primary--fade-80);
+}
+
+.learn__side-map .categ.active {
+  border: 1px solid var(--c-border);
+  border-width: 0 1px;
+}
+
+.learn__side-map .categ.active:last-child {
+  border-bottom-width: 1px;
+}
+
+.learn__side-map .categ.active > h2 {
+  cursor: default;
+  background: var(--c-primary);
+  color: var(--c-over);
+}
+
+.learn__side-map .categ:not(.active) .categ_stages {
+  display: none;
+}
+
+.learn__side-map .stage {
+  font-family: Roboto, sans-serif;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+  font-size: 1.1em;
+  opacity: 0.9;
+  color: var(--c-font);
+}
+
+.learn__side-map .stage img {
+  width: 50px;
+  height: 50px;
+  opacity: 0.9;
+  margin-inline-end: 10px;
+  padding: 10px;
+}
+
+.learn__side-map .stage.active {
+  background: var(--m-primary--fade-80);
+}
+
+.learn__side-map .stage.active img {
+  background: var(--c-primary);
+}
+
+.learn__side-map .stage.done img {
+  background: var(--c-good);
+}
+
+.learn__side-map .stage.done:hover {
+  background: var(--m-secondary--fade-80);
+}
+
+.learn__side-map .stage.future img {
+  opacity: 0.7;
+  background: var(--c-primary);
+}
+
+.learn__side-map .stage.future:hover {
+  background: var(--m-primary--fade-80);
+}
+
+.learn__side-map .stage:hover {
+  filter: brightness(0.9);
+}
+
+/* learn--run: screen overlay */
+
+.learn__main {
+  position: relative;
+}
+
+.learn-board {
+  aspect-ratio: 1;
+  width: 100%;
+  max-height: calc(100svh - 130px);
+}
+
+.learn__screen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+  display: grid;
+}
+
+@keyframes slide-in {
+  0% {
+    opacity: 0;
+    filter: blur(15px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.learn__screen {
+  margin: auto;
+  background-color: var(--c-bg-box);
+  border-radius: 7px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+  width: 350px;
+  text-align: center;
+  padding-top: 36px;
+  max-height: 100%;
+  overflow: auto;
+}
+
+.learn__screen > :nth-child(1) {
+  animation: slide-in 1s cubic-bezier(0.37, 0.82, 0.2, 1);
+}
+
+.learn__screen > :nth-child(2) {
+  animation: slide-in 1.5s cubic-bezier(0.37, 0.82, 0.2, 1);
+}
+
+.learn__screen > :nth-child(3) {
+  animation: slide-in 2s cubic-bezier(0.37, 0.82, 0.2, 1);
+}
+
+.learn__screen > :nth-child(4) {
+  animation: slide-in 2.5s cubic-bezier(0.37, 0.82, 0.2, 1);
+}
+
+.learn__screen > :nth-child(5) {
+  animation: slide-in 3s cubic-bezier(0.37, 0.82, 0.2, 1);
+}
+
+.learn__screen h1 {
+  font-weight: bold;
+  color: var(--c-font-clear);
+  font-size: 24px;
+  margin-bottom: 22px;
+}
+
+.learn__screen .no-square {
+  width: 100px;
+  height: 100px;
+  position: relative;
+  margin: 0 auto 22px auto;
+}
+
+.learn__screen .no-square img {
+  width: 100%;
+  height: 100%;
+}
+
+html.light .learn__screen .no-square img {
+  filter: brightness(0.15);
+}
+
+.learn__screen p {
+  padding: 0 15%;
+  line-height: 24px;
+  margin-bottom: 17px;
+}
+
+.learn__screen .buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 10% 24px 10%;
+}
+
+.learn__screen .buttons button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 48px;
+}
+
+/* learn--run: table */
+
+.learn__table {
+  grid-area: table;
+  align-self: center;
+}
+
+.learn__table .wrap {
+  border-radius: 7px;
+  box-shadow:
+    0 2px 2px 0 rgba(0, 0, 0, 0.14),
+    0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.learn__table .title {
+  display: flex;
+  background: var(--c-primary);
+  color: var(--c-over);
+}
+
+.learn__table .title h2,
+.learn__table .title h3 {
+  font-size: 2.3em;
+  margin: 15px 0 5px -3px;
+  white-space: nowrap;
+}
+
+.learn__table .title img {
+  width: 80px;
+  height: 80px;
+  margin: 5px 8px 5px 5px;
+}
+
+.learn__table .subtitle {
+  margin-bottom: 1em;
+}
+
+.learn__table .goal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-bg-box);
+  border: 1px solid var(--c-border);
+  border-top: none;
+  padding: 1em;
+  text-align: center;
+}
+
+.learn__table .progress {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  text-align: center;
+  border: 1px solid var(--c-border);
+  border-top: 0;
+}
+
+.learn__table .progress a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 100%;
+  text-align: center;
+  background: var(--c-bg-high);
+  height: 3em;
+  font-size: 0.9em;
+  border-inline-start: 1px solid var(--c-border);
+  opacity: 0.8;
+  transition: all 0.2s;
+}
+
+.learn__table .progress a:first-child {
+  border-inline-start: 0;
+}
+
+.learn__table .progress a:hover {
+  opacity: 1;
+}
+
+.learn__table .progress a.done {
+  color: var(--c-over);
+  background: var(--c-good);
+}
+
+.learn__table .progress a.active {
+  opacity: 1;
+  color: var(--c-over);
+  background: var(--c-primary);
+}
