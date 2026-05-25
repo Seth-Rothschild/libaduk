@@ -34,6 +34,12 @@
     </div>
   </section>
   <section>
+    <a href="/learn" onclick={onClose}>{t('Learn')}</a>
+    <div role="group">
+      <a href="/learn" onclick={onClose}>{t('Lessons')}</a>
+    </div>
+  </section>
+  <section>
     <a href="/puzzle" onclick={onClose}>{t('Puzzles')}</a>
     <div role="group">
       <a href="/puzzle" onclick={onClose}>{t('Random puzzle')}</a>

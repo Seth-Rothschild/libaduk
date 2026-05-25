@@ -366,6 +366,11 @@
                       class="go-marker-shape go-marker-on-{sign || 'empty'}"
                     />
                   </svg>
+                {:else if marker === 'hint'}
+                  <svg class="go-marker" viewBox="0 0 1 1" style="overflow: visible;">
+                    <circle class="go-hint-ring" cx="0.5" cy="0.5" r="0.38" />
+                    <circle class="go-hint-ring go-hint-ring-2" cx="0.5" cy="0.5" r="0.38" />
+                  </svg>
                 {:else if marker?.type === 'label' || marker?.type === 'number'}
                   <div class="go-marker-label go-marker-label-on-{sign || 'empty'}">
                     {marker.label}

@@ -1003,6 +1003,30 @@ html.light .color-icon.white::before {
   pointer-events: none;
 }
 
+.go-hint-ring {
+  fill: none;
+  stroke: #2563eb;
+  stroke-width: 0.12;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: go-hint-pulse 2.6s ease-out infinite;
+}
+
+.go-hint-ring-2 {
+  animation-delay: -1.3s;
+}
+
+@keyframes go-hint-pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
 /* -------------------------------------------------------------
    Ghost stones (variation preview in analysis)
    ------------------------------------------------------------- */

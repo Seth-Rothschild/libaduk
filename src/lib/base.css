@@ -318,6 +318,21 @@ main.page-small {
   color: var(--c-font-dim);
 }
 
+.button.button-empty,
+.button.button-empty:visited,
+.button.button-empty:focus {
+  background: transparent;
+  color: var(--c-font);
+  box-shadow: none;
+  border: 1px solid var(--c-border);
+}
+
+.button.button-empty:not(.disabled):not([disabled]):hover {
+  background: var(--c-bg-high);
+  box-shadow: none;
+  color: var(--c-font);
+}
+
 .button.disabled,
 .button[disabled] {
   opacity: 0.5;

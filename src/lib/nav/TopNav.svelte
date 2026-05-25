@@ -17,6 +17,12 @@
     </div>
   </section>
   <section>
+    <a href="/learn">{t('Learn')}</a>
+    <div role="group">
+      <a href="/learn">{t('Lessons')}</a>
+    </div>
+  </section>
+  <section>
     <a href="/puzzle">{t('Puzzles')}</a>
     <div role="group">
       <a href="/puzzle">{t('Random puzzle')}</a>

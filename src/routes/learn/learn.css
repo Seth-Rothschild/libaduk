@@ -647,12 +647,53 @@ html.light .learn__screen .no-square img {
   margin: 8px 10% 24px 10%;
 }
 
-.learn__screen .buttons button {
+.learn__screen .buttons .button {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
   height: 48px;
+}
+
+.learn__screen .stars {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+icon.star::before {
+  content: '★';
+  font-size: 4em;
+  color: var(--c-font-dim);
+  display: block;
+  opacity: 0;
+  animation: star-pop 0.5s cubic-bezier(0.37, 0.82, 0.2, 1) both;
+}
+
+.learn__screen .star-wrap:nth-child(1) icon.star::before {
+  animation-delay: 0.6s;
+}
+.learn__screen .star-wrap:nth-child(2) icon.star::before {
+  animation-delay: 0.9s;
+}
+.learn__screen .star-wrap:nth-child(3) icon.star::before {
+  animation-delay: 1.2s;
+}
+
+@keyframes star-pop {
+  0% {
+    transform: scale(0) rotate(-120deg);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.2) rotate(10deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }
 
 /* learn--run: table */
@@ -714,7 +755,7 @@ html.light .learn__screen .no-square img {
   border-top: 0;
 }
 
-.learn__table .progress a {
+.learn__table .progress button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -723,26 +764,166 @@ html.light .learn__screen .no-square img {
   background: var(--c-bg-high);
   height: 3em;
   font-size: 0.9em;
+  border: none;
   border-inline-start: 1px solid var(--c-border);
+  border-radius: 0;
   opacity: 0.8;
   transition: all 0.2s;
+  cursor: pointer;
 }
 
-.learn__table .progress a:first-child {
+.learn__table .progress button:first-child {
   border-inline-start: 0;
 }
 
-.learn__table .progress a:hover {
+.learn__table .progress button:hover:not(:disabled) {
   opacity: 1;
 }
 
-.learn__table .progress a.done {
+.learn__table .progress button.done {
   color: var(--c-over);
   background: var(--c-good);
 }
 
-.learn__table .progress a.active {
+.learn__table .progress button.active {
   opacity: 1;
   color: var(--c-over);
   background: var(--c-primary);
+}
+
+.learn__table .progress button.future {
+  cursor: default;
+}
+
+/* Affirmation flash */
+.learn__table .goal {
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.learn__table .goal.celebrating {
+  background: var(--c-good);
+  color: var(--c-over);
+  border-radius: 4px;
+}
+
+.learn__table .affirmation {
+  display: block;
+  font-weight: bold;
+  font-size: 1.3em;
+  text-align: center;
+  animation: affirmation-pop 0.25s ease-out;
+}
+
+@keyframes affirmation-pop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.learn__table .pass-btn {
+  display: block;
+  margin: 1rem auto 1rem;
+  font-size: 1.15em;
+  padding: 0.65em 4em;
+}
+
+@keyframes pass-hint-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px var(--c-primary),
+      0 0 0 5px transparent;
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px var(--c-primary),
+      0 0 8px 5px var(--c-primary);
+  }
+}
+
+.learn__table .pass-btn.pass-hint {
+  animation: pass-hint-pulse 1.2s ease-in-out infinite;
+}
+
+.learn__table .goal.passing {
+  background: var(--c-bg-high);
+  transition: background 0.2s;
+}
+
+.pass-message {
+  display: block;
+  font-weight: bold;
+  font-size: 1.1em;
+  text-align: center;
+  opacity: 0.75;
+  animation: affirmation-pop 0.25s ease-out;
+}
+
+/* Dev author panel */
+.author-panel {
+  padding: 1rem;
+  border-top: 2px dashed #f0a000;
+  background: var(--c-bg-high);
+}
+
+.author-panel h3 {
+  margin: 0 0 0.5rem;
+  color: #f0a000;
+}
+
+.author-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.author-controls label {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.author-controls input[type='text'] {
+  width: 280px;
+}
+
+.author-phase {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.9em;
+}
+
+.author-phase button.active {
+  background: #f0a000;
+  color: #000;
+}
+
+.author-body {
+  display: flex;
+  gap: 1rem;
+}
+
+.author-board {
+  width: 320px;
+  height: 320px;
+  flex-shrink: 0;
+}
+
+.author-output {
+  flex: 1;
+  min-height: 320px;
+  font-family: monospace;
+  font-size: 11px;
+  resize: vertical;
 }
