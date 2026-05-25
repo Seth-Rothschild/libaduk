@@ -46,6 +46,7 @@
   let chatViewers = $state([]);
   let chatHighlightVertex = $state(null);
   let chatInputText = $state('');
+  let isMobile = $state(false);
 
   const coordModeEnabled = $derived(boardSettings.ctrlClickBehavior !== 'nothing');
 
@@ -259,6 +260,10 @@
       }, LINGER_MS);
     };
 
+    const mq = window.matchMedia('(max-width: 799px)');
+    isMobile = mq.matches;
+    mq.addEventListener('change', (e) => (isMobile = e.matches));
+
     disposed = false;
     connect();
 
@@ -278,7 +283,19 @@
 
 <svelte:window onkeydown={handleKeyNav} />
 
-<div class="round">
+<div class="round round--tv">
+  {#if isMobile}
+    <KibbitzChat
+      {username}
+      messages={chatMessages}
+      viewers={chatViewers}
+      onSend={handleChatSend}
+      {boardSize}
+      onCoordHover={(v) => (chatHighlightVertex = v)}
+      bind:inputText={chatInputText}
+    />
+  {/if}
+
   <aside class="round__side">
     <GameMeta
       {boardSize}
@@ -298,16 +315,17 @@
       timeControl={ogsLiveGame.game?.timeControl ?? null}
       handicap={ogsLiveGame.game?.handicap ?? 0}
     />
-
-    <KibbitzChat
-      {username}
-      messages={chatMessages}
-      viewers={chatViewers}
-      onSend={handleChatSend}
-      {boardSize}
-      onCoordHover={(v) => (chatHighlightVertex = v)}
-      bind:inputText={chatInputText}
-    />
+    {#if !isMobile}
+      <KibbitzChat
+        {username}
+        messages={chatMessages}
+        viewers={chatViewers}
+        onSend={handleChatSend}
+        {boardSize}
+        onCoordHover={(v) => (chatHighlightVertex = v)}
+        bind:inputText={chatInputText}
+      />
+    {/if}
   </aside>
 
   <div class="round__app">
@@ -381,6 +399,13 @@
 </div>
 
 <style>
+  @media (max-width: 799px) {
+    .round--tv {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
   .rmoves.rmoves--tv {
     padding: 0;
   }

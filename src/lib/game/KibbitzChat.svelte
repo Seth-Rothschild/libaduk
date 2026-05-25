@@ -48,6 +48,9 @@
 
   const visibleMessages = $derived(filterEmptyDividers(messages));
   const uniqueViewers = $derived([...new Set(viewers)]);
+  const userHasPosted = $derived(
+    username && visibleMessages.some((m) => !m.divider && m.user === username)
+  );
 
   function sendMessage(text) {
     if (!text.trim()) return;
@@ -99,6 +102,9 @@
       tabindex="0"
       bind:this={messagesEl}
     >
+      {#if username && !userHasPosted}
+        <p class="mchat__empty">You haven't said anything yet — jump in!</p>
+      {/if}
       {#each visibleMessages as msg}
         {#if msg.divider}
           <li class="kibbitz-divider">
@@ -135,7 +141,9 @@
     <input
       class="mchat__say"
       class:mchat__say--disconnected={sendFailed}
-      placeholder={sendFailed ? 'Disconnected — message not sent' : 'Chat is local to libaduk only'}
+      placeholder={sendFailed
+        ? 'Disconnected — message not sent'
+        : 'Chat  about anything — moves, games, nonsense'}
       aria-label="Kibbitz message"
       bind:value={inputText}
       onkeydown={handleKeydown}
@@ -214,6 +222,14 @@
     border-radius: 50%;
     background: var(--c-success, #4ade80);
     flex-shrink: 0;
+  }
+
+  .mchat__empty {
+    color: var(--c-font-dim);
+    font-size: 0.85em;
+    text-align: center;
+    padding: 1em;
+    margin: 0;
   }
 
   .mchat__ts,
