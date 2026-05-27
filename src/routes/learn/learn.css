@@ -808,6 +808,20 @@ icon.star::before {
   border-radius: 4px;
 }
 
+.learn__table .goal.failed {
+  background: var(--c-bad);
+  color: var(--c-over);
+  border-radius: 4px;
+}
+
+.learn__table .fail-message {
+  display: block;
+  font-weight: bold;
+  font-size: 1.1em;
+  text-align: center;
+  animation: affirmation-pop 0.25s ease-out;
+}
+
 .learn__table .affirmation {
   display: block;
   font-weight: bold;

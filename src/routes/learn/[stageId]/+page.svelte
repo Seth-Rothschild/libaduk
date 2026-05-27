@@ -422,9 +422,12 @@
             class="goal"
             class:celebrating={!!affirmation}
             class:passing={!!passMessage && !affirmation}
+            class:failed={lessonFailed}
           >
             {#if affirmation}
               <span class="affirmation">{affirmation}</span>
+            {:else if lessonFailed}
+              <span class="fail-message">That's not the move — try again!</span>
             {:else if passMessage}
               <span class="pass-message">{passMessage}</span>
             {:else}
