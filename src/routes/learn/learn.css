@@ -827,7 +827,16 @@ icon.star::before {
   font-weight: bold;
   font-size: 1.3em;
   text-align: center;
-  animation: affirmation-pop 0.25s ease-out;
+  animation:
+    affirmation-pop 0.25s ease-out,
+    text-shadow-glow 1s 1;
+}
+
+@keyframes text-shadow-glow {
+  50% {
+    text-shadow: 0 0 10px #fff;
+    transform: scale(1.05);
+  }
 }
 
 @keyframes affirmation-pop {
