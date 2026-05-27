@@ -15,7 +15,6 @@
   import { themeState } from '$lib/nav/theme.svelte.js';
   import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
   import { stoneTheme } from '$lib/nav/stoneTheme.svelte.js';
-  import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import SiteHeader from '$lib/nav/SiteHeader.svelte';
@@ -41,13 +40,15 @@
       $page.route.id?.startsWith('/puzzle')
   );
 
-  const openSetup = async (type) => {
-    await goto('/');
-    setupModal = type;
-  };
+  $effect(() => {
+    const setup = $page.url.searchParams.get('setup');
+    if (setup) {
+      setupModal = setup;
+    }
+  });
 </script>
 
-<SiteHeader username={getMe()?.username ?? ''} onOpenSetup={openSetup} />
+<SiteHeader username={getMe()?.username ?? ''} />
 
 <div id="main-wrap" class:game-page={isGamePage}>
   <main>
@@ -61,7 +62,10 @@
   <GameSetupModal
     gameType={setupModal}
     creatorName={getMe()?.username || getGuestId()}
-    onClose={() => (setupModal = null)}
+    onClose={() => {
+      setupModal = null;
+      history.replaceState(history.state, '', '/');
+    }}
   />
 {/if}
 {#if ogsSeekGraph.tokenExpired && !ogsWarningDismissed}

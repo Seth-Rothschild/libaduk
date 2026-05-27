@@ -1,20 +1,7 @@
 <script>
   import { t } from '$lib/i18n/i18n.svelte.js';
 
-  let { open, onClose, onCreateGame, onChallengeAFriend, onPlayLocally } = $props();
-
-  const handleCreateGame = () => {
-    onClose();
-    onCreateGame();
-  };
-  const handleChallengeAFriend = () => {
-    onClose();
-    onChallengeAFriend();
-  };
-  const handlePlayLocally = () => {
-    onClose();
-    onPlayLocally();
-  };
+  let { open, onClose } = $props();
 </script>
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && open && onClose()} />
@@ -28,9 +15,9 @@
   <section>
     <a href="/" onclick={onClose}>{t('Play')}</a>
     <div role="group">
-      <button onclick={handleCreateGame}>{t('Create a game')}</button>
-      <button onclick={handleChallengeAFriend}>{t('Challenge a friend')}</button>
-      <button onclick={handlePlayLocally}>{t('Play against computer')}</button>
+      <a href="/?setup=hook" onclick={onClose}>{t('Create a game')}</a>
+      <a href="/?setup=friend" onclick={onClose}>{t('Challenge a friend')}</a>
+      <a href="/?setup=ai" onclick={onClose}>{t('Play against computer')}</a>
     </div>
   </section>
   <section>

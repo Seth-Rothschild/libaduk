@@ -861,7 +861,7 @@ export const stages = [
     title: 'Play machine',
     subtitle: 'Test your skills with the computer',
     image: '/images/learn/robot-golem.svg',
-    href: '#'
+    href: '/?setup=ai'
   },
   {
     id: 'puzzles',

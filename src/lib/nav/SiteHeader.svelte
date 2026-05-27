@@ -8,7 +8,7 @@
   import DasherMenu from './DasherMenu.svelte';
   import MobileNav from './MobileNav.svelte';
 
-  let { username, onOpenSetup } = $props();
+  let { username } = $props();
 
   let navOpen = $state(false);
 
@@ -39,11 +39,7 @@
 
   <div class="site-title-nav">
     <SiteTitle />
-    <TopNav
-      onCreateGame={() => onOpenSetup('hook')}
-      onChallengeAFriend={() => onOpenSetup('friend')}
-      onPlayLocally={() => onOpenSetup('ai')}
-    />
+    <TopNav />
   </div>
 
   <div class="site-buttons">
@@ -52,10 +48,4 @@
   </div>
 </header>
 
-<MobileNav
-  open={navOpen}
-  onClose={() => (navOpen = false)}
-  onCreateGame={() => onOpenSetup('hook')}
-  onChallengeAFriend={() => onOpenSetup('friend')}
-  onPlayLocally={() => onOpenSetup('ai')}
-/>
+<MobileNav open={navOpen} onClose={() => (navOpen = false)} />
