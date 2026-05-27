@@ -850,9 +850,9 @@ export const stages = [
   {
     id: 'play-people',
     category: 'what_next',
-    title: 'Find people to play with',
-    subtitle: 'Opponents from around the world',
-    image: '/images/learn/sword-clash.svg',
+    title: 'Find people to learn with',
+    subtitle: 'Players from around the world',
+    image: '/images/learn/chat-bubble.svg',
     href: '/tv'
   },
   {
@@ -870,5 +870,13 @@ export const stages = [
     subtitle: 'Exercise your tactical skills',
     image: '/images/learn/bullseye.svg',
     href: '/puzzle'
+  },
+  {
+    id: 'ogs-practice',
+    category: 'what_next',
+    title: 'Practice',
+    subtitle: 'Do more lessons on OGS',
+    image: '/images/learn/weight-lifting-up.svg',
+    href: 'https://online-go.com/learn-to-play-go'
   }
 ];

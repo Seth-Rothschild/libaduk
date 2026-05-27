@@ -80,7 +80,11 @@
           <div class="categ_stages">
             {#each stagesForCategory(category.id) as stage}
               {@const state = stageState(stage)}
-              <a class="stage {state}" href={stage.href ?? `/learn/${stage.id}`}>
+              <a
+                class="stage {state}"
+                href={stage.href ?? `/learn/${stage.id}`}
+                target={stage.href?.startsWith('http') ? '_blank' : null}
+              >
                 {#if state === 'done' && !category.static}
                   <span class="ribbon-wrapper">
                     <span class="ribbon done">
