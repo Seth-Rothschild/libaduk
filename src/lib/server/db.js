@@ -401,7 +401,7 @@ export async function loadTvChat() {
   }
 }
 
-export async function pushTvChat(entry, cap = 100) {
+export async function pushTvChat(entry, cap = 1000) {
   try {
     const d = await getDb();
     await d

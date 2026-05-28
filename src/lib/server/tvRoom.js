@@ -1,6 +1,6 @@
 import * as db from './db.js';
 
-const CHAT_CAP = 100;
+const CHAT_CAP = 1000;
 
 if (!global.__tvRoom) global.__tvRoom = { currentGameId: null, chat: [], clients: new Set() };
 const room = global.__tvRoom;
