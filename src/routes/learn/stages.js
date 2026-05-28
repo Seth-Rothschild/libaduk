@@ -950,16 +950,94 @@ export const stages = [
     category: 'fundamentals',
     title: 'Big moves',
     subtitle: 'Choosing where to play',
-    description: '',
+    description:
+      'Finding the most important move is the core challenge of the game. For beginners, this means finding the balance between fast moves and solid moves.',
     image: '/images/learn/globe.svg',
     lessons: [
       {
-        description: '',
+        description:
+          'After learning about territory, beginners often try to slowly make walls. Gain an advantage as Black while White moves slowly.',
         boardSize: 9,
-        initialStones: { black: [], white: [] },
+        initialStones: {
+          black: [],
+          white: []
+        },
         turn: 'black',
-        goal: '',
-        solution: []
+        solution: [
+          [5, 2],
+          [2, 8],
+          [6, 6],
+          [2, 7],
+          [2, 3],
+          [2, 6],
+          [3, 5],
+          [1, 5],
+          [4, 6],
+          [0, 5]
+        ],
+        hints: { 0: [5, 2], 2: [6, 6], 4: [2, 3], 6: [3, 5], 8: [4, 6] }
+      },
+      {
+        description:
+          "For beginners, the specific space played in the opening isn't so important. It's worth experimenting to find the differences!",
+        boardSize: 9,
+        initialStones: {
+          black: [],
+          white: []
+        },
+        turn: 'black',
+        solution: [
+          [6, 2],
+          [2, 6],
+          [6, 6],
+          [2, 2],
+          [5, 4],
+          [3, 4]
+        ],
+        hints: { 0: [6, 2], 2: [6, 6], 4: [5, 4] }
+      },
+      {
+        description:
+          "In contrast, exact placement is important when capturing is involved. It's urgent to save the stones, even if black would rather play elsewhere.",
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [6, 2],
+            [1, 4],
+            [4, 4],
+            [5, 4],
+            [1, 5],
+            [2, 5],
+            [3, 5],
+            [1, 6],
+            [4, 6],
+            [6, 6],
+            [4, 7]
+          ],
+          white: [
+            [2, 2],
+            [1, 3],
+            [3, 3],
+            [0, 4],
+            [2, 4],
+            [3, 4],
+            [0, 5],
+            [4, 5],
+            [2, 6],
+            [3, 6],
+            [0, 7],
+            [1, 7]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [5, 5],
+          [0, 6],
+          [4, 5],
+          [2, 7],
+          [4, 2]
+        ],
+        hints: { 0: [5, 5], 2: [4, 5], 4: [4, 2] }
       }
     ]
   },
