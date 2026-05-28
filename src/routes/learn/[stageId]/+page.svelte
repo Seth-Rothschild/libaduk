@@ -381,7 +381,7 @@
               <div class="star-wrap"><icon class="star"></icon></div>
             </div>
             <h1>{stage.title} complete</h1>
-            <p>{stage.description}</p>
+            <p>{stage.endDescription || stage.description}</p>
             <div class="buttons">
               {#if nextStage}
                 <a class="button" href="/learn/{nextStage.id}">
