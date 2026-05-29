@@ -74,11 +74,17 @@
   }
 
   const markerMap = $derived.by(() => {
-    if (lessonFailed || !currentLesson?.hints) return null;
-    const hint = currentLesson.hints[moveIndex];
-    if (!hint) return null;
+    if (lessonFailed) return null;
+    const hint = currentLesson?.hints?.[moveIndex];
+    const marks = currentLesson?.markers?.[moveIndex] ?? [];
+    if (!hint && marks.length === 0) return null;
     const map = Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
-    map[hint[1]][hint[0]] = 'hint';
+    if (hint) map[hint[1]][hint[0]] = 'hint';
+    for (const mark of marks)
+      map[mark.y][mark.x] =
+        mark.type === 'label' || mark.type === 'number'
+          ? { type: mark.type, label: mark.label }
+          : mark.type;
     return map;
   });
 
@@ -158,6 +164,18 @@
         advance();
       }
     }, 500);
+  }
+
+  function parseLinks(text, links) {
+    if (!links) return text;
+    let result = text;
+    for (const [label, url] of Object.entries(links)) {
+      result = result.replace(
+        label,
+        `<a href="${url}" target="_blank" rel="noopener">${label}</a>`
+      );
+    }
+    return result;
   }
 
   const lessonHasPass = $derived(currentLesson?.solution?.some((m) => m === null) ?? false);
@@ -431,7 +449,8 @@
             {:else if passMessage}
               <span class="pass-message">{passMessage}</span>
             {:else}
-              {currentLesson?.description ?? ''}
+              <span>{@html parseLinks(currentLesson?.description ?? '', currentLesson?.links)}</span
+              >
             {/if}
           </div>
           <div class="progress">

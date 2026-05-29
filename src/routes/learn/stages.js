@@ -14,6 +14,107 @@ export const categories = [
 
 export const stages = [
   {
+    id: 'intro',
+    category: 'rules',
+    title: 'What is Go?',
+    subtitle: 'The board and stones',
+    description:
+      'Go is a very old two player game strategy where players take turns placing stones on a board. How hard could it be?',
+    endDescription:
+      'You now know the basics of Go! Read the text and play the suggested moves to learn from the lessons. Ready to learn how to score points?',
+    image: '/images/learn/stone-stack.svg',
+    lessons: [
+      {
+        description:
+          "In this tutorial, context on the lesson will be in this window and you'll be following hints marked in blue. While you can complete the lessons without learning anything, we would recommend looking at the context here before each lesson.",
+        boardSize: 19,
+        initialStones: {
+          black: [],
+          white: []
+        },
+        turn: 'black',
+        solution: [],
+        hints: {}
+      },
+      {
+        description:
+          'It\'s estimated about 46 million people know how to play Go, mostly in Asia. It\'s known as "igo" (囲碁) in Japanese, "weiqi" (圍棋) in Chinese and "baduk" (바둑) in Korean.',
+        boardSize: 19,
+        initialStones: {
+          black: [],
+          white: []
+        },
+        turn: 'black',
+        solution: [],
+        hints: {},
+        links: {
+          '46 million':
+            'https://web.archive.org/web/20170517013354/http://www.intergofed.org/wp-content/uploads/2016/06/2016_Go_population_report.pdf'
+        }
+      },
+
+      {
+        description:
+          'Go is an extremely old board game where players take turns placing stones on intersections of a grid on a board. Black goes first. Place a stone on the board at the marked location!',
+        boardSize: 19,
+        initialStones: {
+          black: [],
+          white: []
+        },
+        turn: 'black',
+        solution: [[9, 9]],
+        hints: { 0: [9, 9] },
+        links: { 'extremely old': 'https://en.wikipedia.org/wiki/Go_(game)' }
+      },
+      {
+        description:
+          'Go is most often played on 19x19 boards, but 13x13 and 9x9 are also popular. While even fast games on large boards can take half an hour, a 9x9 game can be finished in under 5 minutes.',
+        boardSize: 13,
+        initialStones: {
+          black: [],
+          white: []
+        },
+        turn: 'black',
+        solution: [[6, 6]],
+        hints: { 0: [6, 6] }
+      },
+      {
+        description:
+          'Games of Go can be made more fair by letting the weaker player start with extra stones on the board. This lets players of dramatically different skill levels both have a challenging and interesting game!',
+        boardSize: 19,
+        initialStones: {
+          black: [
+            [3, 3],
+            [9, 3],
+            [15, 3],
+            [3, 9],
+            [9, 9],
+            [15, 9],
+            [3, 15],
+            [9, 15],
+            [15, 15]
+          ],
+          white: []
+        },
+        turn: 'black',
+        solution: [],
+        hints: {}
+      },
+      {
+        description:
+          "The game concludes when both players agree to stop playing. You'll get more comfortable with that concept later, for now it's helpful to know there's sometimes a \"pass\" button to look for and click.",
+        boardSize: 13,
+        initialStones: {
+          black: [],
+          white: []
+        },
+        turn: 'black',
+        solution: [null],
+        hints: { 0: null }
+      }
+    ]
+  },
+  {
     id: 'territory',
     category: 'rules',
     title: 'Territory',
@@ -855,97 +956,6 @@ export const stages = [
     ]
   },
   {
-    id: 'board-setup',
-    category: 'rules',
-    title: 'Board setup',
-    subtitle: 'Keeping the game fair',
-    description:
-      'Go has two mechanisms for keeping the game fair. The player who plays second gets extra points called Komi. But in games where the players are at different skill, Komi is reduced and Black gets extra stones.',
-    image: '/images/learn/scales.svg',
-    lessons: [
-      {
-        description:
-          'Black has 9 points of territory, White has 4. But with standard Komi of 6.5 Black loses this game.',
-        boardSize: 9,
-        showScoring: true,
-        initialStones: {
-          black: [
-            [3, 0],
-            [3, 1],
-            [3, 2],
-            [0, 3],
-            [1, 3],
-            [2, 3],
-            [3, 3]
-          ],
-          white: [
-            [6, 6],
-            [7, 6],
-            [8, 6],
-            [6, 7],
-            [6, 8]
-          ]
-        },
-        turn: 'black',
-        solution: [],
-        hints: {}
-      },
-      {
-        description:
-          'This is a 4 stone handicap game and Komi is 0.5 points. White plays first and must attack aggressively to have a chance.',
-        boardSize: 9,
-        initialStones: {
-          black: [
-            [2, 2],
-            [6, 2],
-            [2, 6],
-            [6, 6]
-          ],
-          white: []
-        },
-        turn: 'black',
-        solution: [],
-        hints: {}
-      },
-      {
-        description: 'Black just barely wins this game even though they have much more than half.',
-        boardSize: 9,
-        showScoring: true,
-        initialStones: {
-          black: [
-            [5, 2],
-            [7, 3],
-            [8, 3],
-            [0, 4],
-            [1, 4],
-            [2, 4],
-            [3, 4],
-            [4, 4],
-            [5, 4],
-            [6, 4],
-            [7, 4]
-          ],
-          white: [
-            [8, 4],
-            [0, 5],
-            [1, 5],
-            [2, 5],
-            [3, 5],
-            [4, 5],
-            [5, 5],
-            [6, 5],
-            [7, 5],
-            [8, 5],
-            [7, 7]
-          ]
-        },
-        turn: 'black',
-        solution: [],
-        hints: {}
-      }
-    ]
-  },
-  {
     id: 'big-moves',
     category: 'fundamentals',
     title: 'Big moves',
@@ -1046,16 +1056,134 @@ export const stages = [
     category: 'fundamentals',
     title: 'Attack',
     subtitle: 'Threatening to capture',
-    description: '',
+    description:
+      "While it would be nice of your opponent to let you capture all of their stones, they usually don't want to let you. Luckily, it's still possible to gain territory with just the threat of capture.",
+    endDescription:
+      "Threatening to capture is a good way to gain territory. In the next section we'll talk about ways to respond to attacks.",
     image: '/images/learn/bowman.svg',
     lessons: [
       {
-        description: '',
+        description:
+          "Even if you can't capture, you can threaten to capture to push around your opponent",
         boardSize: 9,
-        initialStones: { black: [], white: [] },
+        initialStones: {
+          black: [
+            [3, 3],
+            [5, 3],
+            [6, 4],
+            [2, 5]
+          ],
+          white: [
+            [6, 1],
+            [2, 2],
+            [3, 2],
+            [6, 3]
+          ]
+        },
         turn: 'black',
-        goal: '',
-        solution: []
+        solution: [
+          [7, 3],
+          [6, 2]
+        ],
+        hints: { 0: [7, 3] }
+      },
+      {
+        description:
+          "Capturing White's stone would be impossible. But you can solidify your wall while they defend.",
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [5, 3],
+            [4, 4],
+            [5, 4],
+            [2, 5]
+          ],
+          white: [
+            [2, 2],
+            [6, 2],
+            [4, 3],
+            [1, 4]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [3, 3],
+          [4, 2],
+          [2, 3]
+        ],
+        hints: { 0: [3, 3], 2: [2, 3] }
+      },
+      {
+        description:
+          'It can be helpful to sacrifice stones in exchange for a good wall. The initial exchange is good for Black, and White really should not spend an extra move capturing the stone.',
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [4, 3],
+            [5, 4]
+          ],
+          white: [
+            [5, 3],
+            [6, 4]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [6, 3],
+          [5, 2],
+          [6, 5],
+          [7, 4],
+          [4, 5],
+          [6, 2],
+          [4, 2]
+        ],
+        hints: { 0: [6, 3], 2: [6, 5], 4: [4, 5], 6: [4, 2] }
+      },
+      {
+        description:
+          "It's often a good idea to separate your opponent's stones. You don't need to capture, but you can take profit from multiple weak groups.",
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [4, 4],
+            [6, 4]
+          ],
+          white: [
+            [2, 4],
+            [4, 6]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [3, 5],
+          [2, 5],
+          [3, 6]
+        ],
+        hints: { 0: [3, 5], 2: [3, 6] }
+      },
+      {
+        description: 'Even the threat of separation usually prompts a response.',
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [2, 4],
+            [6, 4]
+          ],
+          white: [
+            [2, 2],
+            [6, 2]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [4, 3],
+          [4, 2],
+          [5, 3],
+          [5, 2],
+          [3, 3],
+          [3, 2]
+        ],
+        hints: { 0: [4, 3], 2: [5, 3], 4: [3, 3] }
       }
     ]
   },
@@ -1064,7 +1192,10 @@ export const stages = [
     category: 'fundamentals',
     title: 'Defense',
     subtitle: 'Preventing capture',
-    description: '',
+    description:
+      "Choosing whether you need to defend or if you can counterattack is a key tension in the game. In these exercises we'll show some common scenarios for saving and sacrificing your stones.",
+    endDescription:
+      "Knowing the difference for when to attack versus when to defend is one of the most important skills in Go. But it's important to properly predict what the outcome will be of both decisions. That's called Reading, and it's the next section.",
     image: '/images/learn/bolt-shield.svg',
     lessons: [
       {
@@ -1072,8 +1203,8 @@ export const stages = [
         boardSize: 9,
         initialStones: { black: [], white: [] },
         turn: 'black',
-        goal: '',
-        solution: []
+        solution: [],
+        hints: {}
       }
     ]
   },

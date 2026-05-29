@@ -8,7 +8,7 @@ Lorc (http://lorcblog.blogspot.com)
 
 Delapouite (https://delapouite.com)
   abacus.svg, chat-bubble.svg, graduate-cap.svg, id-card.svg, magic-hat.svg,
-  shaking-hands.svg, teacher.svg, weight-lifting-up.svg
+  shaking-hands.svg, stone-stack.svg, teacher.svg, weight-lifting-up.svg
 
 Skoll
   bullseye.svg
