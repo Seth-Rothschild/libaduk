@@ -245,7 +245,7 @@ class OgsLiveGame {
 
     this.#handleClock(data.clock);
 
-    if (data.phase === 'finished') {
+    if (data.phase === 'finished' || data?.paused_since) {
       this.result = this.#computeResultFromData(data);
       this.#fireGameEnd();
       if (!this.onGameEnd)
