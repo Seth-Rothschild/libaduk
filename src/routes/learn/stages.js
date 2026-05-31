@@ -1199,12 +1199,128 @@ export const stages = [
     image: '/images/learn/bolt-shield.svg',
     lessons: [
       {
-        description: '',
+        description: 'White is threatening to take your stone. Defend it.',
         boardSize: 9,
-        initialStones: { black: [], white: [] },
+        initialStones: {
+          black: [
+            [5, 2],
+            [2, 3],
+            [4, 5]
+          ],
+          white: [
+            [4, 4],
+            [3, 5],
+            [4, 6]
+          ]
+        },
         turn: 'black',
-        solution: [],
-        hints: {}
+        solution: [[5, 5]],
+        hints: { 0: [5, 5] }
+      },
+      {
+        description: 'White is threatening to take one stone. Play at the hint to prevent capture.',
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [5, 5],
+            [5, 6],
+            [5, 7],
+            [6, 8]
+          ],
+          white: [
+            [4, 5],
+            [4, 6],
+            [4, 7],
+            [4, 8],
+            [5, 8]
+          ]
+        },
+        turn: 'black',
+        solution: [[6, 7]],
+        hints: { 0: [6, 7] }
+      },
+      {
+        description:
+          'White is threatening to take two stones. Play at the hint to prevent capture.',
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [5, 4],
+            [5, 5],
+            [5, 6],
+            [4, 7],
+            [4, 8]
+          ],
+          white: [
+            [4, 4],
+            [4, 5],
+            [4, 6],
+            [3, 7],
+            [3, 8]
+          ]
+        },
+        turn: 'black',
+        solution: [[5, 7]],
+        hints: { 0: [5, 7] }
+      },
+      {
+        description:
+          'White is trying to surround 3 stones but the move at triangle was too agressive. Counterattack! ',
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [4, 3],
+            [4, 4],
+            [4, 5],
+            [5, 6],
+            [5, 7]
+          ],
+          white: [
+            [3, 3],
+            [3, 4],
+            [3, 5],
+            [5, 5],
+            [4, 6]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [3, 6],
+          [4, 7],
+          [3, 7],
+          [4, 8],
+          [5, 8],
+          [3, 8],
+          [2, 8]
+        ],
+        hints: { 0: [3, 6], 2: [3, 7], 4: [5, 8], 6: [2, 8] },
+        markers: { 0: [{ x: 4, y: 6, type: 'triangle' }] }
+      },
+      {
+        description:
+          "White is overextended and would need 3 moves in a row to capture Black's stones. Time to counterattack!",
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [3, 5],
+            [4, 5],
+            [4, 6],
+            [5, 7]
+          ],
+          white: [
+            [2, 5],
+            [3, 6],
+            [5, 6],
+            [4, 7]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [3, 7],
+          [2, 6],
+          [4, 8]
+        ],
+        hints: { 0: [3, 7], 2: [4, 8] }
       }
     ]
   },
@@ -1213,52 +1329,425 @@ export const stages = [
     category: 'fundamentals',
     title: 'Reading',
     subtitle: 'Predicting the future',
-    description: '',
+    description:
+      "Knowing the difference between good moves and bad moves comes down to figuring out the best move for both sides. In these lessons we'll play out the outcome of both playing and not playing some critical moves.",
     image: '/images/learn/crystal-ball.svg',
     lessons: [
       {
-        description: '',
+        description:
+          "Black should not try to save these 3 stones. It's better to build a wall and force White to capture them.",
         boardSize: 9,
-        initialStones: { black: [], white: [] },
+        initialStones: {
+          black: [
+            [6, 2],
+            [7, 2],
+            [8, 2],
+            [0, 3],
+            [1, 3],
+            [2, 3],
+            [3, 3],
+            [4, 3],
+            [5, 4]
+          ],
+          white: [
+            [6, 1],
+            [7, 1],
+            [8, 1],
+            [0, 2],
+            [1, 2],
+            [2, 2],
+            [3, 2],
+            [4, 2],
+            [5, 2],
+            [6, 3]
+          ]
+        },
         turn: 'black',
-        goal: '',
-        solution: []
-      }
-    ]
-  },
-  {
-    id: 'sente',
-    category: 'intermediate',
-    title: 'Sente',
-    subtitle: 'Keeping the initiative',
-    description: '',
-    image: '/images/learn/sprint.svg',
-    lessons: [
+        solution: [
+          [6, 4],
+          [7, 3],
+          [7, 4],
+          [8, 3],
+          [8, 4]
+        ],
+        hints: { 0: [6, 4], 2: [7, 4], 4: [8, 4] }
+      },
       {
-        description: '',
+        description:
+          "Trying to save the stones doesn't work, you lose more stones and don't get to wall off your territory!",
         boardSize: 9,
-        initialStones: { black: [], white: [] },
+        initialStones: {
+          black: [
+            [6, 2],
+            [7, 2],
+            [8, 2],
+            [0, 3],
+            [1, 3],
+            [2, 3],
+            [3, 3],
+            [4, 3],
+            [5, 4]
+          ],
+          white: [
+            [6, 1],
+            [7, 1],
+            [8, 1],
+            [0, 2],
+            [1, 2],
+            [2, 2],
+            [3, 2],
+            [4, 2],
+            [5, 2],
+            [6, 3]
+          ]
+        },
         turn: 'black',
-        goal: '',
-        solution: []
+        solution: [
+          [8, 4],
+          [7, 4],
+          [8, 3],
+          [8, 5],
+          [7, 5],
+          [7, 3]
+        ],
+        hints: { 0: [8, 4], 2: [8, 3], 4: [7, 5] }
+      },
+      {
+        description:
+          "There's an important defensive point in Black's group that both players have missed. What happens if White plays it first?",
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [3, 0],
+            [3, 1],
+            [4, 1],
+            [4, 2],
+            [4, 3],
+            [1, 4],
+            [2, 4],
+            [4, 4],
+            [5, 5],
+            [1, 7],
+            [2, 7],
+            [3, 7],
+            [4, 7],
+            [5, 7],
+            [1, 8],
+            [5, 8]
+          ],
+          white: [
+            [4, 0],
+            [5, 0],
+            [5, 1],
+            [5, 2],
+            [5, 3],
+            [6, 4],
+            [0, 6],
+            [1, 6],
+            [2, 6],
+            [3, 6],
+            [4, 6],
+            [5, 6],
+            [7, 6],
+            [0, 7],
+            [6, 7],
+            [0, 8],
+            [6, 8]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [6, 5],
+          [3, 8],
+          [6, 6],
+          [4, 8],
+          [2, 8],
+          [3, 8],
+          [4, 8],
+          [3, 8]
+        ],
+        hints: { 0: [6, 5], 2: [6, 6], 4: [2, 8], 6: [4, 8] }
+      },
+      {
+        description:
+          'Black needs to save the group, even though it lets White play somewhere important.',
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [3, 0],
+            [3, 1],
+            [4, 1],
+            [4, 2],
+            [4, 3],
+            [1, 4],
+            [2, 4],
+            [4, 4],
+            [5, 5],
+            [1, 7],
+            [2, 7],
+            [3, 7],
+            [4, 7],
+            [5, 7],
+            [1, 8],
+            [5, 8]
+          ],
+          white: [
+            [4, 0],
+            [5, 0],
+            [5, 1],
+            [5, 2],
+            [5, 3],
+            [6, 4],
+            [0, 6],
+            [1, 6],
+            [2, 6],
+            [3, 6],
+            [4, 6],
+            [5, 6],
+            [7, 6],
+            [0, 7],
+            [6, 7],
+            [0, 8],
+            [6, 8]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [3, 8],
+          [6, 5]
+        ],
+        hints: { 0: [3, 8] }
       }
     ]
   },
+  // {
+  //   id: 'sente',
+  //   category: 'intermediate',
+  //   title: 'Sente',
+  //   subtitle: 'Keeping the initiative',
+  //   description: '',
+  //   image: '/images/learn/sprint.svg',
+  //   lessons: [
+  //     {
+  //       description: '',
+  //       boardSize: 9,
+  //       initialStones: { black: [], white: [] },
+  //       turn: 'black',
+  //       goal: '',
+  //       solution: []
+  //     }
+  //   ]
+  // },
   {
     id: 'tesuji',
     category: 'intermediate',
     title: 'Tesuji',
     subtitle: 'Tricks for capturing stones',
-    description: '',
+    description:
+      'There are lots of tricky ways to take stones. Recognizing these takes some practice, but this section gives a taste of the kinds of moves that are possible.',
     image: '/images/learn/magic-hat.svg',
     lessons: [
       {
-        description: '',
+        description:
+          "Trying to capture this stone directly doesn't work! It can escape and connect to another stone.",
         boardSize: 9,
-        initialStones: { black: [], white: [] },
+        initialStones: {
+          black: [
+            [3, 3],
+            [3, 4],
+            [4, 5],
+            [5, 5]
+          ],
+          white: [
+            [6, 2],
+            [4, 4]
+          ]
+        },
         turn: 'black',
-        goal: '',
-        solution: []
+        solution: [
+          [4, 3],
+          [5, 4],
+          [6, 4],
+          [5, 3],
+          [5, 2],
+          [6, 3]
+        ],
+        hints: { 0: [4, 3], 2: [6, 4], 4: [5, 2] }
+      },
+      {
+        description: 'This tactic for capturing is called a Net. There is no escape for White.',
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [3, 3],
+            [3, 4],
+            [4, 5],
+            [5, 5]
+          ],
+          white: [
+            [6, 2],
+            [4, 4]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [5, 3],
+          [5, 4],
+          [6, 4],
+          [4, 3],
+          [4, 2]
+        ],
+        hints: { 0: [5, 3], 2: [6, 4], 4: [4, 2] }
+      },
+      {
+        description:
+          'The obvious move to capture two stones does not work for Black. White can connect and the situation is settled.',
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [2, 3],
+            [3, 3],
+            [3, 4],
+            [3, 5],
+            [3, 6],
+            [5, 6],
+            [4, 7],
+            [1, 8],
+            [4, 8]
+          ],
+          white: [
+            [2, 4],
+            [2, 5],
+            [2, 6],
+            [0, 7],
+            [1, 7],
+            [3, 7],
+            [3, 8]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [2, 8],
+          [2, 7]
+        ],
+        hints: { 0: [2, 8] }
+      },
+      {
+        description:
+          'White can play a non-obvious move called a Snapback to sacrifice a stone to capture more stones.',
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [2, 3],
+            [3, 3],
+            [3, 4],
+            [3, 5],
+            [3, 6],
+            [5, 6],
+            [4, 7],
+            [1, 8],
+            [4, 8]
+          ],
+          white: [
+            [2, 4],
+            [2, 5],
+            [2, 6],
+            [0, 7],
+            [1, 7],
+            [3, 7],
+            [3, 8]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [2, 7],
+          [2, 8],
+          [2, 7]
+        ],
+        hints: { 0: [2, 7], 2: [2, 7] }
+      },
+      {
+        description: 'Capturing these stones directly does not work.',
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [6, 2],
+            [5, 4],
+            [1, 5],
+            [2, 5],
+            [5, 5],
+            [0, 6],
+            [1, 6],
+            [3, 6],
+            [4, 6],
+            [5, 6],
+            [0, 7],
+            [4, 7],
+            [0, 8]
+          ],
+          white: [
+            [7, 3],
+            [6, 5],
+            [2, 6],
+            [6, 6],
+            [1, 7],
+            [2, 7],
+            [3, 7],
+            [5, 7],
+            [6, 7],
+            [4, 8]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [1, 8],
+          [3, 8],
+          [2, 8],
+          [5, 8]
+        ],
+        hints: { 0: [1, 8], 2: [2, 8] }
+      },
+      {
+        description: "Black can use a Throw In to capture White's stones.",
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [6, 2],
+            [5, 4],
+            [1, 5],
+            [2, 5],
+            [5, 5],
+            [0, 6],
+            [1, 6],
+            [3, 6],
+            [4, 6],
+            [5, 6],
+            [0, 7],
+            [4, 7],
+            [0, 8]
+          ],
+          white: [
+            [7, 3],
+            [6, 5],
+            [2, 6],
+            [6, 6],
+            [1, 7],
+            [2, 7],
+            [3, 7],
+            [5, 7],
+            [6, 7],
+            [4, 8]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [3, 8],
+          [2, 8],
+          [1, 8],
+          [3, 8],
+          [5, 8]
+        ],
+        hints: { 0: [3, 8], 2: [1, 8], 4: [5, 8] }
       }
     ]
   },
@@ -1267,7 +1756,8 @@ export const stages = [
     category: 'intermediate',
     title: 'Joseki',
     subtitle: 'Learning opening patterns',
-    description: '',
+    description:
+      "Well known opening patterns are known as Joseki. It's infeasible as a beginner to memorize every possible corner approach and these sequences are not as critical as in Chess. But knowing a couple can help you think more about other parts of the game.",
     image: '/images/learn/tied-scroll.svg',
     lessons: [
       {
