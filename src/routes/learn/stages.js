@@ -332,7 +332,7 @@ export const stages = [
       },
       {
         description:
-          'Often, there are several bits of territory to complete at the end of the game. Finish the game!',
+          'Often, there are several bits of territory to complete at the end of the game. Finish the game',
         boardSize: 9,
         showScoring: true,
         initialStones: {
@@ -375,31 +375,16 @@ export const stages = [
         solution: [
           [5, 0],
           [3, 0],
-          [8, 4],
-          [7, 5],
-          [8, 5],
-          [8, 6],
           [8, 3],
-          [7, 6],
+          [8, 4],
+          [4, 4],
+          [5, 4],
           [2, 4],
           [1, 2],
-          [0, 4],
-          [0, 3],
           [0, 5],
-          [4, 4],
-          [3, 4],
-          [5, 4]
+          [0, 4]
         ],
-        hints: {
-          0: [5, 0],
-          2: [8, 4],
-          4: [8, 5],
-          6: [8, 3],
-          8: [2, 4],
-          10: [0, 4],
-          12: [0, 5],
-          14: [3, 4]
-        }
+        hints: { 0: [5, 0], 2: [8, 3], 4: [4, 4], 6: [2, 4], 8: [0, 5] }
       }
     ]
   },
@@ -565,7 +550,7 @@ export const stages = [
       // },
       {
         description:
-          'You cannot play stones that would be completely surrounded, unless they also remove stones from the board. Capture the big White group!',
+          'You cannot play stones that would be completely surrounded, unless they also remove stones from the board. White is not completely surrounded until black plays at the triangles. Capture the big White group!',
         boardSize: 9,
         initialStones: {
           black: [
@@ -596,7 +581,13 @@ export const stages = [
           [3, 6],
           [4, 4]
         ],
-        hints: { 0: [4, 2], 2: [4, 4] }
+        hints: { 0: [4, 2], 2: [4, 4] },
+        markers: {
+          0: [
+            { x: 4, y: 4, type: 'triangle' },
+            { x: 4, y: 2, type: 'triangle' }
+          ]
+        }
       },
       {
         description:
@@ -624,14 +615,86 @@ export const stages = [
           [0, 8],
           [1, 8]
         ],
-        hints: { 0: [1, 8] }
+        hints: { 0: [1, 8], 2: [1, 8] }
+      },
+      {
+        description: 'Capture the White stones. No hint on this one!',
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [0, 4],
+            [1, 4],
+            [2, 4],
+            [3, 4],
+            [4, 5],
+            [5, 5],
+            [6, 5],
+            [7, 5],
+            [8, 5],
+            [4, 6],
+            [4, 7],
+            [5, 7],
+            [6, 7],
+            [7, 7]
+          ],
+          white: [
+            [0, 5],
+            [1, 5],
+            [2, 5],
+            [3, 5],
+            [3, 6],
+            [5, 6],
+            [6, 6],
+            [7, 6],
+            [8, 6],
+            [3, 7],
+            [8, 7],
+            [4, 8],
+            [5, 8],
+            [6, 8],
+            [7, 8]
+          ]
+        },
+        turn: 'black',
+        solution: [[8, 8]],
+        hints: {}
+      },
+      {
+        description: 'Capture the White stones in two moves. No hints here either.',
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [3, 6],
+            [5, 6],
+            [6, 6],
+            [7, 6],
+            [8, 6],
+            [4, 7],
+            [3, 8],
+            [6, 8],
+            [8, 8]
+          ],
+          white: [
+            [5, 7],
+            [6, 7],
+            [7, 7],
+            [8, 7],
+            [4, 8]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [5, 8],
+          [7, 8],
+          [8, 8]
+        ],
+        hints: {}
       },
 
       {
         description:
           'The point of the game is territory, not capturing. But you use capturing to claim and extend your territory. Extend your territory by capturing some stones.',
         boardSize: 9,
-        showScoring: true,
         initialStones: {
           black: [
             [6, 6],
@@ -673,7 +736,6 @@ export const stages = [
         description:
           'There is nothing you can do to save these stones. But remember, the objective is territory!',
         boardSize: 9,
-        showScoring: true,
         initialStones: {
           black: [
             [6, 2],
@@ -713,7 +775,6 @@ export const stages = [
         description:
           'White really wants to capture stones. But territory is what wins the game. Take advantage as Black!',
         boardSize: 9,
-        showScoring: true,
         initialStones: {
           black: [
             [0, 1],
@@ -832,225 +893,129 @@ export const stages = [
       }
     ]
   },
-  {
-    id: 'ko',
-    category: 'rules',
-    title: 'Ko',
-    subtitle: 'Capture and recapture',
-    description:
-      'To prevent infinite loops, players cannot immediately recapture. The rule that the board position cannot repeat is called "Ko".',
-    image: '/images/learn/time-trap.svg',
-    lessons: [
-      {
-        description: 'Capture the stone',
-        boardSize: 9,
-        initialStones: {
-          black: [
-            [4, 3],
-            [3, 4],
-            [4, 5]
-          ],
-          white: [
-            [5, 3],
-            [4, 4],
-            [6, 4],
-            [5, 5]
-          ]
-        },
-        turn: 'black',
-        solution: [
-          [5, 4],
-          [4, 2],
-          [4, 4]
-        ],
-        hints: { 0: [5, 4], 2: [4, 4] }
-      },
-      {
-        description: 'Find an urgent move that White must respond to',
-        boardSize: 9,
-        initialStones: {
-          black: [
-            [2, 1],
-            [4, 1],
-            [4, 2],
-            [5, 2],
-            [2, 3],
-            [3, 3],
-            [4, 3],
-            [2, 4],
-            [1, 5],
-            [2, 6],
-            [4, 6],
-            [2, 7]
-          ],
-          white: [
-            [6, 0],
-            [5, 1],
-            [6, 2],
-            [6, 3],
-            [3, 4],
-            [6, 4],
-            [7, 4],
-            [4, 5],
-            [5, 5],
-            [3, 6],
-            [3, 7]
-          ]
-        },
-        turn: 'black',
-        solution: [
-          [3, 5],
-          [2, 5],
-          [6, 1],
-          [7, 1],
-          [3, 5]
-        ],
-        hints: { 0: [3, 5], 2: [6, 1], 4: [3, 5] }
-      },
-      {
-        description:
-          "Ko are not always important. But it's mildly better to be the last person to fill it. Sometimes there's nothing you can do.",
-        boardSize: 9,
-        initialStones: {
-          black: [
-            [4, 0],
-            [4, 1],
-            [2, 2],
-            [4, 2],
-            [1, 3],
-            [4, 3],
-            [3, 4],
-            [3, 5],
-            [4, 5],
-            [4, 6],
-            [2, 7],
-            [3, 7],
-            [2, 8]
-          ],
-          white: [
-            [5, 0],
-            [5, 1],
-            [1, 2],
-            [5, 2],
-            [5, 3],
-            [5, 4],
-            [5, 5],
-            [5, 6],
-            [4, 7],
-            [5, 7],
-            [3, 8],
-            [5, 8]
-          ]
-        },
-        turn: 'black',
-        solution: [
-          [4, 8],
-          [2, 3],
-          [1, 1],
-          [3, 8],
-          [4, 4],
-          [4, 8]
-        ],
-        hints: { 0: [4, 8], 2: [1, 1], 4: [4, 4] }
-      }
-    ]
-  },
-  {
-    id: 'big-moves',
-    category: 'fundamentals',
-    title: 'Big moves',
-    subtitle: 'Choosing where to play',
-    description:
-      'Finding the most important move is the core challenge of the game. For beginners, this means finding the balance between fast moves and solid moves.',
-    image: '/images/learn/globe.svg',
-    lessons: [
-      {
-        description:
-          'After learning about territory, beginners often try to slowly make walls. Gain an advantage as Black while White moves slowly.',
-        boardSize: 9,
-        initialStones: {
-          black: [],
-          white: []
-        },
-        turn: 'black',
-        solution: [
-          [5, 2],
-          [2, 8],
-          [6, 6],
-          [2, 7],
-          [2, 3],
-          [2, 6],
-          [3, 5],
-          [1, 5],
-          [4, 6],
-          [0, 5]
-        ],
-        hints: { 0: [5, 2], 2: [6, 6], 4: [2, 3], 6: [3, 5], 8: [4, 6] }
-      },
-      {
-        description:
-          "For beginners, the specific space played in the opening isn't so important. It's worth experimenting to find the differences!",
-        boardSize: 9,
-        initialStones: {
-          black: [],
-          white: []
-        },
-        turn: 'black',
-        solution: [
-          [6, 2],
-          [2, 6],
-          [6, 6],
-          [2, 2],
-          [5, 4],
-          [3, 4]
-        ],
-        hints: { 0: [6, 2], 2: [6, 6], 4: [5, 4] }
-      },
-      {
-        description:
-          "In contrast, exact placement is important when capturing is involved. It's urgent to save the stones, even if black would rather play elsewhere.",
-        boardSize: 9,
-        initialStones: {
-          black: [
-            [6, 2],
-            [1, 4],
-            [4, 4],
-            [5, 4],
-            [1, 5],
-            [2, 5],
-            [3, 5],
-            [1, 6],
-            [4, 6],
-            [6, 6],
-            [4, 7]
-          ],
-          white: [
-            [2, 2],
-            [1, 3],
-            [3, 3],
-            [0, 4],
-            [2, 4],
-            [3, 4],
-            [0, 5],
-            [4, 5],
-            [2, 6],
-            [3, 6],
-            [0, 7],
-            [1, 7]
-          ]
-        },
-        turn: 'black',
-        solution: [
-          [5, 5],
-          [0, 6],
-          [4, 5],
-          [2, 7],
-          [4, 2]
-        ],
-        hints: { 0: [5, 5], 2: [4, 5], 4: [4, 2] }
-      }
-    ]
-  },
+  // {
+  //   id: 'ko',
+  //   category: 'rules',
+  //   title: 'Ko',
+  //   subtitle: 'Capture and recapture',
+  //   description:
+  //     'To prevent infinite loops, players cannot immediately recapture. The rule that the board position cannot repeat is called "Ko".',
+  //   image: '/images/learn/time-trap.svg',
+  //   lessons: [
+  //     {
+  //       description: 'Capture the stone',
+  //       boardSize: 9,
+  //       initialStones: {
+  //         black: [
+  //           [4, 3],
+  //           [3, 4],
+  //           [4, 5]
+  //         ],
+  //         white: [
+  //           [5, 3],
+  //           [4, 4],
+  //           [6, 4],
+  //           [5, 5]
+  //         ]
+  //       },
+  //       turn: 'black',
+  //       solution: [
+  //         [5, 4],
+  //         [4, 2],
+  //         [4, 4]
+  //       ],
+  //       hints: { 0: [5, 4], 2: [4, 4] }
+  //     },
+  //     {
+  //       description: 'Find an urgent move that White must respond to',
+  //       boardSize: 9,
+  //       initialStones: {
+  //         black: [
+  //           [2, 1],
+  //           [4, 1],
+  //           [4, 2],
+  //           [5, 2],
+  //           [2, 3],
+  //           [3, 3],
+  //           [4, 3],
+  //           [2, 4],
+  //           [1, 5],
+  //           [2, 6],
+  //           [4, 6],
+  //           [2, 7]
+  //         ],
+  //         white: [
+  //           [6, 0],
+  //           [5, 1],
+  //           [6, 2],
+  //           [6, 3],
+  //           [3, 4],
+  //           [6, 4],
+  //           [7, 4],
+  //           [4, 5],
+  //           [5, 5],
+  //           [3, 6],
+  //           [3, 7]
+  //         ]
+  //       },
+  //       turn: 'black',
+  //       solution: [
+  //         [3, 5],
+  //         [2, 5],
+  //         [6, 1],
+  //         [7, 1],
+  //         [3, 5]
+  //       ],
+  //       hints: { 0: [3, 5], 2: [6, 1], 4: [3, 5] }
+  //     },
+  //     {
+  //       description:
+  //         "Ko are not always important. But it's mildly better to be the last person to fill it. Sometimes there's nothing you can do.",
+  //       boardSize: 9,
+  //       initialStones: {
+  //         black: [
+  //           [4, 0],
+  //           [4, 1],
+  //           [2, 2],
+  //           [4, 2],
+  //           [1, 3],
+  //           [4, 3],
+  //           [3, 4],
+  //           [3, 5],
+  //           [4, 5],
+  //           [4, 6],
+  //           [2, 7],
+  //           [3, 7],
+  //           [2, 8]
+  //         ],
+  //         white: [
+  //           [5, 0],
+  //           [5, 1],
+  //           [1, 2],
+  //           [5, 2],
+  //           [5, 3],
+  //           [5, 4],
+  //           [5, 5],
+  //           [5, 6],
+  //           [4, 7],
+  //           [5, 7],
+  //           [3, 8],
+  //           [5, 8]
+  //         ]
+  //       },
+  //       turn: 'black',
+  //       solution: [
+  //         [4, 8],
+  //         [2, 3],
+  //         [1, 1],
+  //         [3, 8],
+  //         [4, 4],
+  //         [4, 8]
+  //       ],
+  //       hints: { 0: [4, 8], 2: [1, 1], 4: [4, 4] }
+  //     }
+  //   ]
+  // },
   {
     id: 'attack',
     category: 'fundamentals',
@@ -1115,7 +1080,7 @@ export const stages = [
       },
       {
         description:
-          'It can be helpful to sacrifice stones in exchange for a good wall. The initial exchange is good for Black, and White really should not spend an extra move capturing the stone.',
+          'It can be helpful to sacrifice stones in exchange for a good wall. The initial exchange is good for Black, and White really should not spend extra moves capturing the stone.',
         boardSize: 9,
         initialStones: {
           black: [
@@ -1135,9 +1100,11 @@ export const stages = [
           [7, 4],
           [4, 5],
           [6, 2],
-          [4, 2]
+          [4, 2],
+          [7, 3],
+          [7, 5]
         ],
-        hints: { 0: [6, 3], 2: [6, 5], 4: [4, 5], 6: [4, 2] }
+        hints: { 0: [6, 3], 2: [6, 5], 4: [4, 5], 6: [4, 2], 8: [7, 5] }
       },
       {
         description:
@@ -1162,7 +1129,8 @@ export const stages = [
         hints: { 0: [3, 5], 2: [3, 6] }
       },
       {
-        description: 'Even the threat of separation usually prompts a response.',
+        description:
+          'Even the threat of separation usually prompts a response. Play at the marked stones to threaten to disconnect White at triangle.',
         boardSize: 9,
         initialStones: {
           black: [
@@ -1183,7 +1151,12 @@ export const stages = [
           [3, 3],
           [3, 2]
         ],
-        hints: { 0: [4, 3], 2: [5, 3], 4: [3, 3] }
+        hints: { 0: [4, 3], 2: [5, 3], 4: [3, 3] },
+        markers: {
+          0: [{ x: 4, y: 2, type: 'triangle' }],
+          2: [{ x: 5, y: 2, type: 'triangle' }],
+          4: [{ x: 3, y: 2, type: 'triangle' }]
+        }
       }
     ]
   },
@@ -1403,14 +1376,12 @@ export const stages = [
         },
         turn: 'black',
         solution: [
-          [8, 4],
+          [7, 3],
           [7, 4],
           [8, 3],
-          [8, 5],
-          [7, 5],
-          [7, 3]
+          [8, 4]
         ],
-        hints: { 0: [8, 4], 2: [8, 3], 4: [7, 5] }
+        hints: { 0: [7, 3], 2: [8, 3] }
       },
       {
         description:
@@ -1466,7 +1437,11 @@ export const stages = [
           [4, 8],
           [3, 8]
         ],
-        hints: { 0: [6, 5], 2: [6, 6], 4: [2, 8], 6: [4, 8] }
+        hints: { 0: [6, 5], 2: [6, 6], 4: [2, 8], 6: [4, 8] },
+
+        markers: {
+          0: [{ x: 3, y: 8, type: 'triangle' }]
+        }
       },
       {
         description:
@@ -1517,6 +1492,102 @@ export const stages = [
           [6, 5]
         ],
         hints: { 0: [3, 8] }
+      }
+    ]
+  },
+  {
+    id: 'big-moves',
+    category: 'fundamentals',
+    title: 'Big moves',
+    subtitle: 'Choosing where to play',
+    description:
+      'Finding the most important move is the core challenge of the game. For beginners, this means finding the balance between fast moves and solid moves.',
+    image: '/images/learn/globe.svg',
+    lessons: [
+      {
+        description:
+          'After learning about territory, beginners often try to slowly make walls. Gain an advantage as Black while White moves slowly.',
+        boardSize: 9,
+        initialStones: {
+          black: [],
+          white: []
+        },
+        turn: 'black',
+        solution: [
+          [5, 2],
+          [2, 8],
+          [6, 6],
+          [2, 7],
+          [2, 3],
+          [2, 6],
+          [3, 5],
+          [1, 5],
+          [4, 6],
+          [0, 5]
+        ],
+        hints: { 0: [5, 2], 2: [6, 6], 4: [2, 3], 6: [3, 5], 8: [4, 6] }
+      },
+      {
+        description:
+          "For beginners, the specific space played in the opening isn't so important. It's worth experimenting to find the differences!",
+        boardSize: 9,
+        initialStones: {
+          black: [],
+          white: []
+        },
+        turn: 'black',
+        solution: [
+          [6, 2],
+          [2, 6],
+          [6, 6],
+          [2, 2],
+          [5, 4],
+          [3, 4]
+        ],
+        hints: { 0: [6, 2], 2: [6, 6], 4: [5, 4] }
+      },
+      {
+        description:
+          "In contrast, exact placement is important when capturing is involved. It's urgent to save the stones, even if black would rather play elsewhere.",
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [6, 2],
+            [1, 4],
+            [4, 4],
+            [5, 4],
+            [1, 5],
+            [2, 5],
+            [3, 5],
+            [1, 6],
+            [4, 6],
+            [6, 6],
+            [4, 7]
+          ],
+          white: [
+            [2, 2],
+            [1, 3],
+            [3, 3],
+            [0, 4],
+            [2, 4],
+            [3, 4],
+            [0, 5],
+            [4, 5],
+            [2, 6],
+            [3, 6],
+            [0, 7],
+            [1, 7]
+          ]
+        },
+        turn: 'black',
+        solution: [
+          [5, 5],
+          [0, 6],
+          [4, 5],
+          [2, 7],
+          [4, 2]
+        ],
+        hints: { 0: [5, 5], 2: [4, 5], 4: [4, 2] }
       }
     ]
   },
