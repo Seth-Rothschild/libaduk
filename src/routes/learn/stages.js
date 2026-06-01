@@ -1718,7 +1718,7 @@ export const stages = [
     lessons: [
       {
         description:
-          'After learning about territory, beginners often try to slowly make walls. Here are some moves Black can play while White moves slowly.Gain an advantage as Black while White moves slowly.',
+          'After learning about territory, beginners often try to slowly make walls. Here are some moves Black can play while White moves slowly. Gain an advantage as Black!',
         boardSize: 9,
         initialStones: {
           black: [],
@@ -2182,7 +2182,8 @@ export const stages = [
     category: 'etiquette',
     title: 'Continuing play',
     subtitle: 'Respecting your opponent',
-    description: '',
+    description:
+      'It can be tricky to know how to end the game. The passing/scoring mechanism resolves most disputes, but the rest hinges on being polite and respectful.',
     image: '/images/learn/spade.svg',
     lessons: [
       {
@@ -2320,7 +2321,8 @@ export const stages = [
     category: 'etiquette',
     title: 'Review culture',
     subtitle: 'Learning with your opponent',
-    description: '',
+    description:
+      'More often than not, Go players are happy to help each other learn. Postgame review with your opponents is common, even in online play. Work with your opponent to figure out what the best moves would have been!',
     image: '/images/learn/teacher.svg',
     lessons: [
       {
