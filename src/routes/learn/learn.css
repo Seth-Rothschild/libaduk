@@ -875,6 +875,48 @@ icon.star::before {
   animation: pass-hint-pulse 1.2s ease-in-out infinite;
 }
 
+.learn-score-bar {
+  display: flex;
+  align-items: center;
+  padding: 0.5em;
+  background: var(--c-bg-zebra);
+  border-top: 1px solid var(--c-border);
+  width: 100%;
+  font-size: 0.85em;
+}
+
+.learn-score-bar__verdict {
+  min-width: 5em;
+  font-weight: bold;
+}
+
+.learn-score-bar__label {
+  flex: 1;
+  text-align: center;
+  color: var(--c-font-dim);
+}
+
+.learn__table .learn-score-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  font-size: 0.85em;
+  padding: 0.3em 1rem;
+}
+
+.learn__table .scoring-approvals {
+  display: flex;
+  gap: 1rem;
+  padding: 0.1rem 1rem 0.4rem;
+  font-size: 0.85em;
+  color: var(--c-font-dim);
+}
+
+.learn__table .scoring-approval--done {
+  color: var(--c-secondary);
+  font-weight: bold;
+}
+
 .learn__table .goal.passing {
   background: var(--c-bg-high);
   transition: background 0.2s;

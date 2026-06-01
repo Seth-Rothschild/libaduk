@@ -8,6 +8,12 @@
   import { readProgress, completeLesson } from '../progress.js';
   import GoBoard from '$lib/game/GoBoard.svelte';
   import GoBoardLib from '@sabaki/go-board';
+  import {
+    buildScoreBoard,
+    toggleDeadStones,
+    computeScore,
+    scoreVerdictShort
+  } from '$lib/game/board';
 
   const AFFIRMATIONS = [
     'Awesome!',
@@ -55,6 +61,12 @@
   let affirmation = $state(null);
   let passMessage = $state(null);
   let justCompleted = $state(false);
+  let scoringPhase = $state(false);
+  let scoringDeadStones = $state([]);
+  let scoringStep = $state(0);
+  let playerApproved = $state(false);
+  let opponentApproved = $state(false);
+  const KOMI = 6.5;
 
   let dismissedStages = $state(new Set());
   const showScreen = $derived(!dismissedStages.has(stageId));
@@ -76,6 +88,13 @@
 
   const markerMap = $derived.by(() => {
     if (lessonFailed) return null;
+    if (scoringPhase) {
+      const hint = currentLesson?.scoringHints?.[scoringStep];
+      if (!hint) return null;
+      const map = Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
+      map[hint[1]][hint[0]] = 'hint';
+      return map;
+    }
     const hint = currentLesson?.hints?.[moveIndex];
     const marks = currentLesson?.markers?.[moveIndex] ?? [];
     if (!hint && marks.length === 0) return null;
@@ -94,7 +113,20 @@
     return moveIndex in currentLesson.hints && currentLesson.hints[moveIndex] === null;
   });
 
-  const areaMap = $derived(currentLesson?.showScoring ? influence.areaMap(signMap) : null);
+  const displayDeadStones = $derived(scoringPhase ? scoringDeadStones : null);
+
+  const scoringAreaMap = $derived.by(() => {
+    if (!displayDeadStones) return null;
+    const board = new GoBoardLib(signMap);
+    const scored = buildScoreBoard(board, displayDeadStones);
+    return influence.areaMap(scored.signMap);
+  });
+
+  const score = $derived(scoringAreaMap ? computeScore(scoringAreaMap, boardSize, KOMI) : null);
+
+  const areaMap = $derived(
+    scoringAreaMap ?? (currentLesson?.showScoring ? influence.areaMap(signMap) : null)
+  );
 
   $effect(() => {
     if (currentLesson) {
@@ -104,11 +136,30 @@
       lessonFailed = false;
       passMessage = null;
       justCompleted = false;
+      scoringPhase = false;
+      scoringDeadStones = [];
+      scoringStep = 0;
+      playerApproved = false;
+      opponentApproved = false;
     }
   });
 
   function signForMove(index) {
     return index % 2 === 0 ? playerSign : -playerSign;
+  }
+
+  function enterScoringPhase() {
+    scoringPhase = true;
+    scoringDeadStones = [...(currentLesson?.deadStones ?? [])];
+    scoringStep = 0;
+  }
+
+  function endSolution() {
+    if (currentLesson?.scoring) {
+      enterScoringPhase();
+    } else {
+      advance();
+    }
   }
 
   function advance() {
@@ -130,8 +181,45 @@
     if (i <= completedCount) selectedIndex = i;
   }
 
+  const scoringHintCount = $derived(Object.keys(currentLesson?.scoringHints ?? {}).length);
+  const showAcceptHint = $derived(
+    scoringPhase && currentLesson?.showAcceptHint === true && scoringStep >= scoringHintCount
+  );
+
+  function handleAcceptScore() {
+    playerApproved = true;
+    setTimeout(() => {
+      opponentApproved = true;
+      setTimeout(advance, 600);
+    }, 900);
+  }
+
+  function resumeScoring() {
+    lessonFailed = true;
+    setTimeout(() => {
+      lessonFailed = false;
+    }, 600);
+  }
+
   function handleVertexClick(x, y) {
     if (!currentLesson || (stageComplete && justCompleted) || lessonFailed) return;
+
+    if (scoringPhase) {
+      if (currentLesson?.scoringHints) {
+        const hint = currentLesson.scoringHints[scoringStep];
+        if (!hint || x !== hint[0] || y !== hint[1]) {
+          lessonFailed = true;
+          setTimeout(() => {
+            lessonFailed = false;
+          }, 600);
+          return;
+        }
+      }
+      scoringDeadStones = toggleDeadStones(new GoBoardLib(signMap), scoringDeadStones, x, y);
+      scoringStep++;
+      return;
+    }
+
     if (currentLesson.solution.length === 0) return;
 
     const expected = currentLesson.solution[moveIndex];
@@ -150,7 +238,7 @@
     moveIndex++;
 
     if (moveIndex >= currentLesson.solution.length) {
-      advance();
+      endSolution();
       return;
     }
 
@@ -165,7 +253,7 @@
       }
       moveIndex++;
       if (moveIndex >= currentLesson.solution.length) {
-        advance();
+        endSolution();
       }
     }, 500);
   }
@@ -198,7 +286,7 @@
     passMessage = 'You passed';
     moveIndex++;
     if (moveIndex >= currentLesson.solution.length) {
-      setTimeout(advance, 800);
+      setTimeout(endSolution, 800);
       return;
     }
     const opponentMove = currentLesson.solution[moveIndex];
@@ -209,11 +297,11 @@
         lastMove = opponentMove;
         passMessage = null;
         moveIndex++;
-        if (moveIndex >= currentLesson.solution.length) advance();
+        if (moveIndex >= currentLesson.solution.length) endSolution();
       } else {
         passMessage = 'Opponent passed';
         moveIndex++;
-        if (moveIndex >= currentLesson.solution.length) setTimeout(advance, 800);
+        if (moveIndex >= currentLesson.solution.length) setTimeout(endSolution, 800);
       }
     }, 500);
   }
@@ -426,8 +514,15 @@
           onVertexClick={handleVertexClick}
           {markerMap}
           {areaMap}
+          deadStones={displayDeadStones}
         />
       </div>
+      {#if scoringPhase && score}
+        <div class="learn-score-bar">
+          <span class="learn-score-bar__verdict">{scoreVerdictShort(score)}</span>
+          <span class="learn-score-bar__label">Mark dead stones</span>
+        </div>
+      {/if}
     </div>
 
     <div class="learn__table">
@@ -443,7 +538,7 @@
           <div
             class="goal"
             class:celebrating={!!affirmation}
-            class:passing={!!passMessage && !affirmation}
+            class:passing={!!passMessage && !affirmation && !lessonFailed}
             class:failed={lessonFailed}
           >
             {#if affirmation}
@@ -457,6 +552,22 @@
               >
             {/if}
           </div>
+          {#if scoringPhase && score}
+            <div class="learn-score-display">
+              <span>● Black: {score.blackArea}</span>
+              <span>○ White: {score.whiteArea} + {KOMI} = {score.whiteScore.toFixed(1)}</span>
+            </div>
+            <div class="scoring-approvals">
+              <span class="scoring-approval" class:scoring-approval--done={playerApproved}>
+                {playerSign === 1 ? '● Black' : '○ White'}
+                {playerApproved ? '✓' : '…'}
+              </span>
+              <span class="scoring-approval" class:scoring-approval--done={opponentApproved}>
+                {playerSign === 1 ? '○ White' : '● Black'}
+                {opponentApproved ? '✓' : '…'}
+              </span>
+            </div>
+          {/if}
           <div class="progress">
             {#each stage.lessons as lesson, i}
               {@const dotState =
@@ -466,7 +577,19 @@
               </button>
             {/each}
           </div>
-          {#if lessonHasPass}
+          {#if scoringPhase}
+            <button
+              class="button pass-btn"
+              class:button-metal={!playerApproved}
+              class:button-green={playerApproved}
+              class:pass-hint={showAcceptHint}
+              disabled={playerApproved}
+              onclick={handleAcceptScore}
+              >{playerApproved ? 'Score accepted' : 'Accept score'}</button
+            >
+            <button class="button button-metal pass-btn" onclick={resumeScoring}>Resume play</button
+            >
+          {:else if lessonHasPass}
             <button
               class="button button-metal pass-btn"
               class:pass-hint={hintIsPass}

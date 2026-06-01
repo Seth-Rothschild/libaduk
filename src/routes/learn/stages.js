@@ -827,9 +827,8 @@ export const stages = [
     image: '/images/learn/shaking-hands.svg',
     lessons: [
       {
-        description: 'When there are no more useful moves, click the pass button',
+        description: "There aren't any obvious useful moves. Time to pass to finish the game!",
         boardSize: 9,
-        showScoring: true,
         initialStones: {
           black: [
             [0, 4],
@@ -840,12 +839,13 @@ export const stages = [
             [5, 4],
             [6, 4],
             [7, 4],
+            [8, 4],
             [2, 6],
-            [7, 6]
+            [6, 7]
           ],
           white: [
-            [1, 1],
-            [7, 1],
+            [6, 1],
+            [2, 2],
             [0, 3],
             [1, 3],
             [2, 3],
@@ -853,43 +853,255 @@ export const stages = [
             [4, 3],
             [5, 3],
             [6, 3],
-            [7, 3]
+            [7, 3],
+            [8, 3]
           ]
         },
         turn: 'black',
-        solution: [[8, 3], [8, 2], [8, 4], null, null],
-        hints: { 0: [8, 3], 2: [8, 4], 4: null }
+        solution: [null, null],
+        hints: { 0: null }
       },
       {
-        description: 'White passes too early here. Take advantage as Black.',
+        description:
+          "After both players pass, the game moves to scoring. Territory markers don't show up until scoring, and the game does not end until both players agree on it. Finish the game again, and we'll show you what scoring looks like.",
         boardSize: 9,
-        showScoring: true,
+        scoring: true,
         initialStones: {
           black: [
-            [4, 1],
-            [2, 2],
-            [4, 2],
-            [4, 3],
+            [0, 4],
+            [1, 4],
+            [2, 4],
+            [3, 4],
             [4, 4],
-            [4, 5],
-            [4, 6],
-            [4, 7]
+            [5, 4],
+            [6, 4],
+            [7, 4],
+            [8, 4],
+            [2, 6],
+            [6, 7]
           ],
           white: [
-            [5, 0],
-            [5, 1],
-            [5, 2],
+            [6, 1],
+            [2, 2],
+            [0, 3],
+            [1, 3],
+            [2, 3],
+            [3, 3],
+            [4, 3],
             [5, 3],
-            [5, 4],
-            [5, 5],
-            [5, 6],
-            [5, 7],
-            [7, 7]
+            [6, 3],
+            [7, 3],
+            [8, 3]
           ]
         },
         turn: 'black',
-        solution: [[4, 0], null, [5, 8], [6, 8], [4, 8], null, null],
-        hints: { 0: [4, 0], 2: [5, 8], 4: [4, 8], 6: null }
+        solution: [null, null],
+        hints: { 0: null },
+        showAcceptHint: true
+      },
+      {
+        description:
+          'You might have noticed White gets additional points at the end of the game for going second. This is called Komi, and is usually set to 6.5. This means black needs more territory on the board to win the game.',
+        boardSize: 9,
+        scoring: true,
+        initialStones: {
+          black: [
+            [0, 4],
+            [1, 4],
+            [2, 4],
+            [3, 4],
+            [4, 4],
+            [5, 4],
+            [6, 4],
+            [6, 5],
+            [7, 5],
+            [8, 5]
+          ],
+          white: [
+            [0, 3],
+            [1, 3],
+            [2, 3],
+            [3, 3],
+            [4, 3],
+            [5, 3],
+            [6, 3],
+            [7, 3],
+            [7, 4],
+            [8, 4]
+          ]
+        },
+        turn: 'black',
+        solution: [null, null],
+        hints: { 0: null },
+        showAcceptHint: true
+      },
+      {
+        description:
+          'Up until this point, we\'ve kept territory unambiguous. But often there are extra stones left around on the board that could have been captured. At the end of the game both players have to agree on which stones should be removed. Mark stones that are not creating territory as "captured" during scoring!',
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [3, 2],
+            [0, 4],
+            [1, 4],
+            [2, 4],
+            [3, 4],
+            [6, 4],
+            [7, 4],
+            [8, 4],
+            [2, 5],
+            [4, 5],
+            [5, 5],
+            [2, 6],
+            [6, 6],
+            [3, 7]
+          ],
+          white: [
+            [3, 1],
+            [4, 2],
+            [0, 3],
+            [1, 3],
+            [2, 3],
+            [3, 3],
+            [6, 3],
+            [7, 3],
+            [8, 3],
+            [4, 4],
+            [5, 4],
+            [3, 5],
+            [3, 6]
+          ]
+        },
+        turn: 'black',
+        solution: [null, null],
+        hints: { 0: null },
+        scoring: true,
+        deadStones: [],
+        scoringHints: { 0: [3, 5], 1: [3, 2] },
+        showAcceptHint: true
+      },
+      {
+        description:
+          "Marking hopeless stones can be very hard for beginners! It requires reading and intuition that builds with experience. Our first tip is that if a stone isn't forming territory of its own when you pass, it should almost always be removed. Black has a lot of stones here but none are forming territory. White could capture every one of them so mark them for removal.",
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [0, 0],
+            [3, 0],
+            [4, 1],
+            [6, 1],
+            [0, 3],
+            [1, 3],
+            [2, 3],
+            [3, 3],
+            [4, 3],
+            [5, 3],
+            [6, 3],
+            [7, 3],
+            [8, 3],
+            [0, 5],
+            [1, 5],
+            [2, 5],
+            [3, 5],
+            [4, 5],
+            [2, 6],
+            [5, 6],
+            [6, 6],
+            [6, 7],
+            [2, 8],
+            [3, 8],
+            [6, 8]
+          ],
+          white: [
+            [1, 0],
+            [2, 0],
+            [5, 0],
+            [1, 1],
+            [3, 1],
+            [5, 1],
+            [7, 1],
+            [0, 2],
+            [1, 2],
+            [2, 2],
+            [3, 2],
+            [4, 2],
+            [5, 2],
+            [6, 2],
+            [7, 2],
+            [8, 2],
+            [0, 6],
+            [1, 6],
+            [3, 6],
+            [4, 6],
+            [0, 7],
+            [2, 7],
+            [4, 7],
+            [5, 7],
+            [1, 8],
+            [5, 8]
+          ]
+        },
+        turn: 'black',
+        solution: [null, null],
+        hints: { 0: null },
+        scoring: true,
+        deadStones: [],
+        scoringHints: { 0: [2, 8], 1: [0, 0], 3: [3, 0], 2: [4, 1], 4: [6, 1] },
+        showAcceptHint: true
+      },
+      {
+        description:
+          "The second tip is that if you're not sure, just play it out! The situation in the bottom right is common, but would be hard to recognize as a beginner. If the status is ambiguous to you, just keep playing before you pass!",
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [3, 3],
+            [3, 4],
+            [4, 4],
+            [5, 4],
+            [6, 4],
+            [7, 4],
+            [8, 4],
+            [0, 5],
+            [1, 5],
+            [2, 5],
+            [3, 5],
+            [4, 5],
+            [4, 6],
+            [6, 6],
+            [7, 6],
+            [3, 7],
+            [3, 8],
+            [6, 8],
+            [7, 8]
+          ],
+          white: [
+            [2, 2],
+            [3, 2],
+            [2, 3],
+            [4, 3],
+            [5, 3],
+            [6, 3],
+            [7, 3],
+            [8, 3],
+            [0, 4],
+            [1, 4],
+            [2, 4],
+            [4, 7],
+            [5, 7],
+            [6, 7],
+            [7, 7],
+            [8, 7],
+            [4, 8]
+          ]
+        },
+        turn: 'black',
+        solution: [[5, 6], [8, 8], [8, 6], [5, 8], [6, 8], [7, 8], [6, 8], null, null],
+        hints: { 0: [5, 6], 2: [8, 6], 4: [6, 8], 6: [6, 8], 8: null },
+        scoring: true,
+        deadStones: [],
+        scoringHints: {},
+        showAcceptHint: true
       }
     ]
   },
