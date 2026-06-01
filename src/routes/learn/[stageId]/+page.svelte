@@ -54,6 +54,7 @@
   let lessonFailed = $state(false);
   let affirmation = $state(null);
   let passMessage = $state(null);
+  let justCompleted = $state(false);
 
   let dismissedStages = $state(new Set());
   const showScreen = $derived(!dismissedStages.has(stageId));
@@ -102,6 +103,7 @@
       lastMove = null;
       lessonFailed = false;
       passMessage = null;
+      justCompleted = false;
     }
   });
 
@@ -116,8 +118,10 @@
       affirmation = null;
       selectedIndex = null;
       if (!wasReviewing) {
-        completeLesson(stageId, completedCount + 1);
+        const newCount = completedCount + 1;
+        completeLesson(stageId, newCount);
         progress = readProgress();
+        if (newCount >= (stage?.lessons.length ?? 0)) justCompleted = true;
       }
     }, 2000);
   }
@@ -127,7 +131,7 @@
   }
 
   function handleVertexClick(x, y) {
-    if (!currentLesson || stageComplete || lessonFailed) return;
+    if (!currentLesson || (stageComplete && justCompleted) || lessonFailed) return;
     if (currentLesson.solution.length === 0) return;
 
     const expected = currentLesson.solution[moveIndex];
@@ -181,7 +185,7 @@
   const lessonHasPass = $derived(currentLesson?.solution?.some((m) => m === null) ?? false);
 
   function handlePass() {
-    if (!currentLesson || stageComplete || lessonFailed) return;
+    if (!currentLesson || (stageComplete && justCompleted) || lessonFailed) return;
     const expected = currentLesson.solution[moveIndex];
     if (expected !== null) {
       lessonFailed = true;
@@ -390,7 +394,7 @@
           </div>
         </div>
       {/if}
-      {#if stageComplete}
+      {#if stageComplete && justCompleted}
         <div class="learn__screen-overlay">
           <div class="learn__screen">
             <div class="stars">
