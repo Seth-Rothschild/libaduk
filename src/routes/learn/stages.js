@@ -68,7 +68,7 @@ export const stages = [
       },
       {
         description:
-          'Go is most often played on 19x19 boards, but 13x13 and 9x9 are also popular. While even fast games on large boards can take half an hour, a 9x9 game can be finished in under 5 minutes.',
+          'Go is most often played on 19x19 boards, but 13x13 and 9x9 are also popular. While even fast games on large boards can take half an hour, a 9x9 game can be finished in under 5 minutes. Play a stone on a 13x13 board.',
         boardSize: 13,
         initialStones: {
           black: [],
@@ -102,8 +102,8 @@ export const stages = [
       },
       {
         description:
-          "The game concludes when both players agree to stop playing. You'll get more comfortable with that concept later, for now it's helpful to know there's sometimes a \"pass\" button to look for and click.",
-        boardSize: 13,
+          'The game concludes when both players agree to stop playing. This will be covered in the Passing lessons but for now it\'s helpful to know there\'s sometimes a "pass" button to look for and click.',
+        boardSize: 19,
         initialStones: {
           black: [],
           white: []
@@ -734,7 +734,7 @@ export const stages = [
       },
       {
         description:
-          'There is nothing you can do to save these stones. But remember, the objective is territory!',
+          "There is nothing you can do to save these stones (we'll see them again in the Reading lessons). But remember, the objective is territory!",
         boardSize: 9,
         initialStones: {
           black: [
@@ -1308,7 +1308,7 @@ export const stages = [
     lessons: [
       {
         description:
-          "Black should not try to save these 3 stones. It's better to build a wall and force White to capture them.",
+          "As we saw in the Territory lessons, Black should not try to save these 3 stones. It's better to build a wall and force White to capture them.",
         boardSize: 9,
         initialStones: {
           black: [
@@ -1347,7 +1347,7 @@ export const stages = [
       },
       {
         description:
-          "Trying to save the stones doesn't work, you lose more stones and don't get to wall off your territory!",
+          "Trying to save the stones doesn't work, you lose more stones and don't get to wall off your territory! Here's one example of a sequence that doesn't work. Can you read out the others?",
         boardSize: 9,
         initialStones: {
           black: [
@@ -1506,7 +1506,7 @@ export const stages = [
     lessons: [
       {
         description:
-          'After learning about territory, beginners often try to slowly make walls. Gain an advantage as Black while White moves slowly.',
+          'After learning about territory, beginners often try to slowly make walls. Here are some moves Black can play while White moves slowly.Gain an advantage as Black while White moves slowly.',
         boardSize: 9,
         initialStones: {
           black: [],
@@ -1548,7 +1548,7 @@ export const stages = [
       },
       {
         description:
-          "In contrast, exact placement is important when capturing is involved. It's urgent to save the stones, even if black would rather play elsewhere.",
+          "In contrast, exact placement is important when capturing is involved. White is threatening to capture by playing at the triangle. It's urgent to save the stones, even if black would rather play elsewhere.",
         boardSize: 9,
         initialStones: {
           black: [
@@ -1583,11 +1583,12 @@ export const stages = [
         solution: [
           [5, 5],
           [0, 6],
-          [4, 5],
-          [2, 7],
-          [4, 2]
+          [4, 5]
         ],
-        hints: { 0: [5, 5], 2: [4, 5], 4: [4, 2] }
+        hints: { 0: [5, 5], 2: [4, 5] },
+        markers: {
+          0: [{ x: 0, y: 6, type: 'triangle' }]
+        }
       }
     ]
   },
@@ -1834,7 +1835,8 @@ export const stages = [
     image: '/images/learn/tied-scroll.svg',
     lessons: [
       {
-        description: 'This is a common sequence for a corner invasion.',
+        description:
+          'This is a common sequence for a corner invasion that both sides can be satisfied with.',
         boardSize: 19,
         initialStones: {
           black: [],
