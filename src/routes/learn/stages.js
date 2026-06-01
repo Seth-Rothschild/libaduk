@@ -2186,12 +2186,132 @@ export const stages = [
     image: '/images/learn/spade.svg',
     lessons: [
       {
-        description: '',
+        description:
+          'When beginners play, it can be extremely difficult to know when to end the game. The scoring system takes this into account! If both players play within the territory it does not change the final score. The score right now is B+18.5 if all the stones are marked as captured. What is it if we continue playing?',
         boardSize: 9,
-        initialStones: { black: [], white: [] },
+        initialStones: {
+          black: [
+            [0, 2],
+            [6, 2],
+            [7, 2],
+            [8, 2],
+            [0, 3],
+            [1, 3],
+            [3, 3],
+            [5, 3],
+            [6, 3],
+            [1, 4],
+            [2, 4],
+            [5, 4],
+            [3, 5],
+            [4, 5],
+            [5, 5],
+            [7, 5],
+            [2, 7],
+            [5, 7]
+          ],
+          white: [
+            [0, 1],
+            [1, 1],
+            [6, 1],
+            [7, 1],
+            [8, 1],
+            [1, 2],
+            [2, 2],
+            [4, 2],
+            [5, 2],
+            [2, 3],
+            [4, 3],
+            [3, 4],
+            [4, 4],
+            [6, 7]
+          ]
+        },
         turn: 'black',
-        goal: '',
-        solution: []
+        solution: [
+          [6, 6],
+          [7, 6],
+          [7, 7],
+          [8, 6],
+          [8, 5],
+          [8, 7],
+          [8, 8],
+          [6, 8],
+          [5, 8],
+          [5, 6],
+          [7, 8],
+          null,
+          null
+        ],
+        hints: { 0: [6, 6], 2: [7, 7], 4: [8, 5], 6: [8, 8], 8: [5, 8], 10: [7, 8] },
+        scoring: true
+      },
+      {
+        description:
+          "If you're very certain you don't need to respond to a particular move, you can pass to tell your opponent you don't think you need to respond. This does gain points which should discourage playing moves that don't need responses. You can always play a move later to help your opponent understand why it did not need a response.",
+        boardSize: 9,
+        initialStones: {
+          black: [
+            [1, 1],
+            [4, 2],
+            [5, 2],
+            [4, 3],
+            [0, 4],
+            [1, 4],
+            [3, 4],
+            [4, 4],
+            [5, 4],
+            [6, 4],
+            [2, 5],
+            [6, 5],
+            [8, 5],
+            [1, 6],
+            [3, 6],
+            [5, 6],
+            [7, 6],
+            [0, 7],
+            [2, 7],
+            [4, 7],
+            [6, 7],
+            [8, 7]
+          ],
+          white: [
+            [2, 1],
+            [4, 1],
+            [5, 1],
+            [1, 2],
+            [3, 2],
+            [6, 2],
+            [0, 3],
+            [1, 3],
+            [2, 3],
+            [3, 3],
+            [5, 3],
+            [6, 3],
+            [7, 3],
+            [2, 4],
+            [7, 4],
+            [8, 4],
+            [7, 5]
+          ]
+        },
+        turn: 'black',
+        solution: [[8, 6], [1, 7], null, [2, 8], null, [1, 8], null, [0, 8], [3, 8], null, null],
+        hints: { 0: [8, 6], 2: null, 4: null, 6: null, 8: [3, 8], 10: null },
+        scoring: true,
+        deadStones: [[1, 1]]
+      },
+      {
+        description:
+          "Emotions can run high at the end of the game when players disagree about territory or suddenly lose something they thought was theirs. It's therefore extremely important to be considerate and empathetic when that happens. You can always figure out the *best* outcome together in a postgame review.",
+        boardSize: 19,
+        initialStones: {
+          black: [],
+          white: []
+        },
+        turn: 'black',
+        solution: [],
+        hints: {}
       }
     ]
   },
