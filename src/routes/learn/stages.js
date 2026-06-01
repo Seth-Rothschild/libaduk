@@ -2204,12 +2204,23 @@ export const stages = [
     image: '/images/learn/teacher.svg',
     lessons: [
       {
-        description: '',
+        description:
+          "It's common practice to greet your opponent at the beginning of the game and thank them at the end, regardless of result. Remember that there's a human on the other side of the board.",
+        boardSize: 19,
+        initialStones: { black: [], white: [] },
+        turn: 'black',
+        solution: [],
+        hints: {}
+      },
+      {
+        description:
+          'It is also best-practice to review games with your opponent after finishing them. Take advantage of the Analysis Mode tools to collaboratively play out scenarios, annotate moves, and train memorization skills.',
         boardSize: 9,
         initialStones: { black: [], white: [] },
         turn: 'black',
-        goal: '',
-        solution: []
+        solution: [],
+        hints: {},
+        links: { 'Analysis Mode': 'https://libaduk.com/play/kdthyj' }
       }
     ]
   },
