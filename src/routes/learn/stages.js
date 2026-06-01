@@ -1757,16 +1757,138 @@ export const stages = [
     title: 'Joseki',
     subtitle: 'Learning opening patterns',
     description:
-      "Well known opening patterns are known as Joseki. It's infeasible as a beginner to memorize every possible corner approach and these sequences are not as critical as in Chess. But knowing a couple can help you think more about other parts of the game.",
+      "Well known opening patterns are known as Joseki. There are a lot, and they're not as critical as in Chess. That being said, memorizing a few will help you feel less lost in the opening, even if they don't make too much sense yet.",
+    endDescription:
+      "You've now seen a few Joseki. While these sequences might not make sense yet, they can help you feel less lost when starting the game.",
     image: '/images/learn/tied-scroll.svg',
     lessons: [
       {
-        description: '',
-        boardSize: 9,
-        initialStones: { black: [], white: [] },
+        description: 'This is a common sequence for a corner invasion.',
+        boardSize: 19,
+        initialStones: {
+          black: [],
+          white: [[3, 15]]
+        },
         turn: 'black',
-        goal: '',
-        solution: []
+        solution: [
+          [2, 16],
+          [2, 15],
+          [3, 16],
+          [4, 16],
+          [4, 17],
+          [5, 16],
+          [5, 17],
+          [6, 16],
+          [1, 15],
+          [1, 14],
+          [1, 16],
+          [2, 13]
+        ],
+        hints: { 0: [2, 16], 2: [3, 16], 4: [4, 17], 6: [5, 17], 8: [1, 15], 10: [1, 16] }
+      },
+      {
+        description: 'White gets to choose which way they would like to make a wall.',
+        boardSize: 19,
+        initialStones: {
+          black: [],
+          white: [[3, 15]]
+        },
+        turn: 'black',
+        solution: [
+          [2, 16],
+          [3, 16],
+          [2, 15],
+          [2, 14],
+          [1, 14],
+          [2, 13],
+          [1, 13],
+          [2, 12],
+          [3, 17],
+          [4, 17],
+          [2, 17],
+          [5, 16]
+        ],
+        hints: { 0: [2, 16], 2: [2, 15], 4: [1, 14], 6: [1, 13], 8: [3, 17], 10: [2, 17] }
+      },
+      {
+        description: 'Play the sequence again as the defender.',
+        boardSize: 19,
+        initialStones: {
+          black: [[3, 15]],
+          white: [[2, 16]]
+        },
+        turn: 'black',
+        solution: [
+          [2, 15],
+          [3, 16],
+          [4, 16],
+          [4, 17],
+          [5, 16],
+          [5, 17],
+          [6, 16],
+          [1, 15],
+          [1, 14],
+          [1, 16],
+          [2, 13]
+        ],
+        hints: { 0: [2, 15], 2: [4, 16], 4: [5, 16], 6: [6, 16], 8: [1, 14], 10: [2, 13] }
+      },
+      {
+        description: 'Now defend the other way!',
+        boardSize: 19,
+        initialStones: {
+          black: [[3, 15]],
+          white: [[2, 16]]
+        },
+        turn: 'black',
+        solution: [
+          [3, 16],
+          [2, 15],
+          [2, 14],
+          [1, 14],
+          [2, 13],
+          [1, 13],
+          [2, 12],
+          [3, 17],
+          [4, 17],
+          [2, 17],
+          [5, 16]
+        ],
+        hints: { 0: [3, 16], 2: [2, 14], 4: [2, 13], 6: [2, 12], 8: [4, 17], 10: [5, 16] }
+      },
+      {
+        description:
+          'Another common approach to a corner is to come from the side. Here is a standard and beginner-friendly continuation.',
+        boardSize: 19,
+        initialStones: {
+          black: [],
+          white: [[3, 15]]
+        },
+        turn: 'black',
+        solution: [
+          [5, 16],
+          [2, 13],
+          [3, 17],
+          [2, 16],
+          [8, 16]
+        ],
+        hints: { 0: [5, 16], 2: [3, 17], 4: [8, 16] }
+      },
+      {
+        description: 'Defend with the same Joseki!',
+        boardSize: 19,
+        initialStones: {
+          black: [[3, 15]],
+          white: [[5, 16]]
+        },
+        turn: 'black',
+        solution: [
+          [2, 13],
+          [3, 17],
+          [2, 16],
+          [8, 16]
+        ],
+        hints: { 0: [2, 13], 2: [2, 16] }
       }
     ]
   },
