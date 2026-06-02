@@ -2756,6 +2756,7 @@ html.light .kifu__board .go-inner.go-sign_-1 {
   padding: 0.3em 0.8em;
   border-radius: 4px;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .kifu__actions button:hover:not([disabled]) {
