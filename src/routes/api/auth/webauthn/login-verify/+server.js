@@ -42,7 +42,8 @@ export async function POST({ request, cookies }) {
       expectedChallenge: challenge,
       expectedOrigin: origin,
       expectedRPID: rpID,
-      credential: matchingCredential
+      credential: matchingCredential,
+      requireUserVerification: false
     });
   } catch (err) {
     console.error('Authentication verification failed:', err);

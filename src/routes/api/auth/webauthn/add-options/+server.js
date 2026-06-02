@@ -27,7 +27,7 @@ export async function POST({ request, cookies, locals }) {
     attestationType: 'none',
     excludeCredentials,
     authenticatorSelection: {
-      residentKey: 'required',
+      residentKey: 'preferred',
       userVerification: 'preferred'
     }
   });

@@ -53,7 +53,7 @@
     "@sabaki/go-board": "^1.4.3",
     "@sabaki/influence": "^1.2.2",
     "@simplewebauthn/browser": "^13.3.0",
-    "@simplewebauthn/server": "^13.3.0",
+    "@simplewebauthn/server": "^13.3.1",
     "@sveltejs/adapter-node": "^5.5.4",
     "mongodb": "^7.1.0",
     "onnxruntime-web": "^1.24.3",
