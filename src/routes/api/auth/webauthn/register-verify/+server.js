@@ -34,7 +34,8 @@ export async function POST({ request, cookies }) {
       response: body,
       expectedChallenge: challenge,
       expectedOrigin: origin,
-      expectedRPID: rpID
+      expectedRPID: rpID,
+      requireUserVerification: false
     });
   } catch (err) {
     console.error('Registration verification failed:', err);

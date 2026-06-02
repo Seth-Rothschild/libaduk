@@ -35,7 +35,8 @@ export async function POST({ request, cookies, locals }) {
       response: body,
       expectedChallenge: entry.challenge,
       expectedOrigin: origin,
-      expectedRPID: rpID
+      expectedRPID: rpID,
+      requireUserVerification: false
     });
   } catch (err) {
     console.error('Add-passkey verification failed:', err);
