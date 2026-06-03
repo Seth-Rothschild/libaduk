@@ -52,10 +52,7 @@
 
   function resultClass(game) {
     if (!game.winner) return '';
-    const username = data.profile.username;
-    const myColor = game.blackName === username ? 'black' : 'white';
-    if (game.winner === myColor) return 'win';
-    return 'loss';
+    return game.winner === myGameColor(game) ? 'win' : 'loss';
   }
 
   function resultText(game) {
@@ -265,29 +262,13 @@
   );
 
   const totalGames = $derived(categoryGames.length);
-  const wins = $derived(
-    categoryGames.filter((g) => {
-      const myColor = g.blackName === data.profile.username ? 'black' : 'white';
-      return g.winner === myColor;
-    }).length
-  );
-  const losses = $derived(
-    categoryGames.filter((g) => {
-      const myColor = g.blackName === data.profile.username ? 'black' : 'white';
-      return g.winner && g.winner !== myColor;
-    }).length
-  );
+  const wins = $derived(categoryGames.filter((g) => gameWon(g)).length);
+  const losses = $derived(categoryGames.filter((g) => g.winner && !gameWon(g)).length);
 
   const visibleGames = $derived(
     categoryGames.filter((g) => {
-      if (activeResult === 'wins') {
-        const myColor = g.blackName === data.profile.username ? 'black' : 'white';
-        return g.winner === myColor;
-      }
-      if (activeResult === 'losses') {
-        const myColor = g.blackName === data.profile.username ? 'black' : 'white';
-        return g.winner && g.winner !== myColor;
-      }
+      if (activeResult === 'wins') return gameWon(g);
+      if (activeResult === 'losses') return g.winner && !gameWon(g);
       return true;
     })
   );
