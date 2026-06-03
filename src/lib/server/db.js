@@ -792,18 +792,28 @@ export async function getSiteStats() {
     recentCompletedGame
   ] = await Promise.all([
     d.collection('users').countDocuments(),
-    d.collection('games').countDocuments({ status: 'finished' }),
-    d.collection('games').countDocuments({ status: 'finished', aiDifficulty: null }),
-    d.collection('games').countDocuments({ status: 'finished', aiDifficulty: { $ne: null } }),
+    d.collection('games').countDocuments({ status: 'finished', gameType: { $ne: 'uploaded' } }),
+    d
+      .collection('games')
+      .countDocuments({ status: 'finished', gameType: { $ne: 'uploaded' }, aiDifficulty: null }),
+    d.collection('games').countDocuments({
+      status: 'finished',
+      gameType: { $ne: 'uploaded' },
+      aiDifficulty: { $ne: null }
+    }),
     d
       .collection('users')
       .aggregate([{ $unwind: '$attempts' }, { $count: 'total' }])
       .toArray(),
     d.collection('puzzles').countDocuments(),
     d.collection('users').countDocuments({ createdAt: { $gte: oneDayAgo } }),
-    d.collection('games').countDocuments({ status: 'finished', endedAt: { $gte: oneDayAgo } }),
+    d.collection('games').countDocuments({
+      status: 'finished',
+      endedAt: { $gte: oneDayAgo },
+      gameType: { $ne: 'uploaded' }
+    }),
     d.collection('games').findOne(
-      { status: 'finished' },
+      { status: 'finished', gameType: { $ne: 'uploaded' } },
       {
         sort: { endedAt: -1 },
         projection: { _id: 1, blackName: 1, whiteName: 1, result: 1, endedAt: 1 }
@@ -844,7 +854,7 @@ export async function getRecentActivity() {
     d
       .collection('games')
       .find(
-        { status: 'finished', endedAt: { $gte: oneDayAgo } },
+        { status: 'finished', endedAt: { $gte: oneDayAgo }, gameType: { $ne: 'uploaded' } },
         { projection: { _id: 1, blackName: 1, whiteName: 1, result: 1, endedAt: 1 } }
       )
       .sort({ endedAt: -1 })
