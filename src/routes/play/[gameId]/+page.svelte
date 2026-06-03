@@ -411,10 +411,9 @@
       const moveResult = gs.board.analyzeMove(mySign, [x, y]);
       if (moveResult.overwrite || moveResult.suicide || moveResult.ko) return;
       const mode = boardSettings.moveConfirmation;
-      if (
-        (mode === 'double-click' || mode === 'button') &&
-        !(pendingMove?.[0] === x && pendingMove?.[1] === y)
-      ) {
+      const coordsMatch = pendingMove?.[0] === x && pendingMove?.[1] === y;
+      const needsConfirm = mode === 'double-click' || mode === 'button';
+      if (needsConfirm && !coordsMatch) {
         pendingMove = [x, y];
         return;
       }
