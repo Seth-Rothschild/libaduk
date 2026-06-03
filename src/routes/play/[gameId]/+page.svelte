@@ -32,6 +32,7 @@
   import { initEngine, generateMove, hasModel, isReady, dispose } from '$lib/ai/engine.js';
   import { t } from '$lib/i18n/i18n.svelte.js';
   import ModelManager from '$lib/ai/ModelManager.svelte';
+  import { formatOgsClock, formatOgsRank } from '$lib/lobby/ogsSeekGraph.svelte.js';
 
   function getOgsToken() {
     for (const pair of document.cookie.split(';')) {
@@ -719,8 +720,14 @@
             analysis.animatedVertex = analysis.currentNode.lastMove ?? null;
           }
         }
+        if (msg.type === 'gamedata') {
+          gs.initFromGamedata(msg.gamedata, data.viewerColor);
+          blackName = msg.gamedata.players?.black?.username ?? blackName;
+          whiteName = msg.gamedata.players?.white?.username ?? whiteName;
+          komi = msg.gamedata.komi ?? komi;
+        }
         if (msg.type === 'my-color') {
-          gs.mySign = msg.color === 'black' ? 1 : -1;
+          if (msg.color) gs.mySign = msg.color === 'black' ? 1 : -1;
           if (gs.status === 'waiting') gs.status = 'playing';
           if (msg.komi != null) komi = msg.komi;
           if (gs.totalPly === 0 && msg.handicapStones?.length > 0) {
@@ -742,7 +749,7 @@
         }
       });
 
-      const ogsToken = isOgs ? getOgsToken() : null;
+      const ogsToken = data.game.ogsGameId ? getOgsToken() : null;
       gameSocket.join(currentGameId, data.viewerColor ?? null, ogsToken, displayName);
 
       if (data.game.gameType === 'ai') {
@@ -788,7 +795,20 @@
       whiteName={resolvePlayerName('white')}
       gameType={data.game.gameType}
       gameUrl={page.url.href}
-      ogsGameId={data.game.ogsGameId}
+      ogsGameId={gs.gamedata?.id ?? data.game.ogsGameId}
+      ranked={gs.gamedata?.ranked ?? false}
+      komi={gs.gamedata?.komi ?? data.game.komi ?? null}
+      rules={gs.gamedata?.rules
+        ? gs.gamedata.rules[0].toUpperCase() + gs.gamedata.rules.slice(1)
+        : null}
+      timeControl={formatOgsClock(gs.gamedata?.time_control)}
+      handicap={gs.gamedata?.handicap ?? data.game.handicap ?? 0}
+      blackRank={isSpectator && gs.gamedata
+        ? formatOgsRank(gs.gamedata.players?.black?.rank)
+        : null}
+      whiteRank={isSpectator && gs.gamedata
+        ? formatOgsRank(gs.gamedata.players?.white?.rank)
+        : null}
     />
     {#if analysisMode}
       <AnalysisInfo
@@ -815,6 +835,7 @@
       boardSize={gs.boardSize}
       onCoordHover={(v) => (chatHighlightVertex = v)}
       moveCount={gs.totalPly}
+      readOnly={data.game.gameType === 'uploaded'}
     />
   </aside>
 

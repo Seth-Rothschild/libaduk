@@ -175,6 +175,20 @@ export async function getGame(id) {
   }
 }
 
+export async function findGameByOgsId(ogsGameId) {
+  try {
+    const d = await getDb();
+    const doc = await d.collection('games').findOne({
+      ogsGameId: String(ogsGameId),
+      owners: { $size: 0 }
+    });
+    return doc?._id ?? null;
+  } catch (err) {
+    console.error('[db] findGameByOgsId failed:', err.message);
+    throw err;
+  }
+}
+
 export async function createGame({
   id,
   size,
@@ -190,7 +204,8 @@ export async function createGame({
   aiDifficulty = null,
   ogsGameId = null,
   ogsUserId = null,
-  owners = []
+  owners = [],
+  gamedata = null
 }) {
   try {
     const game = {
@@ -210,6 +225,7 @@ export async function createGame({
       aiDifficulty,
       ogsGameId,
       ogsUserId,
+      gamedata,
       createdAt: Date.now(),
       endedAt: null,
       winner: null,

@@ -15,7 +15,9 @@
     komi = null,
     rules = null,
     timeControl = null,
-    handicap = 0
+    handicap = 0,
+    blackRank = null,
+    whiteRank = null
   } = $props();
 
   function formatResult(result) {
@@ -58,8 +60,12 @@
       {/if}
     </div>
     <div class="game__meta__players">
-      <div class="player color-icon is black text">{blackName}</div>
-      <div class="player color-icon is white text">{whiteName}</div>
+      <div class="player color-icon is black text">
+        {blackName}{blackRank ? ` (${blackRank})` : ''}
+      </div>
+      <div class="player color-icon is white text">
+        {whiteName}{whiteRank ? ` (${whiteRank})` : ''}
+      </div>
     </div>
   </section>
   {#if showWaiting}

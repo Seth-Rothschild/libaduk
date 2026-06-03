@@ -5,9 +5,8 @@
 import { WebSocket } from 'ws';
 
 async function fetchOgsJwt(ogsToken) {
-  const res = await fetch('https://online-go.com/api/v1/ui/config/', {
-    headers: { Authorization: `Bearer ${ogsToken}` }
-  });
+  const headers = ogsToken ? { Authorization: `Bearer ${ogsToken}` } : {};
+  const res = await fetch('https://online-go.com/api/v1/ui/config/', { headers });
   if (!res.ok) return null;
   const config = await res.json();
   return config.user_jwt ?? null;

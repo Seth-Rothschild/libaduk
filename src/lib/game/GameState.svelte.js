@@ -8,6 +8,30 @@ import {
 
 export { replayMoves } from '$lib/game/board';
 
+function fromOgsTimeControl(tc) {
+  if (!tc) return { type: 'none' };
+  if (tc.system === 'byoyomi') {
+    return {
+      type: 'byoyomi',
+      initial: tc.main_time,
+      periodTime: tc.period_time,
+      periods: tc.periods
+    };
+  }
+  if (tc.system === 'fischer') {
+    return {
+      type: 'fischer',
+      initial: tc.initial_time,
+      increment: tc.time_increment,
+      max: tc.max_time
+    };
+  }
+  if (tc.system === 'correspondence') {
+    return { type: 'correspondence', days: tc.per_move ?? 3 };
+  }
+  return { type: 'none' };
+}
+
 export class GameState {
   boardSize = $state(19);
   board = $state(createBoard(19));
@@ -28,6 +52,7 @@ export class GameState {
   finalScore = $state(null);
   timedOutColor = $state(null);
   mySign = $state(null);
+  gamedata = $state(null);
 
   boardHistory = $state([]);
   lastMoveHistory = $state([]);
@@ -178,6 +203,55 @@ export class GameState {
       this.status = 'cancelled';
     } else {
       this.status = game.status ?? 'waiting';
+    }
+  }
+
+  initFromGamedata(gamedata, viewerColor) {
+    this.gamedata = gamedata;
+    this.boardSize = gamedata.width ?? 19;
+    this.timeControl = fromOgsTimeControl(gamedata.time_control);
+    this.shiftMap = emptyShiftMap(this.boardSize);
+    this.deadStones = [];
+    this.blackApproved = false;
+    this.whiteApproved = false;
+    this.clockState = null;
+    this.corrState = null;
+
+    if (viewerColor === 'black') this.mySign = 1;
+    else if (viewerColor === 'white') this.mySign = -1;
+    else this.mySign = null;
+
+    const moves = (gamedata.moves ?? []).map(([x, y]) =>
+      x < 0 ? { type: 'pass' } : { type: 'move', x, y }
+    );
+
+    if (moves.length > 0) {
+      const replay = replayMovesWithHistory(moves, this.boardSize, null);
+      this.board = replay.board;
+      this.shiftMap = replay.shiftMap;
+      this.boardHistory = replay.boards;
+      this.lastMoveHistory = replay.lastMoves;
+      this.shiftMapHistory = replay.shiftMaps;
+      this.consecutivePasses = 0;
+      this.currentSign = moves.length % 2 === 0 ? 1 : -1;
+      const lastMove = moves.at(-1);
+      if (lastMove?.type === 'move') this.lastMove = [lastMove.x, lastMove.y];
+    } else {
+      this.board = createBoard(this.boardSize);
+      this.boardHistory = [this.board];
+      this.lastMoveHistory = [null];
+      this.shiftMapHistory = [emptyShiftMap(this.boardSize)];
+    }
+
+    const outcome = gamedata.outcome ?? '';
+    if (gamedata.phase === 'stone removal') {
+      this.status = 'scoring';
+    } else if (gamedata.phase === 'finished') {
+      this.status = 'gameover';
+      this.winnerResult = outcome || null;
+      this.winner = outcome.startsWith('B') ? 1 : outcome.startsWith('W') ? -1 : null;
+    } else {
+      this.status = 'playing';
     }
   }
 

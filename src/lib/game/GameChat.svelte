@@ -12,7 +12,8 @@
     boardSize = 19,
     onCoordHover = () => {},
     inputText = $bindable(''),
-    moveCount = 0
+    moveCount = 0,
+    readOnly = false
   } = $props();
 
   const COL_LETTERS = 'ABCDEFGHJKLMNOPQRST';
@@ -198,15 +199,19 @@
           </li>
         {/each}
       </ol>
-      <input
-        class="mchat__say"
-        class:mchat__say--disconnected={sendFailed}
-        placeholder={sendFailed ? 'Disconnected — message not sent' : 'Please be nice in the chat!'}
-        aria-label="Chat message"
-        bind:value={inputText}
-        onkeydown={handleKeydown}
-      />
-      {#if presetsVisible}
+      {#if !readOnly}
+        <input
+          class="mchat__say"
+          class:mchat__say--disconnected={sendFailed}
+          placeholder={sendFailed
+            ? 'Disconnected — message not sent'
+            : 'Please be nice in the chat!'}
+          aria-label="Chat message"
+          bind:value={inputText}
+          onkeydown={handleKeydown}
+        />
+      {/if}
+      {#if presetsVisible && !readOnly}
         <div class="mchat__presets" role="group" aria-label="Quick messages">
           {#each activePresets as preset}
             <span

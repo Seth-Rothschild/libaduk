@@ -1,5 +1,6 @@
 <script>
   import { tick } from 'svelte';
+  import { goto } from '$app/navigation';
 
   let {
     username = '',
@@ -30,8 +31,32 @@
     });
   }
 
+  const mountTime = Date.now();
+
   let messagesEl = $state(null);
   let sendFailed = $state(false);
+  let importingGameId = $state(null);
+
+  async function importOgsGame(ogsGameId) {
+    importingGameId = ogsGameId;
+    try {
+      const res = await fetch('/api/game/from-ogs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ogsGameId })
+      });
+      if (!res.ok) {
+        window.open(`https://online-go.com/game/${ogsGameId}`, '_blank', 'noopener');
+        return;
+      }
+      const { id } = await res.json();
+      goto(`/play/${id}`);
+    } catch {
+      window.open(`https://online-go.com/game/${ogsGameId}`, '_blank', 'noopener');
+    } finally {
+      importingGameId = null;
+    }
+  }
 
   function formatTime(t) {
     if (!t) return '';
@@ -41,6 +66,7 @@
   function filterEmptyDividers(messages) {
     return messages.filter((m, i) => {
       if (!m.divider) return true;
+      if (m.t >= mountTime) return true;
       const next = messages[i + 1];
       return !next || !next.divider;
     });
@@ -108,9 +134,35 @@
       {#each visibleMessages as msg}
         {#if msg.divider}
           <li class="kibbitz-divider">
-            <a href="https://online-go.com/game/{msg.gameId}" target="_blank" rel="noopener">
-              {msg.blackName ?? 'Black'} vs {msg.whiteName ?? 'White'}
-            </a>
+            <button
+              class="kibbitz-link"
+              disabled={importingGameId === msg.gameId}
+              onclick={() => importOgsGame(msg.gameId)}
+            >
+              {#if importingGameId === msg.gameId}
+                Loading…
+              {:else}
+                {msg.blackName ?? 'Black'} vs {msg.whiteName ?? 'White'}
+              {/if}
+              {#if importingGameId !== msg.gameId}<svg
+                  class="kibbitz-link__icon"
+                  aria-hidden="true"
+                  width="11"
+                  height="11"
+                  viewBox="0 0 11 11"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><path d="M4.5 2H2v7h7V6.5" /><path d="M6.5 2H9v2.5" /><line
+                    x1="9"
+                    y1="2"
+                    x2="5"
+                    y2="6"
+                  /></svg
+                >{/if}
+            </button>
           </li>
         {:else}
           <li class:me={msg.user === username}>
@@ -169,13 +221,30 @@
     border-top: 1px solid var(--c-border);
   }
 
-  .kibbitz-divider a {
+  .kibbitz-link {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
     color: inherit;
-    text-decoration: none;
+    font: inherit;
+    font-size: inherit;
   }
 
-  .kibbitz-divider a:hover {
+  .kibbitz-link:hover:not(:disabled) {
     text-decoration: underline;
+  }
+
+  .kibbitz-link:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+
+  .kibbitz-link__icon {
+    margin-left: 0.3em;
+    vertical-align: middle;
+    position: relative;
+    top: -0.05em;
   }
 
   .mchat__viewers {

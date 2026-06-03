@@ -353,76 +353,80 @@ export function attachWebSocketServer(httpServer) {
           });
         }
 
-        if (msg.ogsToken) {
-          if (game?.gameType === 'ogs' && game.ogsGameId && game.ogsUserId) {
-            let adapter = ogsAdapters.get(msg.gameId);
-            if (!adapter) {
-              const existingChat = await db.getChat(msg.gameId);
-              const persistedTs = new Set(existingChat.map((e) => e.t).filter(Boolean));
-              adapter = new OgsAdapter(game.ogsGameId, game.ogsUserId, msg.ogsToken, {
-                onBroadcast: (m) => {
-                  if (m.type === 'move')
-                    db.appendMove(msg.gameId, { type: 'move', x: m.x, y: m.y });
-                  if (m.type === 'pass') db.appendMove(msg.gameId, { type: 'pass' });
-                  if (m.type === 'chat' && !persistedTs.has(m.t)) {
-                    persistedTs.add(m.t);
-                    db.appendChat(msg.gameId, { user: m.user, text: m.text, t: m.t });
-                  }
-                  if (m.type === 'gameover') {
-                    db.getGame(msg.gameId).then((current) => {
-                      if (!current || current.status === 'finished') return;
-                      const patch = {
-                        status: 'finished',
-                        winner: m.winner,
-                        result: m.result,
-                        deadStones: m.deadStones,
-                        endedAt: Date.now()
-                      };
-                      db.updateGame(msg.gameId, patch);
-                    });
-                  }
-                  broadcast(msg.gameId, m);
-                },
-                onUnicast: (m) => send(socket, m),
-                onGameStart: (myColor, blackName, whiteName, handicapStones, timeControl, komi) => {
-                  if (game.status !== 'waiting') return;
+        if (game?.gamedata) {
+          send(socket, { type: 'gamedata', gamedata: game.gamedata });
+        }
 
-                  socket.playerColor = myColor;
-                  socket.spectatorName = null;
-                  broadcast(msg.gameId, { type: 'presence', color: myColor, online: true });
-                  broadcast(msg.gameId, { type: 'spectators', names: spectatorNames(msg.gameId) });
-                  const stones = handicapStones.map(([x, y]) => ({ x, y }));
-                  db.updateGame(msg.gameId, {
-                    blackName,
-                    whiteName,
-                    timeControl,
-                    status: 'playing',
-                    handicapStones: stones,
-                    komi
+        if (game?.ogsGameId && (msg.ogsToken || game.gameType === 'uploaded')) {
+          let adapter = ogsAdapters.get(msg.gameId);
+          if (!adapter) {
+            const existingChat = await db.getChat(msg.gameId);
+            const persistedTs = new Set(existingChat.map((e) => e.t).filter(Boolean));
+            adapter = new OgsAdapter(game.ogsGameId, game.ogsUserId ?? null, msg.ogsToken, {
+              onBroadcast: (m) => {
+                if (m.type === 'move') db.appendMove(msg.gameId, { type: 'move', x: m.x, y: m.y });
+                if (m.type === 'pass') db.appendMove(msg.gameId, { type: 'pass' });
+                if (m.type === 'chat' && !persistedTs.has(m.t)) {
+                  persistedTs.add(m.t);
+                  db.appendChat(msg.gameId, { user: m.user, text: m.text, t: m.t });
+                }
+                if (m.type === 'gameover') {
+                  db.getGame(msg.gameId).then((current) => {
+                    if (!current || current.status === 'finished') return;
+                    const patch = {
+                      status: 'finished',
+                      winner: m.winner,
+                      result: m.result,
+                      deadStones: m.deadStones,
+                      endedAt: Date.now()
+                    };
+                    db.updateGame(msg.gameId, patch);
                   });
-                },
-                onGameData: (gameData) => {
-                  let dbMoveCount = game.moves.length;
-                  let ogsMoveCount = gameData.moves.length;
-                  if (dbMoveCount < ogsMoveCount) {
-                    let missingMoves = gameData.moves.slice(dbMoveCount);
-                    for (const m of missingMoves) {
-                      let [x, y, _] = m;
-                      if (x < 0) continue;
-                      db.appendMove(msg.gameId, { type: 'move', x, y });
-                      broadcast(msg.gameId, { type: 'move', x, y });
-                    }
+                }
+                broadcast(msg.gameId, m);
+              },
+              onUnicast: (m) => send(socket, m),
+              onGameStart: (myColor, blackName, whiteName, handicapStones, timeControl, komi) => {
+                if (game.gameType !== 'ogs' || game.status !== 'waiting') return;
+                socket.playerColor = myColor;
+                socket.spectatorName = null;
+                broadcast(msg.gameId, { type: 'presence', color: myColor, online: true });
+                broadcast(msg.gameId, { type: 'spectators', names: spectatorNames(msg.gameId) });
+                const stones = handicapStones.map(([x, y]) => ({ x, y }));
+                db.updateGame(msg.gameId, {
+                  blackName,
+                  whiteName,
+                  timeControl,
+                  status: 'playing',
+                  handicapStones: stones,
+                  komi
+                });
+              },
+              onGameData: (gameData) => {
+                broadcast(msg.gameId, { type: 'gamedata', gamedata: gameData });
+                if (!game.gamedata) {
+                  db.updateGame(msg.gameId, { gamedata: gameData });
+                  game.gamedata = gameData;
+                }
+                const dbMoveCount = game.moves.length;
+                const ogsMoveCount = gameData.moves.length;
+                if (dbMoveCount < ogsMoveCount) {
+                  const missingMoves = gameData.moves.slice(dbMoveCount);
+                  for (const m of missingMoves) {
+                    const [x, y] = m;
+                    if (x < 0) continue;
+                    db.appendMove(msg.gameId, { type: 'move', x, y });
                   }
                 }
-              });
-              ogsAdapters.set(msg.gameId, adapter);
-              adapter.connect();
-            } else if (adapter.myColor) {
-              socket.playerColor = adapter.myColor;
-              socket.spectatorName = null;
-              broadcast(msg.gameId, { type: 'spectators', names: spectatorNames(msg.gameId) });
-              send(socket, { type: 'my-color', color: adapter.myColor, handicapStones: [] });
-            }
+              }
+            });
+            ogsAdapters.set(msg.gameId, adapter);
+            adapter.connect();
+          } else if (adapter.myColor) {
+            socket.playerColor = adapter.myColor;
+            socket.spectatorName = null;
+            broadcast(msg.gameId, { type: 'spectators', names: spectatorNames(msg.gameId) });
+            send(socket, { type: 'my-color', color: adapter.myColor, handicapStones: [] });
           }
         }
       }
