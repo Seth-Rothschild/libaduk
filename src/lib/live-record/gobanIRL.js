@@ -14,13 +14,14 @@ export class Board {
   constructor(
     imageData,
     gridCorners,
-    { detectionFunction = null, cutoffs = null, offsetX = 0, offsetY = 0 } = {}
+    { detectionFunction = null, cutoffs = null, offsets = null } = {}
   ) {
     this.boardSubimage = imageData;
     const [topLeft, topRight, bottomLeft] = gridCorners;
     const xstep = (topRight.x - topLeft.x) / 18;
     const ystep = (bottomLeft.y - topLeft.y) / 18;
-    this.intersections = Board._computeIntersections(topLeft, xstep, ystep, offsetX, offsetY);
+    const zeroOffsets = utils.range(19).map(() => utils.range(19).map(() => ({ x: 0, y: 0 })));
+    this.intersections = Board._computeIntersections(topLeft, xstep, ystep, offsets ?? zeroOffsets);
     this.stoneBoundaries = this.getStoneBoundaries(
       this.boardSubimage,
       this.intersections,
@@ -46,6 +47,15 @@ export class Board {
         const xmax = Math.min(Math.ceil(loc.x + halfX), width);
         const ymax = Math.min(Math.ceil(loc.y + halfY), height);
         return { xmin, xmax, ymin, ymax };
+      })
+    );
+  }
+
+  getValues(fn) {
+    return this.stoneBoundaries.map((row) =>
+      row.map((boundary) => {
+        const subimage = utils.cropImageData(this.boardSubimage, boundary);
+        return fn(subimage);
       })
     );
   }
@@ -147,10 +157,13 @@ export class Board {
     }
   }
 
-  static _computeIntersections(origin, xstep, ystep, offsetX, offsetY) {
-    const xLocs = utils.range(19).map((col) => Math.round(origin.x + col * xstep + offsetX));
-    const yLocs = utils.range(19).map((row) => Math.round(origin.y + row * ystep + offsetY));
-    return yLocs.map((yLoc) => xLocs.map((xLoc) => ({ x: xLoc, y: yLoc })));
+  static _computeIntersections(origin, xstep, ystep, offsets) {
+    return utils.range(19).map((row) =>
+      utils.range(19).map((col) => ({
+        x: Math.round(origin.x + col * xstep + offsets[row][col].x),
+        y: Math.round(origin.y + row * ystep + offsets[row][col].y)
+      }))
+    );
   }
 
   static _suggestCutoffs(sortedValues) {

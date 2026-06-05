@@ -240,7 +240,54 @@ export function checkCoreAndCool(stoneSubimage) {
   return (checkCoreBrightness(stoneSubimage) + checkCoolBrightness(stoneSubimage)) / 2;
 }
 
+export function checkCenterVsRing(stoneSubimage) {
+  const { width, height, data } = stoneSubimage;
+  const x0 = Math.floor(width / 3);
+  const x1 = Math.ceil((2 * width) / 3);
+  const y0 = Math.floor(height / 3);
+  const y1 = Math.ceil((2 * height) / 3);
+  let centerTotal = 0,
+    centerCount = 0;
+  let ringTotal = 0,
+    ringCount = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      const luma = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      if (x >= x0 && x < x1 && y >= y0 && y < y1) {
+        centerTotal += luma;
+        centerCount++;
+      } else {
+        ringTotal += luma;
+        ringCount++;
+      }
+    }
+  }
+  const center = centerCount > 0 ? centerTotal / centerCount : 128;
+  const ring = ringCount > 0 ? ringTotal / ringCount : 128;
+  return center - ring;
+}
+
+export function computeStoneOffsets(minMag, maxMag, cameraCol = 0, cameraRow = 18) {
+  const distances = range(19).map((row) =>
+    range(19).map((col) => Math.hypot(col - cameraCol, row - cameraRow))
+  );
+  const maxDist = Math.max(...distances.flat());
+  return range(19).map((row) =>
+    range(19).map((col) => {
+      const dist = distances[row][col];
+      if (dist === 0) return { x: 0, y: 0 };
+      const t = dist / maxDist;
+      const mag = minMag + t * (maxMag - minMag);
+      const xDir = (col - cameraCol) / dist;
+      const yDir = (row - cameraRow) / dist;
+      return { x: xDir * mag, y: yDir * mag };
+    })
+  );
+}
+
 export const DETECTION_FUNCTIONS = [
+  checkCenterVsRing,
   checkBw,
   checkCenterBrightness,
   checkCoolBrightness,

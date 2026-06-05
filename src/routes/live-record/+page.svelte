@@ -6,7 +6,8 @@
     warpPerspective,
     transformFull,
     computeH,
-    intersectionPoint
+    intersectionPoint,
+    computeStoneOffsets
   } from '$lib/live-record/graphicsUtils.js';
   import { Board, toSignMap } from '$lib/live-record/gobanIRL.js';
 
@@ -21,17 +22,23 @@
   let gridCorners = $state([]);
   let signMap = $state(Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0)));
   let cameraError = $state(false);
-  let stoneOffsetX = $state(0);
-  let stoneOffsetY = $state(0);
+  let minMag = $state(0);
+  let maxMag = $state(0);
+  let cameraCol = $state(0);
+  let cameraRow = $state(18);
+  let offsets = $derived(computeStoneOffsets(minMag, maxMag, cameraCol, cameraRow));
   let calibrationData = $state([]);
   let selectedFunctionIndex = $state(0);
+  let boardBaseline = $state(null);
 
   let videoEl;
   let overlayCanvas;
   let calibCanvas = $state(null);
   let captureCanvas;
   let pollInterval;
+  let draggingCorner = -1;
   let draggingGridCorner = -1;
+  let wakeLock = null;
   let videoWidth = 0;
   let videoHeight = 0;
   let rectifiedImageData = null;
@@ -40,6 +47,17 @@
 
   onMount(async () => {
     captureCanvas = document.createElement('canvas');
+
+    async function acquireWakeLock() {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+      } catch {}
+    }
+    function onVisibilityChange() {
+      if (document.visibilityState === 'visible') acquireWakeLock();
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    acquireWakeLock();
 
     let stream;
     try {
@@ -52,40 +70,62 @@
       });
     } catch {
       cameraError = true;
-      return;
     }
 
-    videoEl.srcObject = stream;
-    videoEl.addEventListener('loadedmetadata', () => {
-      videoWidth = videoEl.videoWidth;
-      videoHeight = videoEl.videoHeight;
-      captureCanvas.width = videoWidth;
-      captureCanvas.height = videoHeight;
-      overlayCanvas.width = videoWidth;
-      overlayCanvas.height = videoHeight;
-    });
-    videoEl.play();
+    if (stream) {
+      videoEl.srcObject = stream;
+      videoEl.addEventListener('loadedmetadata', () => {
+        videoWidth = videoEl.videoWidth;
+        videoHeight = videoEl.videoHeight;
+        captureCanvas.width = videoWidth;
+        captureCanvas.height = videoHeight;
+        overlayCanvas.width = videoWidth;
+        overlayCanvas.height = videoHeight;
+      });
+      videoEl.play();
+    }
 
     return () => {
-      stream.getTracks().forEach((t) => t.stop());
+      stream?.getTracks().forEach((t) => t.stop());
       clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      wakeLock?.release();
     };
   });
 
   // ---- corners phase ----
 
-  function eventToVideoCoords(e) {
-    const rect = overlayCanvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (videoWidth / rect.width);
-    const y = (e.clientY - rect.top) * (videoHeight / rect.height);
+  function eventToVideoCoords(e, rect = null) {
+    const r = rect ?? overlayCanvas.getBoundingClientRect();
+    const x = (e.clientX - r.left) * (videoWidth / r.width);
+    const y = (e.clientY - r.top) * (videoHeight / r.height);
     return { x, y };
   }
 
   function overlayPointerDown(e) {
-    if (phase !== 'corners' || corners.length >= 4) return;
+    if (phase !== 'corners') return;
     const { x, y } = eventToVideoCoords(e);
+    const hitRadius = videoWidth / 40;
+    const hitIndex = corners.findIndex((c) => Math.hypot(c.x - x, c.y - y) < hitRadius);
+    if (hitIndex >= 0) {
+      draggingCorner = hitIndex;
+      overlayCanvas.setPointerCapture(e.pointerId);
+      return;
+    }
+    if (corners.length >= 4) return;
     corners = [...corners, { x, y }];
     drawCornersOverlay();
+  }
+
+  function overlayPointerMove(e) {
+    if (phase !== 'corners' || draggingCorner < 0) return;
+    const { x, y } = eventToVideoCoords(e);
+    corners = corners.map((c, i) => (i === draggingCorner ? { x, y } : c));
+    drawCornersOverlay();
+  }
+
+  function overlayPointerUp() {
+    draggingCorner = -1;
   }
 
   function undoCorner() {
@@ -108,17 +148,17 @@
 
   // ---- grid phase ----
 
-  function eventToGridCoords(e) {
-    const rect = calibCanvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (rectifiedImageData.width / rect.width);
-    const y = (e.clientY - rect.top) * (rectifiedImageData.height / rect.height);
+  function eventToGridCoords(e, rect = null) {
+    const r = rect ?? calibCanvas.getBoundingClientRect();
+    const x = (e.clientX - r.left) * (rectifiedImageData.width / r.width);
+    const y = (e.clientY - r.top) * (rectifiedImageData.height / r.height);
     return { x, y };
   }
 
   function calibPointerDown(e) {
     if (phase !== 'grid') return;
     const { x, y } = eventToGridCoords(e);
-    const hitRadius = rectifiedImageData.width / 25;
+    const hitRadius = rectifiedImageData.width / 12;
     const hitIndex = gridCorners.findIndex((c) => Math.hypot(c.x - x, c.y - y) < hitRadius);
     if (hitIndex >= 0) {
       draggingGridCorner = hitIndex;
@@ -152,9 +192,9 @@
 
   // ---- grid-confirm phase ----
 
-  function nudge(dx, dy) {
-    stoneOffsetX += dx;
-    stoneOffsetY += dy;
+  function bumpMag(which, delta) {
+    if (which === 'min') minMag = Math.max(0, minMag + delta);
+    else maxMag = Math.max(0, maxMag + delta);
     drawCorrected();
   }
 
@@ -166,16 +206,28 @@
     drawCorrected();
   }
 
-  function startRecording() {
-    const calibrationBoard = new Board(correctedImageData, correctedCorners, {
-      offsetX: stoneOffsetX,
-      offsetY: stoneOffsetY
-    });
+  function proceedToEmptyBoard() {
+    const calibrationBoard = new Board(correctedImageData, correctedCorners, { offsets });
     calibrationData = calibrationBoard.analyzeDetectionFunctions();
-    const centerBrightnessIndex = calibrationData.findIndex(
-      (fn) => fn.name === 'checkCenterBrightness'
-    );
-    selectedFunctionIndex = centerBrightnessIndex >= 0 ? centerBrightnessIndex : 0;
+    const centerVsRingIndex = calibrationData.findIndex((fn) => fn.name === 'checkCenterVsRing');
+    selectedFunctionIndex = centerVsRingIndex >= 0 ? centerVsRingIndex : 0;
+    phase = 'empty-board';
+    drawCorrected();
+  }
+
+  function captureBaseline() {
+    const ctx = captureCanvas.getContext('2d');
+    ctx.drawImage(videoEl, 0, 0);
+    const videoImageData = ctx.getImageData(0, 0, captureCanvas.width, captureCanvas.height);
+    const rectified = warpPerspective(videoImageData, sortCorners(corners));
+    const result = transformFull(rectified, gridCorners);
+    const emptyBoard = new Board(result.imageData, result.corners, { offsets });
+    boardBaseline = calibrationData.map(({ fn }) => emptyBoard.getValues(fn));
+    calibrationData = calibrationData.map((item) => ({
+      ...item,
+      blackCutoff: -30,
+      whiteCutoff: 30
+    }));
     phase = 'live';
     pollInterval = setInterval(poll, 500);
   }
@@ -192,20 +244,35 @@
     const board = new Board(result.imageData, result.corners, {
       detectionFunction: selected.fn,
       cutoffs: { black: selected.blackCutoff, white: selected.whiteCutoff },
-      offsetX: stoneOffsetX,
-      offsetY: stoneOffsetY
+      offsets
     });
-    signMap = toSignMap(board.state);
+    if (boardBaseline) {
+      const values = board.getValues(selected.fn);
+      const baseline = boardBaseline[selectedFunctionIndex];
+      signMap = values.map((row, i) =>
+        row.map((v, j) => {
+          const delta = v - baseline[i][j];
+          if (delta < selected.blackCutoff) return 1;
+          if (delta > selected.whiteCutoff) return -1;
+          return 0;
+        })
+      );
+    } else {
+      signMap = toSignMap(board.state);
+    }
   }
 
   function recalibrate() {
     clearInterval(pollInterval);
     phase = 'corners';
     gridCorners = [];
-    stoneOffsetX = 0;
-    stoneOffsetY = 0;
+    minMag = 0;
+    maxMag = 0;
+    cameraCol = 0;
+    cameraRow = 18;
     calibrationData = [];
     selectedFunctionIndex = 0;
+    boardBaseline = null;
     signMap = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
     rectifiedImageData = null;
     correctedImageData = null;
@@ -220,7 +287,7 @@
     const ctx = overlayCanvas.getContext('2d');
     ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
-    const dotRadius = videoWidth / 60;
+    const dotRadius = videoWidth / 40;
     if (corners.length >= 2) {
       const sortedForOutline = corners.length === 4 ? sortCorners(corners) : corners;
       const [topLeft, topRight, bottomLeft, bottomRight] = sortedForOutline;
@@ -256,7 +323,7 @@
 
     for (const corner of gridCorners) {
       ctx.beginPath();
-      ctx.arc(corner.x, corner.y, 8, 0, Math.PI * 2);
+      ctx.arc(corner.x, corner.y, 14, 0, Math.PI * 2);
       ctx.fillStyle = MARKER_COLOR;
       ctx.fill();
     }
@@ -321,8 +388,8 @@
       for (let col = 0; col < BOARD_SIZE; col++) {
         ctx.beginPath();
         ctx.arc(
-          topLeft.x + col * xStep + stoneOffsetX,
-          topLeft.y + row * yStep + stoneOffsetY,
+          topLeft.x + col * xStep + offsets[row][col].x,
+          topLeft.y + row * yStep + offsets[row][col].y,
           3,
           0,
           Math.PI * 2
@@ -337,29 +404,6 @@
   {#if cameraError}
     <p class="live-record__error">Camera access denied or unavailable.</p>
   {:else}
-    <div class="live-record__camera" style:display={phase === 'corners' ? '' : 'none'}>
-      <!-- svelte-ignore a11y_media_has_caption -->
-      <video bind:this={videoEl} playsinline muted></video>
-      <canvas
-        class="live-record__overlay"
-        bind:this={overlayCanvas}
-        onpointerdown={overlayPointerDown}
-      ></canvas>
-    </div>
-
-    <canvas
-      class="live-record__calib"
-      bind:this={calibCanvas}
-      style:display={phase === 'grid' || phase === 'grid-confirm' ? '' : 'none'}
-      onpointerdown={calibPointerDown}
-      onpointermove={calibPointerMove}
-      onpointerup={calibPointerUp}
-    ></canvas>
-
-    <div class="live-record__board" style:display={phase === 'live' ? '' : 'none'}>
-      <GoBoard {signMap} size={19} interactive={false} useTheme={false} />
-    </div>
-
     <div class="live-record__controls">
       {#if phase === 'corners'}
         <p class="live-record__instruction">Tap the 4 corners of the board ({corners.length}/4)</p>
@@ -386,13 +430,55 @@
           }}>Back</button
         >
         <button onclick={recapture}>Recapture</button>
-        <div class="live-record__nudge-pad">
-          <button class="live-record__nudge-btn" onclick={() => nudge(0, -3)}>&#8963;</button>
-          <button class="live-record__nudge-btn" onclick={() => nudge(-3, 0)}>&#8249;</button>
-          <button class="live-record__nudge-btn" onclick={() => nudge(3, 0)}>&#8250;</button>
-          <button class="live-record__nudge-btn" onclick={() => nudge(0, 3)}>&#8964;</button>
+        <div class="live-record__camera-picker">
+          <button
+            class="live-record__axis-btn live-record__axis-btn--up"
+            onclick={() => {
+              cameraRow -= 1;
+              drawCorrected();
+            }}>&#8593;</button
+          >
+          <button
+            class="live-record__axis-btn live-record__axis-btn--left"
+            onclick={() => {
+              cameraCol -= 1;
+              drawCorrected();
+            }}>&#8592;</button
+          >
+          <button
+            class="live-record__axis-btn live-record__axis-btn--right"
+            onclick={() => {
+              cameraCol += 1;
+              drawCorrected();
+            }}>&#8594;</button
+          >
+          <button
+            class="live-record__axis-btn live-record__axis-btn--down"
+            onclick={() => {
+              cameraRow += 1;
+              drawCorrected();
+            }}>&#8595;</button
+          >
         </div>
-        <button onclick={startRecording}>Start recording</button>
+        <div class="live-record__camera-label">
+          camera <span class="live-record__mag-value">({cameraCol}, {cameraRow})</span>
+        </div>
+        <div class="live-record__mag-row">
+          <span>min</span>
+          <button onclick={() => bumpMag('min', -1)}>&#8249;</button>
+          <span class="live-record__mag-value">{minMag}</span>
+          <button onclick={() => bumpMag('min', 1)}>&#8250;</button>
+          <span class="live-record__mag-sep">·</span>
+          <span>max</span>
+          <button onclick={() => bumpMag('max', -1)}>&#8249;</button>
+          <span class="live-record__mag-value">{maxMag}</span>
+          <button onclick={() => bumpMag('max', 1)}>&#8250;</button>
+        </div>
+        <button onclick={proceedToEmptyBoard}>Next</button>
+      {:else if phase === 'empty-board'}
+        <p class="live-record__instruction">Clear the board, then capture the empty board</p>
+        <button onclick={recapture}>Recapture</button>
+        <button onclick={captureBaseline}>Capture baseline</button>
       {:else if phase === 'live'}
         <div class="live-record__stone-count">
           ● {signMap.flat().filter((v) => v === 1).length}
@@ -454,6 +540,33 @@
       {/if}
     </div>
 
+    <div class="live-record__camera" style:display={phase === 'corners' ? '' : 'none'}>
+      <!-- svelte-ignore a11y_media_has_caption -->
+      <video bind:this={videoEl} playsinline muted></video>
+      <canvas
+        class="live-record__overlay"
+        bind:this={overlayCanvas}
+        onpointerdown={overlayPointerDown}
+        onpointermove={overlayPointerMove}
+        onpointerup={overlayPointerUp}
+      ></canvas>
+    </div>
+
+    <canvas
+      class="live-record__calib"
+      bind:this={calibCanvas}
+      style:display={phase === 'grid' || phase === 'grid-confirm' || phase === 'empty-board'
+        ? ''
+        : 'none'}
+      onpointerdown={calibPointerDown}
+      onpointermove={calibPointerMove}
+      onpointerup={calibPointerUp}
+    ></canvas>
+
+    <div class="live-record__board" style:display={phase === 'live' ? '' : 'none'}>
+      <GoBoard {signMap} size={19} interactive={false} useTheme={false} />
+    </div>
+
     <p class="live-record__attribution">
       Experimental &middot; Based on <a
         href="https://github.com/Seth-Rothschild/goban_irl"
@@ -494,6 +607,7 @@
     width: 100%;
     height: 100%;
     cursor: crosshair;
+    touch-action: none;
   }
 
   .live-record__calib {
@@ -504,6 +618,7 @@
     cursor: crosshair;
     flex: 1;
     min-height: 0;
+    touch-action: none;
   }
 
   .live-record__board {
@@ -526,7 +641,7 @@
     font-size: 1.05rem;
   }
 
-  .live-record__nudge-pad {
+  .live-record__camera-picker {
     display: grid;
     grid-template-areas: '. up .' 'left . right' '. down .';
     grid-template-columns: repeat(3, 2.5rem);
@@ -534,27 +649,50 @@
     gap: 0.15rem;
   }
 
-  .live-record__nudge-btn {
+  .live-record__axis-btn {
     width: 2.5rem;
     height: 2.5rem;
     padding: 0;
     font-size: 1.1rem;
+  }
+
+  .live-record__axis-btn--up {
+    grid-area: up;
+  }
+  .live-record__axis-btn--left {
+    grid-area: left;
+  }
+  .live-record__axis-btn--right {
+    grid-area: right;
+  }
+  .live-record__axis-btn--down {
+    grid-area: down;
+  }
+
+  .live-record__camera-label {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 0.4rem;
+    flex-basis: 100%;
   }
 
-  .live-record__nudge-btn:nth-child(1) {
-    grid-area: up;
+  .live-record__mag-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    flex-basis: 100%;
   }
-  .live-record__nudge-btn:nth-child(2) {
-    grid-area: left;
+
+  .live-record__mag-value {
+    min-width: 2.5rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
   }
-  .live-record__nudge-btn:nth-child(3) {
-    grid-area: right;
-  }
-  .live-record__nudge-btn:nth-child(4) {
-    grid-area: down;
+
+  .live-record__mag-sep {
+    margin: 0 0.75rem;
   }
 
   .live-record__stone-count {
