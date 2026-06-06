@@ -15,6 +15,7 @@
 
   let onlineUsers = $state([]);
   let onlineGuests = $state([]);
+  let liveGames = $state([]);
   let stats = $state(null);
 
   async function refreshOnline() {
@@ -22,6 +23,7 @@
     const result = await res.json();
     onlineUsers = result.users;
     onlineGuests = result.guests;
+    liveGames = result.games;
   }
 
   async function refreshStats() {
@@ -66,6 +68,21 @@
     </ol>
     {#if onlineCount === 0}
       <div class="online-empty">No one online right now.</div>
+    {/if}
+  </div>
+
+  <div class="community__live">
+    <h2>Live Rooms</h2>
+    <ol class="online-list">
+      {#each liveGames as gameId}
+        <li>
+          <span class="online-dot"></span>
+          <a href="/play/{gameId}">{gameId}</a>
+        </li>
+      {/each}
+    </ol>
+    {#if liveGames.length === 0}
+      <div class="online-empty">No live rooms right now.</div>
     {/if}
   </div>
 

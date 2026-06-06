@@ -56,6 +56,7 @@
    ------------------------------------------------------------- */
 
 .community__online > h2,
+.community__live > h2,
 .community__stats > h2,
 .community__leaders > h2 {
   font-size: 1.7em;
@@ -98,7 +99,6 @@
 
 .online-empty {
   padding: 1.5em;
-  text-align: center;
   color: var(--c-font-dim);
 }
 

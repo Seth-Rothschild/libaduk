@@ -35,7 +35,7 @@
       <strong>{playersOnline}</strong> players online
     </a>
     <a class="lobby__counter" href="/player">
-      <strong>{gamesInPlay}</strong> games in play
+      <strong>{gamesInPlay}</strong> live rooms
     </a>
   </div>
 </div>

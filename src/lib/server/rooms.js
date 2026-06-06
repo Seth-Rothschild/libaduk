@@ -147,6 +147,14 @@ function getConnectedUsers() {
   return { users, guests };
 }
 
+export function getConnectedGames() {
+  const gameIds = [];
+  for (const [gameId, clients] of gameClients) {
+    if (clients.size > 0) gameIds.push(gameId);
+  }
+  return gameIds;
+}
+
 function generateId() {
   return Math.random().toString(36).slice(2, 8);
 }
@@ -240,7 +248,7 @@ export function getLobbyStats() {
   const { users, guests } = getOnlinePlayers();
   return {
     playersOnline: users.length + guests.length,
-    gamesInPlay: 0
+    gamesInPlay: getConnectedGames().length
   };
 }
 
