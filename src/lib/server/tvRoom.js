@@ -68,6 +68,20 @@ function pushChat(entry) {
   broadcast({ type: 'tv-chat', entry });
 }
 
+export function getConnectedUsers() {
+  const users = [];
+  const guests = [];
+  for (const socket of room.clients) {
+    if (!socket.tvName) continue;
+    if (socket.tvName.startsWith('Guest')) {
+      guests.push(socket.tvName);
+    } else {
+      users.push(socket.tvName);
+    }
+  }
+  return { users, guests };
+}
+
 export function broadcast(msg) {
   const payload = JSON.stringify(msg);
   for (const socket of room.clients) {

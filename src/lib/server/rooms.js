@@ -91,6 +91,7 @@ export function getOnlinePlayers() {
   const now = Date.now();
   const users = [];
   const guests = [];
+  const knownNames = new Set();
   for (const [name, entry] of onlinePlayers) {
     if (now - entry.lastPing > ONLINE_TIMEOUT) {
       onlinePlayers.delete(name);
@@ -100,6 +101,47 @@ export function getOnlinePlayers() {
       users.push(name);
     } else {
       guests.push(name);
+    }
+    knownNames.add(name);
+  }
+  const gameUsers = getConnectedUsers();
+  for (const name of gameUsers.users) {
+    if (!knownNames.has(name)) {
+      users.push(name);
+      knownNames.add(name);
+    }
+  }
+  for (const name of gameUsers.guests) {
+    if (!knownNames.has(name)) {
+      guests.push(name);
+      knownNames.add(name);
+    }
+  }
+
+  const tvUsers = tvRoom.getConnectedUsers();
+  for (const name of tvUsers.users) {
+    if (!knownNames.has(name)) {
+      users.push(name);
+      knownNames.add(name);
+    }
+  }
+  for (const name of tvUsers.guests) {
+    if (!knownNames.has(name)) {
+      guests.push(name);
+      knownNames.add(name);
+    }
+  }
+  return { users, guests };
+}
+
+function getConnectedUsers() {
+  const users = [];
+  const guests = [];
+  for (const clients of gameClients.values()) {
+    for (const socket of clients) {
+      const name = socket.playerName ?? socket.spectatorName;
+      if (!name) continue;
+      name.startsWith('Guest') ? guests.push(name) : users.push(name);
     }
   }
   return { users, guests };
@@ -307,6 +349,7 @@ export function attachWebSocketServer(httpServer) {
         removeFromGame(socket);
         addToGame(socket, msg.gameId);
         socket.playerColor = msg.color ?? null;
+        socket.playerName = msg.color && msg.name ? msg.name : null;
         socket.spectatorName = !msg.color && msg.name ? msg.name : null;
         if (socket.playerColor) {
           broadcast(msg.gameId, { type: 'presence', color: socket.playerColor, online: true });
