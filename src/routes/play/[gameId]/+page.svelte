@@ -33,6 +33,7 @@
   import { t } from '$lib/i18n/i18n.svelte.js';
   import ModelManager from '$lib/ai/ModelManager.svelte';
   import { formatOgsClock, formatOgsRank } from '$lib/lobby/ogsSeekGraph.svelte.js';
+  import { formatClock } from '$lib/format.js';
 
   function getOgsToken() {
     for (const pair of document.cookie.split(';')) {
@@ -800,7 +801,9 @@
       rules={gs.gamedata?.rules
         ? gs.gamedata.rules[0].toUpperCase() + gs.gamedata.rules.slice(1)
         : null}
-      timeControl={formatOgsClock(gs.gamedata?.time_control)}
+      timeControl={gs.gamedata?.time_control
+        ? formatOgsClock(gs.gamedata.time_control)
+        : formatClock(gs.timeControl)}
       handicap={gs.gamedata?.handicap ?? data.game.handicap ?? 0}
       blackRank={isSpectator && gs.gamedata
         ? formatOgsRank(gs.gamedata.players?.black?.rank)
