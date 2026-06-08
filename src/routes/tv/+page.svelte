@@ -48,6 +48,18 @@
   let chatInputText = $state('');
   let isMobile = $state(false);
 
+  const BANNER_KEY = 'tv-welcome-dismissed';
+  let bannerOpen = $state(false);
+
+  function dismissBanner() {
+    bannerOpen = false;
+    localStorage.setItem(BANNER_KEY, '1');
+  }
+
+  function openBanner() {
+    bannerOpen = true;
+  }
+
   const coordModeEnabled = $derived(boardSettings.ctrlClickBehavior !== 'nothing');
 
   function handleCtrlClick(coord) {
@@ -260,6 +272,8 @@
       }, LINGER_MS);
     };
 
+    bannerOpen = !localStorage.getItem(BANNER_KEY);
+
     const mq = window.matchMedia('(max-width: 799px)');
     isMobile = mq.matches;
     mq.addEventListener('change', (e) => (isMobile = e.matches));
@@ -284,6 +298,35 @@
 <svelte:window onkeydown={handleKeyNav} />
 
 <div class="round round--tv">
+  {#if bannerOpen}
+    <div class="tv-banner-backdrop" role="dialog" aria-modal="true" onclick={dismissBanner}>
+      <div class="tv-banner" onclick={(e) => e.stopPropagation()}>
+        <button class="tv-banner__close-x" onclick={dismissBanner} aria-label="Close">✕</button>
+        <h2 class="tv-banner__title">Welcome to the Libaduk TV Chat Room!</h2>
+        <p class="tv-banner__body">
+          Here you can see a live game from highly ranked players on <a
+            href="https://online-go.com/observe-games"
+            target="_blank"
+            rel="noopener">OGS</a
+          >, talk to other Libaduk users, and ask questions about the site. Say hello!
+        </p>
+        <div class="tv-banner__actions">
+          <a href="/about" class="tv-banner__btn tv-banner__btn--secondary">See more</a>
+          <button class="tv-banner__btn tv-banner__btn--primary" onclick={dismissBanner}
+            >Close</button
+          >
+        </div>
+      </div>
+    </div>
+  {:else}
+    <button
+      class="tv-info-btn"
+      onclick={openBanner}
+      aria-label="Show welcome info"
+      title="Show welcome info">ℹ</button
+    >
+  {/if}
+
   {#if isMobile}
     <KibbitzChat
       {username}
@@ -408,6 +451,116 @@
 
   .rmoves.rmoves--tv {
     padding: 0;
+  }
+
+  .tv-banner-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+  }
+
+  .tv-banner {
+    position: relative;
+    background: var(--c-bg-box);
+    border: 2px solid var(--c-accent);
+    border-radius: 6px;
+    padding: 2rem 2.5rem;
+    max-width: 480px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    color: var(--c-font);
+  }
+
+  .tv-banner__close-x {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 28px;
+    height: 28px;
+    background: var(--c-bg-box);
+    border: none;
+    border-radius: 50%;
+    font-size: 1rem;
+    cursor: pointer;
+    color: var(--c-font-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tv-banner__close-x:hover {
+    background: var(--c-bad);
+    color: #fff;
+  }
+
+  .tv-banner__title {
+    margin: 0 0 0.75rem;
+    font-size: 1.1rem;
+    color: var(--c-font-clearer);
+  }
+
+  .tv-banner__body {
+    margin: 0 0 1.25rem;
+    line-height: 1.5;
+    font-size: 0.95rem;
+  }
+
+  .tv-banner__actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+  }
+
+  .tv-banner__btn {
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid transparent;
+  }
+
+  .tv-banner__btn--primary {
+    background: var(--c-accent);
+    color: #fff;
+    border-color: var(--c-accent);
+  }
+
+  .tv-banner__btn--secondary {
+    background: none;
+    color: var(--c-font);
+    border-color: var(--c-border);
+  }
+
+  .tv-banner__btn--secondary:hover {
+    background: var(--c-bg-zebra);
+  }
+
+  .tv-info-btn {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 100;
+    background: none;
+    color: var(--c-font-dim);
+    border: 1px solid var(--c-border);
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tv-info-btn:hover {
+    color: var(--c-font);
+    border-color: var(--c-font-dim);
   }
 
   .find-game-btn {
