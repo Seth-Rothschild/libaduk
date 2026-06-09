@@ -190,7 +190,7 @@
         {/if}
       {/each}
     </ol>
-    <input
+    <textarea
       class="mchat__say"
       class:mchat__say--disconnected={sendFailed}
       placeholder={sendFailed

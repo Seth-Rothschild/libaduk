@@ -1173,6 +1173,7 @@ html.light .color-icon.white::before {
   color: var(--c-font);
   font: inherit;
   width: 100%;
+  resize: none;
 }
 
 .mchat__say:focus {
