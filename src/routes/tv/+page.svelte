@@ -466,7 +466,7 @@
   .tv-banner {
     position: relative;
     background: var(--c-bg-box);
-    border: 2px solid var(--c-accent);
+    border: 2px solid var(--c-secondary);
     border-radius: 6px;
     padding: 2rem 2.5rem;
     max-width: 480px;
@@ -525,9 +525,9 @@
   }
 
   .tv-banner__btn--primary {
-    background: var(--c-accent);
+    background: var(--c-secondary);
     color: #fff;
-    border-color: var(--c-accent);
+    border-color: var(--c-secondary);
   }
 
   .tv-banner__btn--secondary {
