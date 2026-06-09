@@ -882,6 +882,58 @@ export async function getRecentActivity() {
   return { games, users };
 }
 
+// --- Library ---
+
+export async function getLibraryRows() {
+  try {
+    const d = await getDb();
+    const base = { gameType: 'uploaded', 'owners.0': { $exists: false } };
+
+    const [highRankedDocs, smallBoardDocs, withScoreDocs] = await Promise.all([
+      d
+        .collection('games')
+        .find({ ...base, 'gamedata.players.black.rank': { $exists: true } })
+        .sort({ 'gamedata.players.black.rank': -1 })
+        .limit(20)
+        .toArray(),
+      d
+        .collection('games')
+        .find({ ...base, 'gamedata.width': 9 })
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .toArray(),
+      d
+        .collection('games')
+        .find({ ...base, result: { $regex: '^[BW]\\+[0-9]' } })
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .toArray()
+    ]);
+
+    const closeGames = withScoreDocs
+      .filter((g) => {
+        const match = g.result?.match(/^[BW]\+([0-9.]+)$/);
+        const margin = match ? parseFloat(match[1]) : null;
+        return margin !== null && margin < 20;
+      })
+      .slice(0, 20);
+
+    function toGame(doc) {
+      const { _id, ...rest } = doc;
+      return { id: _id, ...rest };
+    }
+
+    return {
+      highRanked: highRankedDocs.map(toGame),
+      smallBoard: smallBoardDocs.map(toGame),
+      close: closeGames.map(toGame)
+    };
+  } catch (err) {
+    console.error('[db] getLibraryRows failed:', err.message);
+    throw err;
+  }
+}
+
 // --- Sessions ---
 
 export async function createSession(token, username) {

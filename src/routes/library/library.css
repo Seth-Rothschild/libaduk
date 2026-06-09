@@ -1,0 +1,135 @@
+#library {
+  padding: 2em 0 4em;
+}
+
+.library__heading {
+  font-family: Roboto, sans-serif;
+  font-weight: 300;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  font-size: 2em;
+  color: var(--c-font-dim);
+  text-align: center;
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+  margin: 0 0 1.5em;
+}
+
+.library__row {
+  margin-bottom: 2.5em;
+}
+
+.library__row-title {
+  font-family: Roboto, sans-serif;
+  font-weight: 300;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  font-size: 1.1em;
+  color: var(--c-font-dim);
+  text-shadow: 0 1px 0 var(--c-font-shadow);
+  margin: 0;
+  padding: 0 1.5em 0.6em;
+}
+
+.library__shelf-wrap {
+  position: relative;
+}
+
+.library__shelf-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 80px;
+  height: 100%;
+  background: linear-gradient(to right, transparent, var(--c-bg-page));
+  pointer-events: none;
+}
+
+.library__shelf {
+  display: flex;
+  gap: 0.75em;
+  overflow-x: auto;
+  padding: 0.25em 1.5em 2.5em;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-border) transparent;
+}
+
+.library__shelf::-webkit-scrollbar {
+  height: 5px;
+}
+
+.library__shelf::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.library__shelf::-webkit-scrollbar-thumb {
+  background: var(--c-border);
+  border-radius: 3px;
+}
+
+.library__card {
+  flex: 0 0 260px;
+  border-radius: 7px;
+  background: var(--c-bg-box);
+  border: 1px solid var(--c-border);
+  overflow: hidden;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+  text-decoration: none;
+  color: var(--c-font);
+  display: block;
+  position: relative;
+}
+
+.library__card {
+  transform-origin: top center;
+}
+
+.library__card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  border-color: var(--c-primary);
+  z-index: 1;
+}
+
+html.light .library__card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.library__card-board {
+  width: 260px;
+  height: 260px;
+  display: block;
+}
+
+.library__card-info {
+  padding: 0.5em 0.65em 0.65em;
+  border-top: 1px solid var(--c-border);
+  font-size: 0.83em;
+}
+
+.library__card-players {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--c-font-clearer);
+  line-height: 1.4;
+}
+
+.library__card-meta {
+  color: var(--c-font-dim);
+  margin-top: 0.15em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.library__empty {
+  color: var(--c-font-dim);
+  font-style: italic;
+  padding: 0 1.5em;
+  margin: 0;
+}

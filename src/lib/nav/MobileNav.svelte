@@ -24,6 +24,7 @@
     <a href="/learn" onclick={onClose}>{t('Learn')}</a>
     <div role="group">
       <a href="/learn" onclick={onClose}>{t('Lessons')}</a>
+      <a href="/library" onclick={onClose}>{t('Library')}</a>
     </div>
   </section>
   <section>

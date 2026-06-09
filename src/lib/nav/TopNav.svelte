@@ -18,6 +18,7 @@
     <a href="/learn">{t('Learn')}</a>
     <div role="group">
       <a href="/learn">{t('Lessons')}</a>
+      <a href="/library">{t('Library')}</a>
     </div>
   </section>
   <section>
