@@ -3,7 +3,7 @@
 // standard message format so the client needs no OGS-specific code.
 
 import { WebSocket } from 'ws';
-import { parseSgfCoords } from '$lib/game/board/sgf.js';
+import { parseSgfCoords } from '../game/board/sgf.js';
 
 async function fetchOgsJwt(ogsToken) {
   const headers = ogsToken ? { Authorization: `Bearer ${ogsToken}` } : {};
