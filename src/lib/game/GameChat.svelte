@@ -18,7 +18,20 @@
 
   const COL_LETTERS = 'ABCDEFGHJKLMNOPQRST';
 
+  function parseIfReviewJson(text) {
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed?.type === 'review' && parsed.review_id) {
+        return `https://online-go.com/review/${parsed.review_id}`;
+      }
+    } catch {
+      // not JSON
+    }
+    return text;
+  }
+
   function parseMessageParts(text) {
+    text = parseIfReviewJson(text);
     const isCoord = (word) => /^[A-HJ-Ta-hj-t]\d{1,2}$/i.test(word);
     const isURL = (word) => /^https?:\/\/\S+$/.test(word);
     const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
