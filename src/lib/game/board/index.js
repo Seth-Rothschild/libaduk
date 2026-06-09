@@ -28,6 +28,7 @@ export {
 export {
   exportSgf,
   parseSgf,
+  parseSgfCoords,
   sgfNodeToMove,
   sgfNodeMarkers,
   sgfNodeComment,

@@ -289,6 +289,17 @@ export function sgfNodeComment(sgfNode) {
   return values[0];
 }
 
+export function parseSgfCoords(sgfString) {
+  if (!sgfString) return [];
+  const coords = [];
+  for (let i = 0; i + 1 < sgfString.length; i += 2) {
+    const x = sgfString.charCodeAt(i) - 97;
+    const y = sgfString.charCodeAt(i + 1) - 97;
+    coords.push([x, y]);
+  }
+  return coords;
+}
+
 export function sgfNodeSetup(sgfNode, size) {
   const setup = [];
   for (const coord of sgfNode.props.AB || []) {

@@ -1,19 +1,8 @@
 import { browser } from '$app/environment';
 import { formatOgsClock } from '$lib/lobby/ogsSeekGraph.svelte.js';
 import GoBoardLib from '@sabaki/go-board';
-import { applyMoveWithShifts } from '$lib/game/board';
+import { applyMoveWithShifts, parseSgfCoords } from '$lib/game/board';
 import { emptyShiftMap } from '$lib/game/board/helpers.js';
-
-function parseSgfCoords(sgfString) {
-  if (!sgfString) return [];
-  const coords = [];
-  for (let i = 0; i + 1 < sgfString.length; i += 2) {
-    const x = sgfString.charCodeAt(i) - 97;
-    const y = sgfString.charCodeAt(i + 1) - 97;
-    coords.push([x, y]);
-  }
-  return coords;
-}
 
 class OgsLiveGame {
   game = $state(null);

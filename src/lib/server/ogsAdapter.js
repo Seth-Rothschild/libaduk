@@ -3,6 +3,7 @@
 // standard message format so the client needs no OGS-specific code.
 
 import { WebSocket } from 'ws';
+import { parseSgfCoords } from '$lib/game/board/sgf.js';
 
 async function fetchOgsJwt(ogsToken) {
   const headers = ogsToken ? { Authorization: `Bearer ${ogsToken}` } : {};
@@ -14,17 +15,6 @@ async function fetchOgsJwt(ogsToken) {
 
 function toSgfCoord(x, y) {
   return String.fromCharCode(97 + x) + String.fromCharCode(97 + y);
-}
-
-function parseSgfCoords(sgfString) {
-  if (!sgfString) return [];
-  const coords = [];
-  for (let i = 0; i + 1 < sgfString.length; i += 2) {
-    const x = sgfString.charCodeAt(i) - 97;
-    const y = sgfString.charCodeAt(i + 1) - 97;
-    coords.push([x, y]);
-  }
-  return coords;
 }
 
 function ogsTimeToClockData(t) {

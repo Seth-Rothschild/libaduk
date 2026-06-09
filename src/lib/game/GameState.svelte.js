@@ -3,6 +3,7 @@ import {
   applySetup,
   applyMoveWithShifts,
   replayMovesWithHistory,
+  parseSgfCoords,
   emptyShiftMap
 } from '$lib/game/board';
 
@@ -221,21 +222,33 @@ export class GameState {
     else if (viewerColor === 'white') this.mySign = -1;
     else this.mySign = null;
 
+    const handicapCoords = parseSgfCoords(gamedata.initial_state?.black ?? '');
+    const hasHandicap = handicapCoords.length > 0;
+    const stoneSetup = handicapCoords.map(([x, y]) => ({ x, y, sign: 1 }));
+    const initialBoard = hasHandicap ? applySetup(createBoard(this.boardSize), stoneSetup) : null;
+
     const moves = (gamedata.moves ?? []).map(([x, y]) =>
       x < 0 ? { type: 'pass' } : { type: 'move', x, y }
     );
 
     if (moves.length > 0) {
-      const replay = replayMovesWithHistory(moves, this.boardSize, null);
+      const replay = replayMovesWithHistory(moves, this.boardSize, initialBoard);
       this.board = replay.board;
       this.shiftMap = replay.shiftMap;
       this.boardHistory = replay.boards;
       this.lastMoveHistory = replay.lastMoves;
       this.shiftMapHistory = replay.shiftMaps;
       this.consecutivePasses = 0;
-      this.currentSign = moves.length % 2 === 0 ? 1 : -1;
+      const whiteFirst = hasHandicap;
+      this.currentSign = moves.length % 2 === 0 ? (whiteFirst ? -1 : 1) : whiteFirst ? 1 : -1;
       const lastMove = moves.at(-1);
       if (lastMove?.type === 'move') this.lastMove = [lastMove.x, lastMove.y];
+    } else if (hasHandicap) {
+      this.board = initialBoard;
+      this.boardHistory = [initialBoard];
+      this.lastMoveHistory = [null];
+      this.shiftMapHistory = [emptyShiftMap(this.boardSize)];
+      this.currentSign = -1;
     } else {
       this.board = createBoard(this.boardSize);
       this.boardHistory = [this.board];
