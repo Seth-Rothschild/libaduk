@@ -1,16 +1,61 @@
 <script>
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import GoBoard from '$lib/game/GoBoard.svelte';
   import { replayMoves, placeStones, createBoard } from '$lib/game/board';
   import { formatOgsRank } from '$lib/lobby/ogsSeekGraph.svelte.js';
   import './library.css';
 
   let rows = $state({ highRanked: [], smallBoard: [], close: [] });
+  let query = $state('');
+  let importError = $state('');
 
   onMount(async () => {
     const res = await fetch('/api/library-games');
     rows = await res.json();
   });
+
+  const looksLikeOgsId = $derived(/^\d+$/.test(query.trim()) || query.includes('online-go.com'));
+
+  const filteredRows = $derived.by(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return rows;
+    function matchesQuery(game) {
+      const black = (game.gamedata?.players?.black?.username ?? game.blackName ?? '').toLowerCase();
+      const white = (game.gamedata?.players?.white?.username ?? game.whiteName ?? '').toLowerCase();
+      return black.includes(q) || white.includes(q);
+    }
+    return {
+      highRanked: rows.highRanked.filter(matchesQuery),
+      smallBoard: rows.smallBoard.filter(matchesQuery),
+      close: rows.close.filter(matchesQuery)
+    };
+  });
+
+  function parseOgsId(input) {
+    const match = input.match(/(\d+)/);
+    return match ? match[1] : null;
+  }
+
+  async function importGame() {
+    importError = '';
+    const ogsGameId = parseOgsId(query);
+    if (!ogsGameId) {
+      importError = 'Enter a valid OGS game link or ID.';
+      return;
+    }
+    const res = await fetch('/api/game/from-ogs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ogsGameId })
+    });
+    if (!res.ok) {
+      importError = 'Import failed.';
+      return;
+    }
+    const { id } = await res.json();
+    goto(`/play/${id}`);
+  }
 
   function boardSize(game) {
     return game.gamedata?.width ?? game.size ?? 19;
@@ -53,8 +98,26 @@
 <main id="library">
   <h1 class="library__heading">Library</h1>
 
+  <div class="library__search">
+    <div class="library__search-wrap">
+      <input
+        class="library__search-input"
+        type="text"
+        placeholder="Search games or paste an OGS link to import"
+        bind:value={query}
+        onkeydown={(e) => looksLikeOgsId && e.key === 'Enter' && importGame()}
+      />
+      {#if looksLikeOgsId}
+        <button class="library__search-btn" onclick={importGame}>Import</button>
+      {/if}
+    </div>
+    {#if importError}
+      <p class="library__empty">{importError}</p>
+    {/if}
+  </div>
+
   {#each SECTIONS as section}
-    {@const games = rows[section.key]}
+    {@const games = filteredRows[section.key]}
     <section class="library__row">
       <h2 class="library__row-title">{section.title}</h2>
       {#if games.length === 0}

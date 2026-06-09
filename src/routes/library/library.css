@@ -127,6 +127,52 @@ html.light .library__card:hover {
   text-overflow: ellipsis;
 }
 
+.library__search {
+  padding: 0 1.5em 2em;
+}
+
+.library__search-wrap {
+  position: relative;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.library__search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6em 1em;
+  padding-right: 6em;
+  background: var(--c-bg-box);
+  border: 1px solid var(--c-border);
+  border-radius: 7px;
+  color: var(--c-font);
+  font-size: 0.95em;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.library__search-input:focus {
+  border-color: var(--c-primary);
+}
+
+.library__search-btn {
+  position: absolute;
+  right: 0.4em;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.3em 0.8em;
+  background: var(--c-primary);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+
+.library__search-btn:hover {
+  filter: brightness(1.1);
+}
+
 .library__empty {
   color: var(--c-font-dim);
   font-style: italic;
