@@ -630,6 +630,9 @@
 
     untrack(() => {
       gs.initFromData(data.game, data.viewerColor);
+      if (page.url.searchParams.has('analysis') && gs.totalPly > 0) {
+        enterAnalysis();
+      }
       if (gs.mySign === null) {
         if (blackName === displayName) gs.mySign = 1;
         else if (whiteName === displayName) gs.mySign = -1;
@@ -725,6 +728,9 @@
           blackName = msg.gamedata.players?.black?.username ?? blackName;
           whiteName = msg.gamedata.players?.white?.username ?? whiteName;
           komi = msg.gamedata.komi ?? komi;
+          if (page.url.searchParams.has('analysis')) {
+            enterAnalysis();
+          }
         }
         if (msg.type === 'my-color') {
           if (msg.color) gs.mySign = msg.color === 'black' ? 1 : -1;
@@ -805,12 +811,8 @@
         ? formatOgsClock(gs.gamedata.time_control)
         : formatClock(gs.timeControl)}
       handicap={gs.gamedata?.handicap ?? data.game.handicap ?? 0}
-      blackRank={isSpectator && gs.gamedata
-        ? formatOgsRank(gs.gamedata.players?.black?.rank)
-        : null}
-      whiteRank={isSpectator && gs.gamedata
-        ? formatOgsRank(gs.gamedata.players?.white?.rank)
-        : null}
+      blackRank={isSpectator && gs.gamedata ? formatOgsRank(gs.gamedata.players?.black) : null}
+      whiteRank={isSpectator && gs.gamedata ? formatOgsRank(gs.gamedata.players?.white) : null}
     />
     {#if analysisMode}
       <AnalysisInfo

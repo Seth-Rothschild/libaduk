@@ -887,47 +887,50 @@ export async function getRecentActivity() {
 export async function getLibraryRows() {
   try {
     const d = await getDb();
-    const base = { gameType: 'uploaded', 'owners.0': { $exists: false } };
-
-    const [highRankedDocs, smallBoardDocs, withScoreDocs] = await Promise.all([
-      d
-        .collection('games')
-        .find({ ...base, 'gamedata.players.black.rank': { $exists: true } })
-        .sort({ 'gamedata.players.black.rank': -1 })
-        .limit(20)
-        .toArray(),
-      d
-        .collection('games')
-        .find({ ...base, 'gamedata.width': 9 })
-        .sort({ createdAt: -1 })
-        .limit(20)
-        .toArray(),
-      d
-        .collection('games')
-        .find({ ...base, result: { $regex: '^[BW]\\+[0-9]' } })
-        .sort({ createdAt: -1 })
-        .limit(100)
-        .toArray()
-    ]);
-
-    const closeGames = withScoreDocs
-      .filter((g) => {
-        const match = g.result?.match(/^[BW]\+([0-9.]+)$/);
-        const margin = match ? parseFloat(match[1]) : null;
-        return margin !== null && margin < 20;
-      })
-      .slice(0, 20);
+    const docs = await d
+      .collection('games')
+      .find({ gameType: 'uploaded', 'owners.0': { $exists: false } })
+      .toArray();
 
     function toGame(doc) {
       const { _id, ...rest } = doc;
       return { id: _id, ...rest };
     }
 
-    return {
-      highRanked: highRankedDocs.map(toGame),
-      smallBoard: smallBoardDocs.map(toGame),
-      close: closeGames.map(toGame)
-    };
+    function playerRanking(player) {
+      return player?.ranking ?? player?.rank ?? -Infinity;
+    }
+
+    function combinedRanking(doc) {
+      return (
+        playerRanking(doc.gamedata?.players?.black) + playerRanking(doc.gamedata?.players?.white)
+      );
+    }
+
+    const all = docs.map(toGame);
+
+    function isPro(player) {
+      return !!(player?.pro || player?.professional);
+    }
+
+    const recent = [...all].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)).slice(0, 20);
+
+    const highRanked = [...all]
+      .filter((g) => playerRanking(g.gamedata?.players?.black) !== -Infinity)
+      .sort((a, b) => combinedRanking(b) - combinedRanking(a))
+      .slice(0, 20);
+
+    const smallBoard = [...all]
+      .filter((g) => (g.gamedata?.width ?? g.size) === 9)
+      .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+      .slice(0, 20);
+
+    const proGames = [...all]
+      .filter((g) => isPro(g.gamedata?.players?.black) || isPro(g.gamedata?.players?.white))
+      .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+      .slice(0, 20);
+
+    return { recent, highRanked, smallBoard, proGames };
   } catch (err) {
     console.error('[db] getLibraryRows failed:', err.message);
     throw err;

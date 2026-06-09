@@ -6,7 +6,7 @@
   import { formatOgsRank } from '$lib/lobby/ogsSeekGraph.svelte.js';
   import './library.css';
 
-  let rows = $state({ highRanked: [], smallBoard: [], close: [] });
+  let rows = $state({ recent: [], highRanked: [], smallBoard: [], proGames: [] });
   let query = $state('');
   let importError = $state('');
 
@@ -23,12 +23,14 @@
     function matchesQuery(game) {
       const black = (game.gamedata?.players?.black?.username ?? game.blackName ?? '').toLowerCase();
       const white = (game.gamedata?.players?.white?.username ?? game.whiteName ?? '').toLowerCase();
-      return black.includes(q) || white.includes(q);
+      const ogsId = parseOgsId(query);
+      return black.includes(q) || white.includes(q) || (ogsId && game.ogsGameId === ogsId);
     }
     return {
+      recent: rows.recent.filter(matchesQuery),
       highRanked: rows.highRanked.filter(matchesQuery),
       smallBoard: rows.smallBoard.filter(matchesQuery),
-      close: rows.close.filter(matchesQuery)
+      proGames: rows.proGames.filter(matchesQuery)
     };
   });
 
@@ -89,14 +91,15 @@
   }
 
   const SECTIONS = [
+    { key: 'recent', title: 'Recently Uploaded' },
     { key: 'highRanked', title: 'High Ranked Games' },
     { key: 'smallBoard', title: '9×9 Games' },
-    { key: 'close', title: 'Close Games' }
+    { key: 'proGames', title: 'Pro Games' }
   ];
 </script>
 
 <main id="library">
-  <h1 class="library__heading">Library</h1>
+  <h1 class="library__heading">Game Library</h1>
 
   <div class="library__search">
     <div class="library__search-wrap">
@@ -127,7 +130,7 @@
           <div class="library__shelf">
             {#each games as game}
               {@const size = boardSize(game)}
-              <a class="library__card" href="/play/{game.id}">
+              <a class="library__card" href="/play/{game.id}?analysis=1">
                 <div class="library__card-board">
                   <GoBoard signMap={signMapForGame(game)} {size} interactive={false} />
                 </div>
