@@ -212,18 +212,18 @@
           </li>
         {/each}
       </ol>
-      {#if !readOnly}
-        <textarea
-          class="mchat__say"
-          class:mchat__say--disconnected={sendFailed}
-          placeholder={sendFailed
-            ? 'Disconnected — message not sent'
+      <textarea
+        class="mchat__say"
+        class:mchat__say--disconnected={sendFailed}
+        placeholder={sendFailed
+          ? 'Disconnected — message not sent'
+          : readOnly
+            ? 'Chat with viewers · not sent to OGS'
             : 'Please be nice in the chat!'}
-          aria-label="Chat message"
-          bind:value={inputText}
-          onkeydown={handleKeydown}
-        />
-      {/if}
+        aria-label="Chat message"
+        bind:value={inputText}
+        onkeydown={handleKeydown}
+      />
       {#if presetsVisible && !readOnly}
         <div class="mchat__presets" role="group" aria-label="Quick messages">
           {#each activePresets as preset}

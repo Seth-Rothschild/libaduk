@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { appendChat } from '$lib/server/db.js';
+import { appendChat, getGame } from '$lib/server/db.js';
 import { broadcast, getOgsAdapter } from '$lib/server/rooms.js';
 
 export async function POST({ request }) {
@@ -13,7 +13,8 @@ export async function POST({ request }) {
   const entry = { user, text, t: Date.now() };
   await appendChat(gameId, entry);
   broadcast(gameId, { type: 'chat', user, text });
+  const game = await getGame(gameId);
   const ogsAdapter = getOgsAdapter(gameId);
-  if (ogsAdapter) ogsAdapter.sendChat(text);
+  if (ogsAdapter && game?.gameType === 'ogs') ogsAdapter.sendChat(text);
   return json({ ok: true });
 }
