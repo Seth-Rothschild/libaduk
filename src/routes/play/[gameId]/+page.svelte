@@ -27,7 +27,8 @@
     buildScoreBoard,
     toggleDeadStones,
     scoreVerdictShort,
-    exportSgf
+    exportSgf,
+    parseSgfCoords
   } from '$lib/game/board';
   import { initEngine, generateMove, hasModel, isReady, dispose } from '$lib/ai/engine.js';
   import { t } from '$lib/i18n/i18n.svelte.js';
@@ -318,7 +319,10 @@
 
   function enterAnalysisFromMoves() {
     analysis = new AnalysisState(gs.boardSize, komi);
-    const handicapStones = data.game.handicapStones ?? [];
+    const ogsHandicap = gs.gamedata?.initial_state?.black;
+    const handicapStones = ogsHandicap
+      ? parseSgfCoords(ogsHandicap).map(([x, y]) => ({ x, y }))
+      : (data.game.handicapStones ?? []);
     const moves = [];
     for (let i = 1; i < gs.lastMoveHistory.length; i++) {
       const vertex = gs.lastMoveHistory[i];
@@ -364,6 +368,15 @@
     analysis = null;
     memorize = null;
     gameSocket.send({ type: 'analysis-exit' });
+  }
+
+  function resetAnalysis() {
+    savedAnalysisTree = null;
+    savedAnalysisPath = null;
+    analysis = null;
+    memorize = null;
+    enterAnalysisFromMoves();
+    persistAnalysisTree();
   }
 
   function persistAnalysisTree() {
@@ -1163,6 +1176,7 @@
           { label: t('Export SGF'), onclick: downloadSgf },
           { label: t('Open as Kifu'), href: `/kifu/${gameId}` },
           { label: t('Open scratch board'), href: `/scratch/${gameId}` },
+          { label: t('Reset analysis'), onclick: resetAnalysis },
           { label: t('Back to game'), onclick: exitAnalysis }
         ]}
       />
