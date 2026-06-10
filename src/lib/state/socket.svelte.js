@@ -30,9 +30,10 @@ class GameSocket {
     this.status = 'connecting';
     const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
     const url = `${protocol}://${location.host}/ws`;
-    this.#ws = new WebSocket(url);
+    const ws = new WebSocket(url);
+    this.#ws = ws;
 
-    this.#ws.addEventListener('open', () => {
+    ws.addEventListener('open', () => {
       this.status = 'connected';
       this.#reconnectDelay = 1000;
       if (this.#gameId) {
@@ -43,12 +44,13 @@ class GameSocket {
       }
     });
 
-    this.#ws.addEventListener('message', (e) => {
+    ws.addEventListener('message', (e) => {
       const msg = JSON.parse(e.data);
       this.#onMessage?.(msg);
     });
 
-    this.#ws.addEventListener('close', () => {
+    ws.addEventListener('close', () => {
+      if (this.#ws !== ws) return;
       this.#ws = null;
       if (this.#intentionalClose) {
         this.status = 'disconnected';
@@ -58,8 +60,8 @@ class GameSocket {
       this.#scheduleReconnect();
     });
 
-    this.#ws.addEventListener('error', () => {
-      this.#ws?.close();
+    ws.addEventListener('error', () => {
+      ws.close();
     });
   }
 

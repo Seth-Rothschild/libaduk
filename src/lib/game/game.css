@@ -261,6 +261,11 @@
   padding: 1em;
 }
 
+.rmoves.rmoves--analysis {
+  padding: 0;
+  justify-content: flex-start;
+}
+
 .rmoves .message {
   display: flex;
   align-items: center;

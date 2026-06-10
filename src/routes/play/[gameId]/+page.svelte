@@ -294,7 +294,17 @@
 
   let analysis = $state(null);
   let memorize = $state(null);
+  let movesAreaEl = $state(null);
   const analysisMode = $derived(analysis !== null);
+
+  const currentMoveNum = $derived.by(() => {
+    if (!analysis) return null;
+    for (const row of analysis.moveRows) {
+      if (row.black === analysis.currentNode) return row.moveNum * 2 - 1;
+      if (row.white === analysis.currentNode) return row.moveNum * 2;
+    }
+    return null;
+  });
 
   // Tracks the latest analysis tree. data.game.analysisTree is a page-load snapshot
   // and goes stale as moves are made, so we keep our own up-to-date copy.
@@ -340,6 +350,8 @@
     if (analysis) return;
     if (savedAnalysisTree) {
       enterAnalysisFromTree(savedAnalysisTree, savedAnalysisPath);
+    } else if (data.game.analysisTree) {
+      enterAnalysisFromTree(data.game.analysisTree, data.game.currentNodePath ?? null);
     } else {
       enterAnalysisFromMoves();
     }
@@ -410,6 +422,15 @@
     analysis.animatedVertex = null;
     persistAnalysisTree();
   }
+
+  $effect(() => {
+    if (!analysis || !movesAreaEl) return;
+    analysis.currentNode;
+    const scroller = movesAreaEl.querySelector('.analysis-moves');
+    if (!scroller) return;
+    const active = scroller.querySelector('.move-entry.active');
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  });
 
   // --- Game actions ---
 
@@ -1000,7 +1021,7 @@
       online={isAI || isOgs ? null : topStripColor === 'black' ? blackOnline : whiteOnline}
     />
 
-    <div class="rmoves">
+    <div class="rmoves" class:rmoves--analysis={analysisMode} bind:this={movesAreaEl}>
       {#if analysisMode}
         <AnalysisMoves
           analysisMoveRows={analysis.moveRows}
@@ -1043,6 +1064,7 @@
           currentNode={analysis.currentNode}
           version={analysis.version}
           onSelectNode={navigateAnalysisTo}
+          moveNum={currentMoveNum}
         />
       </div>
     {/if}

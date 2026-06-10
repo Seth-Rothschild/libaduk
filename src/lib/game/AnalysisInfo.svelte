@@ -27,14 +27,14 @@
     <span class="color-icon is black text">{blackCaptures}</span>
     <span class="color-icon is white text">{whiteCaptures}</span>
   </div>
-  {#if lastMoveCoord}
-    <div class="current-move-info">
+  <div class="current-move-info">
+    {#if lastMoveCoord}
       <span class="move-label">{lastMoveColor} {lastMoveCoord}</span>
       {#if currentNode.moveName}
         <span class="move-pattern">{currentNode.moveName}</span>
       {/if}
-    </div>
-  {/if}
+    {/if}
+  </div>
   <div class="comment-section">
     <textarea
       class="comment-input"
@@ -62,6 +62,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.15em;
+    min-height: 3em;
   }
 
   .move-label {

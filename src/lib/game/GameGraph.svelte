@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
 
-  let { root, currentNode, onSelectNode, version = 0 } = $props();
+  let { root, currentNode, onSelectNode, version = 0, moveNum = null } = $props();
 
   const GRID = 22;
   const NODE_RADIUS = 5;
@@ -157,7 +157,11 @@
     remeasure();
     const observer = new ResizeObserver(() => remeasure());
     observer.observe(containerEl);
-    return () => observer.disconnect();
+    containerEl.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      observer.disconnect();
+      containerEl.removeEventListener('wheel', handleWheel);
+    };
   });
 
   let dragging = $state(false);
@@ -175,6 +179,15 @@
   function handleMouseUp() {
     dragging = false;
   }
+
+  function handleWheel(e) {
+    e.preventDefault();
+    if (e.deltaY < 0 && currentNode?.parent) {
+      onSelectNode?.(currentNode.parent);
+    } else if (e.deltaY > 0 && currentNode?.children.length > 0) {
+      onSelectNode?.(currentNode.children[0]);
+    }
+  }
 </script>
 
 <svelte:window onmouseup={handleMouseUp} onmousemove={handleMouseMove} />
@@ -187,6 +200,9 @@
   onclick={handleClick}
   onmousedown={handleMouseDown}
 >
+  {#if moveNum !== null}
+    <span class="move-num">{moveNum}</span>
+  {/if}
   {#if svgWidth > 0 && svgHeight > 0}
     <svg width={svgWidth} height={svgHeight}>
       <g transform="translate({-cameraX}, {-cameraY})">
@@ -254,6 +270,17 @@
     background: var(--c-bg-low, var(--c-bg-box));
     border-top: 1px solid var(--c-border);
     user-select: none;
+    position: relative;
+  }
+
+  .move-num {
+    position: absolute;
+    bottom: 4px;
+    right: 6px;
+    font-size: 0.75em;
+    color: var(--c-font-dim, #888);
+    pointer-events: none;
+    z-index: 1;
   }
 
   .game-graph:active {

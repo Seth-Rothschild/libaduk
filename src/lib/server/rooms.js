@@ -317,18 +317,19 @@ function spectatorNames(gameId) {
 export function attachWebSocketServer(httpServer) {
   const wss = new WebSocketServer({ noServer: true });
 
-  setInterval(async () => {
-    for (const [gameId, clients] of gameClients) {
-      const game = await db.getGame(gameId);
-      if (game?.analysisActive && game?.analysisTree) {
-        broadcast(gameId, {
-          type: 'analysis-tree',
-          tree: game.analysisTree,
-          path: game.currentNodePath ?? null
-        });
-      }
-    }
-  }, 5000);
+  //// Stopgap to force synchronization. Confirming with users if the issues are resolved before removing.
+  // setInterval(async () => {
+  //   for (const [gameId, clients] of gameClients) {
+  //     const game = await db.getGame(gameId);
+  //     if (game?.analysisActive && game?.analysisTree) {
+  //       broadcast(gameId, {
+  //         type: 'analysis-tree',
+  //         tree: game.analysisTree,
+  //         path: game.currentNodePath ?? null
+  //       });
+  //     }
+  //   }
+  // }, 5000);
 
   httpServer.on('upgrade', (req, socket, head) => {
     if (req.url === '/ws') {

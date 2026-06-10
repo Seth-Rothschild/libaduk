@@ -25,9 +25,6 @@
                 onclick={() => onSelectNode(row.black)}
               >
                 {formatVertex(row.black.lastMove, boardSize)}
-                {#if row.black.moveName}
-                  <span class="move-name">{row.black.moveName}</span>
-                {/if}
                 {#if row.black.children.length > 1}
                   <span class="move-branches">⑂</span>
                 {/if}
@@ -41,9 +38,6 @@
                   onclick={() => onSelectNode(row.white)}
                 >
                   {formatVertex(row.white.lastMove, boardSize)}
-                  {#if row.white.moveName}
-                    <span class="move-name">{row.white.moveName}</span>
-                  {/if}
                   {#if row.white.children.length > 1}
                     <span class="move-branches">⑂</span>
                   {/if}
