@@ -9,6 +9,12 @@
   let rows = $state({ recent: [], highRanked: [], smallBoard: [], proGames: [] });
   let query = $state('');
   let importError = $state('');
+  let limits = $state({ recent: 8, highRanked: 8, smallBoard: 8, proGames: 8 });
+
+  $effect(() => {
+    filteredRows;
+    limits = { recent: 8, highRanked: 8, smallBoard: 8, proGames: 8 };
+  });
 
   onMount(async () => {
     const res = await fetch('/api/library-games');
@@ -90,6 +96,18 @@
     return playerLabel(game.gamedata?.players?.white, game.whiteName ?? 'White');
   }
 
+  function lazyScroll(node, onVisible) {
+    const wrap = node.closest('.library__shelf-wrap');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) onVisible();
+      },
+      { root: wrap, rootMargin: '400px' }
+    );
+    observer.observe(node);
+    return { destroy: () => observer.disconnect() };
+  }
+
   const SECTIONS = [
     { key: 'recent', title: 'Recently Uploaded' },
     { key: 'highRanked', title: 'High Ranked Games' },
@@ -121,6 +139,7 @@
 
   {#each SECTIONS as section}
     {@const games = filteredRows[section.key]}
+    {@const displayed = games.slice(0, limits[section.key])}
     <section class="library__row">
       <h2 class="library__row-title">{section.title}</h2>
       {#if games.length === 0}
@@ -128,7 +147,7 @@
       {:else}
         <div class="library__shelf-wrap">
           <div class="library__shelf">
-            {#each games as game}
+            {#each displayed as game}
               {@const size = boardSize(game)}
               <a class="library__card" href="/play/{game.id}?analysis=1">
                 <div class="library__card-board">
@@ -144,6 +163,9 @@
                 </div>
               </a>
             {/each}
+            {#if displayed.length < games.length}
+              <div use:lazyScroll={() => (limits[section.key] += 5)}></div>
+            {/if}
           </div>
         </div>
       {/if}
