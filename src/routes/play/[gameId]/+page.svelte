@@ -11,6 +11,27 @@
   import { getMe } from '$lib/state/user.svelte.js';
   import { GameState } from '$lib/game/GameState.svelte.js';
   import { AnalysisState, serializeTree, getNodePath } from '$lib/game/analysisState.svelte.js';
+
+  function getNodeMoveNum(node) {
+    let depth = 0;
+    let n = node;
+    while (n.parent) {
+      depth++;
+      n = n.parent;
+    }
+    return depth;
+  }
+
+  function scrollActiveIntoView(el, isActive) {
+    $effect(() => {
+      if (isActive) el.scrollIntoView({ block: 'nearest' });
+    });
+    return {
+      update(newIsActive) {
+        if (newIsActive) el.scrollIntoView({ block: 'nearest' });
+      }
+    };
+  }
   import { MemorizeState } from '$lib/game/memorizeState.svelte.js';
   import { gameSocket } from '$lib/state/socket.svelte.js';
   import GameChat from '$lib/game/GameChat.svelte';
@@ -28,7 +49,8 @@
     toggleDeadStones,
     scoreVerdictShort,
     exportSgf,
-    parseSgfCoords
+    parseSgfCoords,
+    formatVertex
   } from '$lib/game/board';
   import { initEngine, generateMove, hasModel, isReady, dispose } from '$lib/ai/engine.js';
   import { t } from '$lib/i18n/i18n.svelte.js';
@@ -628,6 +650,22 @@
         }
         return;
       }
+      if (e.shiftKey) {
+        e.preventDefault();
+        const bookmarks = analysis.bookmarks;
+        if (bookmarks.length > 0) {
+          const idx = bookmarks.findIndex((b) => b.node === analysis.currentNode);
+          if (e.key === 'ArrowUp') {
+            const target = idx > 0 ? bookmarks[idx - 1] : bookmarks[bookmarks.length - 1];
+            navigateAnalysisTo(target.node);
+          } else if (e.key === 'ArrowDown') {
+            const target =
+              idx >= 0 && idx < bookmarks.length - 1 ? bookmarks[idx + 1] : bookmarks[0];
+            navigateAnalysisTo(target.node);
+          }
+        }
+        return;
+      }
       const keyMap = {
         ArrowUp: 'prev',
         ArrowDown: 'next',
@@ -859,6 +897,16 @@
           analysis.setComment(text);
           persistAnalysisTree();
         }}
+        isBookmarked={!!analysis.currentBookmark}
+        bookmarkName={analysis.currentBookmark?.name ?? ''}
+        onBookmark={() => {
+          analysis.toggleBookmark(displayName);
+          persistAnalysisTree();
+        }}
+        onBookmarkRename={(name) => {
+          analysis.setBookmarkName(name);
+          persistAnalysisTree();
+        }}
       />
     {/if}
     <GameChat
@@ -1023,6 +1071,36 @@
 
     <div class="rmoves" class:rmoves--analysis={analysisMode} bind:this={movesAreaEl}>
       {#if analysisMode}
+        {#if !memorize?.active && analysis.bookmarks.length > 0}
+          <div class="bookmark-list">
+            <table class="moves-table">
+              <thead>
+                <tr>
+                  <th class="moves-col-num"></th>
+                  <th>Bookmarks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each analysis.bookmarks as { node, name }, i}
+                  <tr>
+                    <td class="moves-col-num">{i + 1}.</td>
+                    <td>
+                      <button
+                        class="move-entry"
+                        class:active={node === analysis.currentNode}
+                        onclick={() => navigateAnalysisTo(node)}
+                        use:scrollActiveIntoView={node === analysis.currentNode}
+                      >
+                        Move {getNodeMoveNum(node)}: {name ||
+                          (node.lastMove ? formatVertex(node.lastMove, gs.boardSize) : 'Start')}
+                      </button>
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
         <AnalysisMoves
           analysisMoveRows={analysis.moveRows}
           analysisNode={analysis.currentNode}
@@ -1244,3 +1322,17 @@
 {#if showJoinModal}
   <JoinGameModal game={data.game} joinerName={displayName} onJoined={handleJoined} />
 {/if}
+
+<style>
+  .rgraph {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bookmark-list {
+    border-bottom: 1px solid var(--c-border);
+    padding: 0.2em 0;
+    max-height: 50%;
+    overflow-y: auto;
+  }
+</style>

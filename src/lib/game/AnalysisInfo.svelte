@@ -7,7 +7,11 @@
     currentNode,
     boardSize,
     comment = '',
-    onCommentChange
+    onCommentChange,
+    isBookmarked = false,
+    bookmarkName = '',
+    onBookmark,
+    onBookmarkRename
   } = $props();
 
   const lastMoveColor = $derived(
@@ -33,6 +37,20 @@
       {#if currentNode.moveName}
         <span class="move-pattern">{currentNode.moveName}</span>
       {/if}
+    {/if}
+  </div>
+  <div class="bookmark-row">
+    <button class="bookmark-btn" class:bookmark-btn--active={isBookmarked} onclick={onBookmark}>
+      {isBookmarked ? '★' : '☆'}
+      {isBookmarked ? 'Bookmarked' : 'Bookmark'}
+    </button>
+    {#if isBookmarked}
+      <input
+        class="bookmark-name-input"
+        value={bookmarkName}
+        placeholder="Add title..."
+        oninput={(e) => onBookmarkRename?.(e.target.value)}
+      />
     {/if}
   </div>
   <div class="comment-section">
@@ -95,7 +113,50 @@
   }
 
   .comment-input:focus {
-    outline: 1px solid var(--c-primary);
-    border-color: var(--c-primary);
+    outline: 1px solid var(--c-secondary);
+    border-color: var(--c-secondary);
+  }
+
+  .bookmark-row {
+    margin-top: 0.4em;
+  }
+
+  .bookmark-btn {
+    width: 100%;
+    background: none;
+    border: 1px solid var(--c-border);
+    border-radius: 3px;
+    color: var(--c-font-dim);
+    cursor: pointer;
+    font-size: 0.85em;
+    padding: 0.3em 0.5em;
+    text-align: left;
+  }
+
+  .bookmark-btn:hover {
+    border-color: var(--c-secondary);
+    color: var(--c-font);
+  }
+
+  .bookmark-btn--active {
+    border-color: var(--c-secondary);
+    color: var(--c-secondary);
+  }
+
+  .bookmark-name-input {
+    margin-top: 0.3em;
+    width: 100%;
+    background: var(--c-bg-input, var(--c-bg-box));
+    color: var(--c-font);
+    border: 1px solid var(--c-border);
+    border-radius: 3px;
+    padding: 0.3em 0.4em;
+    font: inherit;
+    font-size: 0.85em;
+  }
+
+  .bookmark-name-input:focus {
+    outline: 1px solid var(--c-secondary);
+    border-color: var(--c-secondary);
   }
 </style>

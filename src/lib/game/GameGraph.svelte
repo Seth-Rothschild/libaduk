@@ -67,6 +67,7 @@
           x,
           y,
           isPass: sequence[i].lastMove === null && sequence[i].parent !== null,
+          hasBookmark: !!sequence[i].bookmark,
           hasComment: !!sequence[i].comment
         });
       }
@@ -234,7 +235,11 @@
           {@const cx = n.x * GRID}
           {@const cy = n.y * GRID}
           {@const isCurrent = n.node === currentNode}
-          {@const fill = n.hasComment ? 'rgb(255, 174, 61)' : 'rgb(200, 200, 200)'}
+          {@const fill = n.hasBookmark
+            ? 'var(--c-secondary)'
+            : n.hasComment
+              ? 'rgb(255, 174, 61)'
+              : 'rgb(200, 200, 200)'}
           {#if n.isPass}
             <rect
               x={cx - NODE_RADIUS}
@@ -242,7 +247,7 @@
               width={NODE_RADIUS * 2}
               height={NODE_RADIUS * 2}
               {fill}
-              stroke={isCurrent ? 'var(--c-accent, #639b24)' : 'none'}
+              stroke={isCurrent ? 'var(--c-primary)' : 'none'}
               stroke-width={isCurrent ? 2 : 0}
             />
           {:else}
@@ -251,7 +256,7 @@
               {cy}
               r={NODE_RADIUS}
               {fill}
-              stroke={isCurrent ? 'var(--c-accent, #639b24)' : 'none'}
+              stroke={isCurrent ? 'var(--c-primary)' : 'none'}
               stroke-width={isCurrent ? 2 : 0}
             />
           {/if}

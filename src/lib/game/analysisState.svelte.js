@@ -17,9 +17,21 @@ export function makeAnalysisNode(
   parent,
   moveName = null,
   comment = '',
-  setup = []
+  setup = [],
+  bookmark = null
 ) {
-  return { board, lastMove, markerMap, signToPlay, children: [], parent, moveName, comment, setup };
+  return {
+    board,
+    lastMove,
+    markerMap,
+    signToPlay,
+    children: [],
+    parent,
+    moveName,
+    comment,
+    setup,
+    bookmark
+  };
 }
 
 export function getAnalysisMoveName(parentBoard, sign, vertex) {
@@ -78,6 +90,7 @@ function serializeNode(node) {
   }
   if (node.setup && node.setup.length > 0) result.setup = node.setup;
   if (node.comment) result.comment = node.comment;
+  if (node.bookmark) result.bookmark = node.bookmark;
   if (hasMarkers(node.markerMap)) result.markers = node.markerMap;
   return result;
 }
@@ -107,6 +120,7 @@ function deserializeNodeNested(data, parentBoard, signToPlay, parent, size) {
   const markers = data.markers ?? emptyMarkerMap(size);
   const moveName = lastMove ? getAnalysisMoveName(parentBoard, signToPlay, lastMove) : null;
   const comment = data.comment ?? '';
+  const bookmark = data.bookmark ?? null;
   const node = makeAnalysisNode(
     board,
     lastMove,
@@ -115,7 +129,8 @@ function deserializeNodeNested(data, parentBoard, signToPlay, parent, size) {
     parent,
     moveName,
     comment,
-    setup
+    setup,
+    bookmark
   );
 
   if (data.children) {
@@ -171,6 +186,7 @@ function deserializeFlat(entries, size) {
     const markers = entry.markers ?? emptyMarkerMap(size);
     const moveName = lastMove ? getAnalysisMoveName(parentBoard, signToPlay, lastMove) : null;
     const comment = entry.comment ?? '';
+    const bookmark = entry.bookmark ?? null;
     const node = makeAnalysisNode(
       board,
       lastMove,
@@ -179,7 +195,8 @@ function deserializeFlat(entries, size) {
       parentNode,
       moveName,
       comment,
-      setup
+      setup,
+      bookmark
     );
 
     if (parentNode) parentNode.children.push(node);
@@ -280,6 +297,12 @@ export class AnalysisState {
     return this.currentNode?.comment ?? '';
   });
 
+  currentBookmark = $derived.by(() => {
+    this.#version;
+    const bm = this.currentNode?.bookmark ?? null;
+    return bm ? { ...bm } : null;
+  });
+
   childrenMap = $derived.by(() => {
     this.#version;
     if (!this.currentNode || this.currentNode.children.length === 0) return null;
@@ -338,6 +361,19 @@ export class AnalysisState {
 
   canGoPrev = $derived(!!this.currentNode?.parent);
   canGoNext = $derived((this.currentNode?.children.length ?? 0) > 0);
+
+  bookmarks = $derived.by(() => {
+    this.#version;
+    const result = [];
+    const walk = (node) => {
+      if (node.bookmark && typeof node.bookmark === 'object') {
+        result.push({ node, name: node.bookmark.name });
+      }
+      for (const child of node.children) walk(child);
+    };
+    if (this.#root) walk(this.#root);
+    return result;
+  });
 
   variationIndex = $derived(
     this.currentNode?.parent ? this.currentNode.parent.children.indexOf(this.currentNode) : -1
@@ -512,6 +548,21 @@ export class AnalysisState {
   setComment(text) {
     if (!this.currentNode) return;
     this.currentNode.comment = text;
+    this.#version++;
+  }
+
+  toggleBookmark(createdBy = '') {
+    if (!this.currentNode) return;
+    this.currentNode.bookmark = this.currentNode.bookmark ? null : { name: '', createdBy };
+    this.#version++;
+  }
+
+  setBookmarkName(name) {
+    if (!this.currentNode?.bookmark) return;
+    if (typeof this.currentNode.bookmark !== 'object') {
+      this.currentNode.bookmark = { name: '', createdBy: '' };
+    }
+    this.currentNode.bookmark.name = name;
     this.#version++;
   }
 
