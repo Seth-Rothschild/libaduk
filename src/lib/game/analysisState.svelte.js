@@ -18,9 +18,11 @@ export function makeAnalysisNode(
   moveName = null,
   comment = '',
   setup = [],
-  bookmark = null
+  bookmark = null,
+  id
 ) {
   return {
+    id: id ?? crypto.randomUUID(),
     board,
     lastMove,
     markerMap,
@@ -82,7 +84,7 @@ function hasMarkers(markerMap) {
 }
 
 function serializeNode(node) {
-  const result = {};
+  const result = { id: node.id };
   if (node.lastMove) {
     result.move = node.lastMove;
   } else if (node.parent) {
@@ -121,6 +123,7 @@ function deserializeNodeNested(data, parentBoard, signToPlay, parent, size) {
   const moveName = lastMove ? getAnalysisMoveName(parentBoard, signToPlay, lastMove) : null;
   const comment = data.comment ?? '';
   const bookmark = data.bookmark ?? null;
+  const id = data.id ?? crypto.randomUUID();
   const node = makeAnalysisNode(
     board,
     lastMove,
@@ -130,7 +133,8 @@ function deserializeNodeNested(data, parentBoard, signToPlay, parent, size) {
     moveName,
     comment,
     setup,
-    bookmark
+    bookmark,
+    id
   );
 
   if (data.children) {
@@ -187,6 +191,7 @@ function deserializeFlat(entries, size) {
     const moveName = lastMove ? getAnalysisMoveName(parentBoard, signToPlay, lastMove) : null;
     const comment = entry.comment ?? '';
     const bookmark = entry.bookmark ?? null;
+    const id = entry.id ?? crypto.randomUUID();
     const node = makeAnalysisNode(
       board,
       lastMove,
@@ -196,7 +201,8 @@ function deserializeFlat(entries, size) {
       moveName,
       comment,
       setup,
-      bookmark
+      bookmark,
+      id
     );
 
     if (parentNode) parentNode.children.push(node);
@@ -217,6 +223,16 @@ export function getNodePath(node) {
     current = current.parent;
   }
   return path;
+}
+
+export function findNodeById(root, id) {
+  const queue = [root];
+  while (queue.length > 0) {
+    const node = queue.shift();
+    if (node.id === id) return node;
+    for (const child of node.children) queue.push(child);
+  }
+  return null;
 }
 
 export function followNodePath(root, path) {

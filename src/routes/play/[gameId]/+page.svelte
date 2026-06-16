@@ -10,7 +10,12 @@
   import { getGuestId } from '$lib/state/guestId.js';
   import { getMe } from '$lib/state/user.svelte.js';
   import { GameState } from '$lib/game/GameState.svelte.js';
-  import { AnalysisState, serializeTree, getNodePath } from '$lib/game/analysisState.svelte.js';
+  import {
+    AnalysisState,
+    serializeTree,
+    getNodePath,
+    findNodeById
+  } from '$lib/game/analysisState.svelte.js';
 
   function getNodeMoveNum(node) {
     let depth = 0;
@@ -377,6 +382,11 @@
     } else {
       enterAnalysisFromMoves();
     }
+    const bookmarkId = page.url.searchParams.get('bookmark');
+    if (bookmarkId) {
+      const target = findNodeById(analysis.root, bookmarkId);
+      if (target) analysis.currentNode = target;
+    }
     const tree = serializeTree(analysis.root);
     const path = getNodePath(analysis.currentNode);
     gameSocket.send({ type: 'analysis-enter', tree, path });
@@ -429,6 +439,9 @@
       analysis.navigate(action);
       persistAnalysisTree();
     }
+    const url = new URL(page.url);
+    url.searchParams.delete('bookmark');
+    history.replaceState({}, '', url);
   }
 
   function onAnalysisVertexClick(x, y) {
@@ -443,6 +456,13 @@
     analysis.currentNode = node;
     analysis.animatedVertex = null;
     persistAnalysisTree();
+    const url = new URL(page.url);
+    if (node.bookmark) {
+      url.searchParams.set('bookmark', node.id);
+    } else {
+      url.searchParams.delete('bookmark');
+    }
+    history.replaceState({}, '', url);
   }
 
   $effect(() => {
@@ -677,8 +697,7 @@
       const action = keyMap[e.key];
       if (action) {
         e.preventDefault();
-        analysis.navigate(action);
-        persistAnalysisTree();
+        analysisNavigate(action);
       }
       return;
     }
@@ -902,6 +921,13 @@
         onBookmark={() => {
           analysis.toggleBookmark(displayName);
           persistAnalysisTree();
+          const url = new URL(page.url);
+          if (analysis.currentNode.bookmark) {
+            url.searchParams.set('bookmark', analysis.currentNode.id);
+          } else {
+            url.searchParams.delete('bookmark');
+          }
+          history.replaceState({}, '', url);
         }}
         onBookmarkRename={(name) => {
           analysis.setBookmarkName(name);
