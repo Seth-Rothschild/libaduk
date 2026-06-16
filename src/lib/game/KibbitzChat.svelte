@@ -60,7 +60,10 @@
 
   function formatTime(t) {
     if (!t) return '';
-    return new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const date = new Date(t);
+    const datePart = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    const timePart = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `[${datePart}] ${timePart}`;
   }
 
   function filterEmptyDividers(messages) {
