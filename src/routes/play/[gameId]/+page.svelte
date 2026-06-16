@@ -431,38 +431,32 @@
     gameSocket.send({ type: 'analysis-tree', tree, path });
   }
 
-  function analysisNavigate(action = null) {
+  function navigateAnalysis(target = null) {
     if (analysis.status === 'scoring') analysis.stopScoring();
     else if (analysis.showEstimate) analysis.showEstimate = false;
     flushPendingAnalysisTree();
-    if (action) {
-      analysis.navigate(action);
-      persistAnalysisTree();
+    const actions = ['prev', 'next', 'first', 'last', 'prev-variation', 'next-variation'];
+    const isAction = actions.includes(target);
+    if (isAction) {
+      analysis.navigate(target);
+    } else if (target) {
+      analysis.currentNode = target;
+      analysis.animatedVertex = null;
     }
+    persistAnalysisTree();
     const url = new URL(page.url);
-    url.searchParams.delete('bookmark');
+    const currentBookmark = analysis.currentNode?.bookmark;
+    if (!isAction && currentBookmark) {
+      url.searchParams.set('bookmark', analysis.currentNode.id);
+    } else {
+      url.searchParams.delete('bookmark');
+    }
     history.replaceState({}, '', url);
   }
 
   function onAnalysisVertexClick(x, y) {
     analysis.onVertexClick(x, y);
     persistAnalysisTree();
-  }
-
-  function navigateAnalysisTo(node) {
-    if (analysis.status === 'scoring') analysis.stopScoring();
-    else if (analysis.showEstimate) analysis.showEstimate = false;
-    flushPendingAnalysisTree();
-    analysis.currentNode = node;
-    analysis.animatedVertex = null;
-    persistAnalysisTree();
-    const url = new URL(page.url);
-    if (node.bookmark) {
-      url.searchParams.set('bookmark', node.id);
-    } else {
-      url.searchParams.delete('bookmark');
-    }
-    history.replaceState({}, '', url);
   }
 
   $effect(() => {
@@ -666,7 +660,7 @@
         ].includes(e.key);
         if (isNavKey) {
           e.preventDefault();
-          analysisNavigate();
+          navigateAnalysis();
         }
         return;
       }
@@ -677,11 +671,11 @@
           const idx = bookmarks.findIndex((b) => b.node === analysis.currentNode);
           if (e.key === 'ArrowUp') {
             const target = idx > 0 ? bookmarks[idx - 1] : bookmarks[bookmarks.length - 1];
-            navigateAnalysisTo(target.node);
+            navigateAnalysis(target.node);
           } else if (e.key === 'ArrowDown') {
             const target =
               idx >= 0 && idx < bookmarks.length - 1 ? bookmarks[idx + 1] : bookmarks[0];
-            navigateAnalysisTo(target.node);
+            navigateAnalysis(target.node);
           }
         }
         return;
@@ -697,21 +691,14 @@
       const action = keyMap[e.key];
       if (action) {
         e.preventDefault();
-        analysisNavigate(action);
+        navigateAnalysis(action);
       }
       if (e.key === 'b') {
         const bookmark = analysis.currentNode?.bookmark;
         const isOwner = !bookmark || bookmark.createdBy === displayName;
         if (isOwner) {
           analysis.toggleBookmark(displayName);
-          persistAnalysisTree();
-          const url = new URL(page.url);
-          if (analysis.currentNode.bookmark) {
-            url.searchParams.set('bookmark', analysis.currentNode.id);
-          } else {
-            url.searchParams.delete('bookmark');
-          }
-          history.replaceState({}, '', url);
+          navigateAnalysis();
         }
       }
       return;
@@ -937,14 +924,7 @@
         {displayName}
         onBookmark={() => {
           analysis.toggleBookmark(displayName);
-          persistAnalysisTree();
-          const url = new URL(page.url);
-          if (analysis.currentNode.bookmark) {
-            url.searchParams.set('bookmark', analysis.currentNode.id);
-          } else {
-            url.searchParams.delete('bookmark');
-          }
-          history.replaceState({}, '', url);
+          navigateAnalysis();
         }}
         onBookmarkRename={(name) => {
           analysis.setBookmarkName(name);
@@ -1083,7 +1063,7 @@
             <span class="score-bar__label">
               {t(analysis.status === 'scoring' ? 'Remove dead stones' : 'Toggle group status')}
             </span>
-            <button class="score-bar__close" onclick={analysisNavigate}>✕</button>
+            <button class="score-bar__close" onclick={navigateAnalysis}>✕</button>
           </div>
         {:else}
           <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
@@ -1131,7 +1111,7 @@
                       <button
                         class="move-entry"
                         class:active={node === analysis.currentNode}
-                        onclick={() => navigateAnalysisTo(node)}
+                        onclick={() => navigateAnalysis(node)}
                         use:scrollActiveIntoView={node === analysis.currentNode}
                       >
                         Move {getNodeMoveNum(node)}: {name ||
@@ -1148,7 +1128,7 @@
           analysisMoveRows={analysis.moveRows}
           analysisNode={analysis.currentNode}
           boardSize={gs.boardSize}
-          onSelectNode={memorize?.active ? null : navigateAnalysisTo}
+          onSelectNode={memorize?.active ? null : navigateAnalysis}
         />
       {:else}
         {#if gs.isViewingHistory}
@@ -1184,7 +1164,7 @@
           root={analysis.root}
           currentNode={analysis.currentNode}
           version={analysis.version}
-          onSelectNode={navigateAnalysisTo}
+          onSelectNode={navigateAnalysis}
           moveNum={currentMoveNum}
         />
       </div>
@@ -1311,10 +1291,10 @@
       <NavigationButtons
         canPrev={analysis.canGoPrev}
         canNext={analysis.canGoNext}
-        onFirst={() => analysisNavigate('first')}
-        onPrev={() => analysisNavigate('prev')}
-        onNext={() => analysisNavigate('next')}
-        onLast={() => analysisNavigate('last')}
+        onFirst={() => navigateAnalysis('first')}
+        onPrev={() => navigateAnalysis('prev')}
+        onNext={() => navigateAnalysis('next')}
+        onLast={() => navigateAnalysis('last')}
         menuItems={[
           { label: t('Export SGF'), onclick: downloadSgf },
           { label: t('Open as Kifu'), href: `/kifu/${gameId}` },
