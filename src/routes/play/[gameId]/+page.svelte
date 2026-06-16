@@ -699,6 +699,21 @@
         e.preventDefault();
         analysisNavigate(action);
       }
+      if (e.key === 'b') {
+        const bookmark = analysis.currentNode?.bookmark;
+        const isOwner = !bookmark || bookmark.createdBy === displayName;
+        if (isOwner) {
+          analysis.toggleBookmark(displayName);
+          persistAnalysisTree();
+          const url = new URL(page.url);
+          if (analysis.currentNode.bookmark) {
+            url.searchParams.set('bookmark', analysis.currentNode.id);
+          } else {
+            url.searchParams.delete('bookmark');
+          }
+          history.replaceState({}, '', url);
+        }
+      }
       return;
     }
     if (e.key === 'ArrowLeft') {
@@ -918,6 +933,8 @@
         }}
         isBookmarked={!!analysis.currentBookmark}
         bookmarkName={analysis.currentBookmark?.name ?? ''}
+        bookmarkCreatedBy={analysis.currentBookmark?.createdBy ?? ''}
+        {displayName}
         onBookmark={() => {
           analysis.toggleBookmark(displayName);
           persistAnalysisTree();

@@ -10,9 +10,13 @@
     onCommentChange,
     isBookmarked = false,
     bookmarkName = '',
+    bookmarkCreatedBy = '',
+    displayName = '',
     onBookmark,
     onBookmarkRename
   } = $props();
+
+  const isOwner = $derived(!isBookmarked || bookmarkCreatedBy === displayName);
 
   const lastMoveColor = $derived(
     currentNode?.lastMove ? colorName(currentNode.signToPlay === 1 ? -1 : 1) : null
@@ -40,15 +44,25 @@
     {/if}
   </div>
   <div class="bookmark-row">
-    <button class="bookmark-btn" class:bookmark-btn--active={isBookmarked} onclick={onBookmark}>
+    <button
+      class="bookmark-btn"
+      class:bookmark-btn--active={isBookmarked}
+      onclick={onBookmark}
+      disabled={!isOwner}
+    >
       {isBookmarked ? '★' : '☆'}
-      {isBookmarked ? 'Bookmarked' : 'Bookmark'}
+      {#if isBookmarked && bookmarkCreatedBy}
+        Bookmarked · {bookmarkCreatedBy}
+      {:else}
+        {isBookmarked ? 'Bookmarked' : 'Bookmark'}
+      {/if}
     </button>
     {#if isBookmarked}
       <input
         class="bookmark-name-input"
         value={bookmarkName}
         placeholder="Add title..."
+        disabled={!isOwner}
         oninput={(e) => onBookmarkRename?.(e.target.value)}
       />
     {/if}
@@ -133,9 +147,14 @@
     text-align: left;
   }
 
-  .bookmark-btn:hover {
+  .bookmark-btn:hover:not(:disabled) {
     border-color: var(--c-secondary);
     color: var(--c-font);
+  }
+
+  .bookmark-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
   }
 
   .bookmark-btn--active {
@@ -158,5 +177,10 @@
   .bookmark-name-input:focus {
     outline: 1px solid var(--c-secondary);
     border-color: var(--c-secondary);
+  }
+
+  .bookmark-name-input:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
   }
 </style>
