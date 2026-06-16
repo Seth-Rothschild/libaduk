@@ -83,6 +83,8 @@
   let chatMessages = $state(data.chat ?? []);
   let chatHighlightVertex = $state(null);
   let chatInputText = $state('');
+  let typingUsers = $state(new Set());
+  const typingTimers = new Map();
   let blackName = $state(data.game.blackName ?? null);
   let whiteName = $state(data.game.whiteName ?? null);
   let blackOnline = $state(false);
@@ -107,6 +109,10 @@
       navigator.clipboard?.writeText(coord);
     }
   }
+
+  $effect(() => {
+    gameSocket.send({ type: 'typing', isTyping: chatInputText.trim().length > 0 });
+  });
 
   function handleChatSend(text) {
     chatMessages.push({ user: displayName, text });
@@ -770,6 +776,22 @@
           gs.blackApproved = false;
           gs.whiteApproved = false;
         }
+        if (msg.type === 'typing') {
+          if (msg.user === displayName) return;
+          clearTimeout(typingTimers.get(msg.user));
+          if (msg.isTyping) {
+            typingUsers = new Set([...typingUsers, msg.user]);
+            typingTimers.set(
+              msg.user,
+              setTimeout(() => {
+                typingUsers = new Set([...typingUsers].filter((u) => u !== msg.user));
+              }, 4000)
+            );
+          } else {
+            typingUsers = new Set([...typingUsers].filter((u) => u !== msg.user));
+            typingTimers.delete(msg.user);
+          }
+        }
         if (msg.type === 'chat') {
           const isDuplicate = msg.t
             ? chatMessages.some((m) => m.t === msg.t)
@@ -945,6 +967,7 @@
       onCoordHover={(v) => (chatHighlightVertex = v)}
       moveCount={gs.totalPly}
       readOnly={data.game.gameType === 'uploaded'}
+      {typingUsers}
     />
   </aside>
 

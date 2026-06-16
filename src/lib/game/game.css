@@ -1189,6 +1189,13 @@ html.light .color-icon.white::before {
   border-color: var(--c-error, #f87171);
 }
 
+.mchat__typing {
+  font-size: 0.75em;
+  color: var(--c-text-muted);
+  padding: 0.2em 0.4em;
+  min-height: 1.4em;
+}
+
 .mchat__viewers {
   display: flex;
   align-items: center;

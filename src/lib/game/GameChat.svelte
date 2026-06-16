@@ -13,8 +13,17 @@
     onCoordHover = () => {},
     inputText = $bindable(''),
     moveCount = 0,
-    readOnly = false
+    readOnly = false,
+    typingUsers = new Set()
   } = $props();
+
+  function formatTyping(users) {
+    const names = [...users];
+    if (names.length === 0) return '';
+    if (names.length === 1) return `${names[0]} is typing...`;
+    if (names.length === 2) return `${names[0]} and ${names[1]} are typing...`;
+    return `${names[0]}, ${names[1]} and others are typing...`;
+  }
 
   const COL_LETTERS = 'ABCDEFGHJKLMNOPQRST';
 
@@ -212,6 +221,9 @@
           </li>
         {/each}
       </ol>
+      {#if typingUsers.size > 0}
+        <div class="mchat__typing">{formatTyping(typingUsers)}</div>
+      {/if}
       <textarea
         class="mchat__say"
         class:mchat__say--disconnected={sendFailed}
@@ -223,7 +235,7 @@
         aria-label="Chat message"
         bind:value={inputText}
         onkeydown={handleKeydown}
-      />
+      ></textarea>
       {#if presetsVisible && !readOnly}
         <div class="mchat__presets" role="group" aria-label="Quick messages">
           {#each activePresets as preset}

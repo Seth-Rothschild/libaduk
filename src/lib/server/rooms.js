@@ -637,6 +637,11 @@ export function attachWebSocketServer(httpServer) {
       if (msg.type === 'tv-game-ended' && socket.tvViewer) {
         tvRoom.clearGameIfMatches(msg.gameId);
       }
+      if (msg.type === 'typing' && socket.gameId) {
+        const name = socket.playerName ?? socket.spectatorName;
+        if (name)
+          broadcast(socket.gameId, { type: 'typing', user: name, isTyping: !!msg.isTyping });
+      }
       if (msg.type === 'cancel' && socket.gameId) {
         const game = await db.getGame(socket.gameId);
         if (!game || !socket.playerColor) return;
