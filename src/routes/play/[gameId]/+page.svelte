@@ -91,6 +91,7 @@
   let whiteOnline = $state(false);
   let spectators = $state([]);
   let pendingMove = $state(null);
+  let controlRequest = $state(null);
 
   const isAI = $derived(data.game.gameType === 'ai');
   const aiDifficulty = $derived(data.game.aiDifficulty ?? 5);
@@ -417,7 +418,18 @@
     savedAnalysisPath = getNodePath(analysis.currentNode);
     analysis = null;
     memorize = null;
+    controlRequest = null;
     gameSocket.send({ type: 'analysis-exit' });
+  }
+
+  function requestControl() {
+    controlRequest = displayName;
+    gameSocket.send({ type: 'request-control', user: displayName });
+  }
+
+  function clearControl() {
+    controlRequest = null;
+    gameSocket.send({ type: 'clear-control' });
   }
 
   function resetAnalysis() {
@@ -823,6 +835,13 @@
         }
         if (msg.type === 'analysis-exit') {
           analysis = null;
+          controlRequest = null;
+        }
+        if (msg.type === 'request-control') {
+          controlRequest = msg.user;
+        }
+        if (msg.type === 'clear-control') {
+          controlRequest = null;
         }
         if (msg.type === 'analysis-tree' && analysis) {
           if (analysis.status === 'scoring' || analysis.showEstimate || memorize?.active) {
@@ -1089,7 +1108,24 @@
             <button class="score-bar__close" onclick={navigateAnalysis}>✕</button>
           </div>
         {:else}
-          <EditBar tool={analysis.tool} onSetTool={(t) => (analysis.tool = t)} />
+          {#if controlRequest}
+            <div class="control-request-bar">
+              <span class="control-request-bar__label">{controlRequest} wants to try something</span
+              >
+              {#if controlRequest === displayName}
+                <button class="control-request-bar__btn" onclick={clearControl}>Cancel</button>
+              {:else}
+                <button class="control-request-bar__btn" onclick={clearControl}>Acknowledge</button>
+              {/if}
+            </div>
+          {/if}
+          <EditBar
+            tool={analysis.tool}
+            onSetTool={(t) => (analysis.tool = t)}
+            {controlRequest}
+            {displayName}
+            onControlToggle={() => (controlRequest ? clearControl() : requestControl())}
+          />
         {/if}
       {/if}
     </div>

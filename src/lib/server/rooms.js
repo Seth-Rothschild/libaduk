@@ -608,6 +608,12 @@ export function attachWebSocketServer(httpServer) {
           path: msg.path ?? null
         });
       }
+      if (msg.type === 'request-control' && socket.gameId) {
+        broadcast(socket.gameId, { type: 'request-control', user: msg.user });
+      }
+      if (msg.type === 'clear-control' && socket.gameId) {
+        broadcast(socket.gameId, { type: 'clear-control' });
+      }
       if (msg.type === 'tv-join') {
         socket.tvViewer = true;
         const name = typeof msg.name === 'string' ? msg.name.slice(0, 50) : 'anon';
