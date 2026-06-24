@@ -1,0 +1,4 @@
+#!/bin/sh
+staged_files=$(git diff --cached --name-only)
+./node_modules/.bin/prettier --write $staged_files
+git add $staged_files

@@ -8,7 +8,7 @@
     "build": "npm run format && vite build",
     "start": "node server.js",
     "preview": "vite preview",
-    "prepare": "svelte-kit sync || echo ''",
+    "prepare": "svelte-kit sync || echo '' && git config core.hooksPath .githooks && chmod +x .githooks/commit-msg .githooks/pre-commit",
     "postinstall": "cp node_modules/onnxruntime-web/dist/*.wasm node_modules/onnxruntime-web/dist/*.mjs static/wasm/",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",

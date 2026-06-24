@@ -1,0 +1,8 @@
+#!/bin/sh
+commit_message=$(cat "$1")
+pattern="^(feat|fix|refactor|chore|docs|test|style|ci|build|perf)(\(.+\))?: .+"
+if ! echo "$commit_message" | grep -qE "$pattern"; then
+    echo "Commit message must follow conventional commits format."
+    echo "Example: feat: add login page"
+    exit 1
+fi
