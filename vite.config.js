@@ -47,6 +47,9 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['onnxruntime-web']
   },
+  ssr: {
+    noExternal: ['goban-engine']
+  },
   test: {
     expect: {
       requireAssertions: true

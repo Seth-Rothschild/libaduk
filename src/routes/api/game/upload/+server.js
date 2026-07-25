@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { createGame, updateGame } from '$lib/server/db.js';
+import { newNativeGamedata, packMoves } from '$lib/server/games/gamedata.js';
 
 export async function POST({ request }) {
   const {
@@ -18,20 +19,33 @@ export async function POST({ request }) {
   const id = Math.random().toString(36).slice(2, 8);
   const owners = username ? [username] : [];
 
-  await createGame({
+  const gamedata = newNativeGamedata({
     id,
     size,
+    komi: komi ?? 6.5,
+    handicap: (handicapStones ?? []).length,
+    handicapStones: handicapStones ?? [],
+    timeControl: { type: 'none' },
     blackName: blackName || 'Black',
     whiteName: whiteName || 'White',
-    gameType: 'uploaded',
-    status: status || 'finished',
-    komi: komi ?? 6.5,
-    owners,
-    handicapStones,
-    timeControl: { type: 'none' }
+    moves: packMoves(moves ?? []),
+    phase: 'finished'
   });
 
-  await updateGame(id, { moves, analysisTree, analysisActive: true, result });
+  await createGame({
+    id,
+    gameType: 'uploaded',
+    status: status || 'finished',
+    owners,
+    gamedata
+  });
+
+  if (analysisTree) {
+    await updateGame(id, { analysisTree, analysisActive: true });
+  }
+  if (result) {
+    await updateGame(id, { result });
+  }
 
   return json({ id });
 }

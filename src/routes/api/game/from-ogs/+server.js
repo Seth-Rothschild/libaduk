@@ -14,15 +14,11 @@ export async function POST({ request }) {
 
   await createGame({
     id,
-    size: 19,
-    blackName: null,
-    whiteName: null,
     gameType: 'uploaded',
     status: 'playing',
-    komi: 6.5,
     ogsGameId: ogsId,
     owners: [],
-    timeControl: { type: 'none' }
+    gamedata: null
   });
 
   return json({ id });

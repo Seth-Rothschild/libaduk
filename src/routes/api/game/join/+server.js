@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { joinGame, broadcast } from '$lib/server/rooms.js';
+import { joinGame } from '$lib/server/rooms.js';
 
 export async function POST({ request, locals }) {
   const body = await request.json().catch(() => ({}));

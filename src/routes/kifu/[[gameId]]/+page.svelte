@@ -14,7 +14,8 @@
     sgfNodeToMove,
     sgfNodeComment,
     sgfNodeSetup,
-    emptyMarkerMap
+    emptyMarkerMap,
+    parseSgfCoords
   } from '$lib/game/board';
 
   const gameId = $derived(page.params.gameId ?? null);
@@ -124,18 +125,15 @@
   }
 
   function loadMovesFromGame(game) {
-    const dbMoves = game.moves ?? [];
+    const packedMoves = game.gamedata?.moves ?? [];
     const result = [];
-    const hasHandicap = (game.handicapStones ?? []).length >= 2;
-    let sign = hasHandicap ? -1 : 1;
-    for (const m of dbMoves) {
-      if (m.type === 'pass') {
+    let sign = game.gamedata?.initial_player === 'white' ? -1 : 1;
+    for (const [x, y] of packedMoves) {
+      if (x < 0) {
         result.push({ type: 'pass', sign, number: result.length + 1 });
-        sign = sign === 1 ? -1 : 1;
-        continue;
+      } else {
+        result.push({ type: 'move', x, y, sign, number: result.length + 1 });
       }
-      if (m.x == null || m.y == null) continue;
-      result.push({ type: 'move', x: m.x, y: m.y, sign, number: result.length + 1 });
       sign = sign === 1 ? -1 : 1;
     }
     return result;
@@ -467,14 +465,16 @@
     const res = await fetch(`/api/game/${gameId}`);
     if (!res.ok) return;
     const game = await res.json();
-    size = game.size ?? 19;
-    blackName = game.blackName ?? '';
-    whiteName = game.whiteName ?? '';
-    komi = game.komi ?? 6.5;
+    const gamedata = game.gamedata ?? {};
+    size = gamedata.width ?? 19;
+    blackName = gamedata.players?.black?.username ?? '';
+    whiteName = gamedata.players?.white?.username ?? '';
+    komi = gamedata.komi ?? 6.5;
     result = game.result ?? '';
     status = game.status ?? 'waiting';
     winner = game.winner ?? null;
-    setup = (game.handicapStones ?? []).map(({ x, y }) => ({ x, y, sign: 1 }));
+    const handicapCoords = parseSgfCoords(gamedata.initial_state?.black ?? '');
+    setup = handicapCoords.map(([x, y]) => ({ x, y, sign: 1 }));
     moves = loadMovesFromGame(game);
     cursor = moves.length;
   });

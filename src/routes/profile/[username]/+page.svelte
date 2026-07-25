@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import GoBoard from '$lib/game/GoBoard.svelte';
-  import { replayMoves, placeStones, createBoard } from '$lib/game/board';
+  import { replayMoves, placeStones, createBoard, parseSgfCoords } from '$lib/game/board';
   import { getMe } from '$lib/state/user.svelte.js';
 
   let { data } = $props();
@@ -21,16 +21,34 @@
     return () => clearInterval(id);
   });
 
-  function formatClock(timeControl) {
-    if (!timeControl || timeControl.type === 'none') return '∞';
-    if (timeControl.type === 'correspondence') {
-      const days = timeControl.days ?? 3;
+  function gameBlackName(game) {
+    return game.gamedata?.players?.black?.username ?? null;
+  }
+
+  function gameWhiteName(game) {
+    return game.gamedata?.players?.white?.username ?? null;
+  }
+
+  function gameSize(game) {
+    return game.gamedata?.width ?? 19;
+  }
+
+  function gameTimeControl(game) {
+    return game.gamedata?.time_control ?? null;
+  }
+
+  function gameMoves(game) {
+    return game.gamedata?.moves ?? [];
+  }
+
+  function formatClock(tc) {
+    if (!tc || tc.system === 'none') return '∞';
+    if (tc.speed === 'correspondence') {
+      const days = Math.round((tc.per_move ?? 259200) / 86400);
       return days === 1 ? '1 day' : `${days} days`;
     }
-    if (timeControl.type === 'byoyomi')
-      return `${timeControl.initial / 60}+${timeControl.periods}×${timeControl.periodTime}s`;
-    if (timeControl.type === 'fischer')
-      return `${timeControl.initial / 60}+${timeControl.increment}`;
+    if (tc.system === 'byoyomi') return `${tc.main_time / 60}+${tc.periods}×${tc.period_time}s`;
+    if (tc.system === 'fischer') return `${tc.initial_time / 60}+${tc.time_increment}`;
     return '∞';
   }
 
@@ -70,20 +88,20 @@
     return `${color} wins by ${suffix}`;
   }
 
-  function gameLabel(timeControl) {
-    if (!timeControl || timeControl.type === 'none') return 'Unlimited';
-    if (timeControl.type === 'correspondence') return 'Correspondence';
-    const mins = (timeControl.initial ?? 0) / 60;
+  function gameLabel(tc) {
+    if (!tc || tc.system === 'none') return 'Unlimited';
+    if (tc.speed === 'correspondence') return 'Correspondence';
+    const mins = tcMins(tc);
     if (mins <= 3) return 'Bullet';
     if (mins <= 10) return 'Blitz';
     if (mins <= 30) return 'Rapid';
     return 'Classical';
   }
 
-  function gameIcon(timeControl) {
-    if (!timeControl || timeControl.type === 'none') return '\ue04e';
-    if (timeControl.type === 'correspondence') return '\ue019';
-    const mins = (timeControl.initial ?? 0) / 60;
+  function gameIcon(tc) {
+    if (!tc || tc.system === 'none') return '\ue04e';
+    if (tc.speed === 'correspondence') return '\ue019';
+    const mins = tcMins(tc);
     if (mins <= 3) return '\ue032';
     if (mins <= 10) return '\ue008';
     if (mins <= 30) return '\ue002';
@@ -91,22 +109,26 @@
   }
 
   function signMapForGame(game) {
-    const size = game.size ?? 19;
-    if (!game.moves || game.moves.length === 0) {
+    const size = gameSize(game);
+    const packed = gameMoves(game);
+    if (packed.length === 0) {
       return Array.from({ length: size }, () => Array(size).fill(0));
     }
+    const moves = packed.map(([x, y]) => (x < 0 ? { type: 'pass' } : { type: 'move', x, y }));
     let initialBoard = null;
-    if (game.handicapStones?.length > 0) {
-      const stoneList = game.handicapStones.map(({ x, y }) => ({ x, y, sign: 1 }));
+    const handicapCoords = parseSgfCoords(game.gamedata?.initial_state?.black ?? '');
+    if (handicapCoords.length > 0) {
+      const stoneList = handicapCoords.map(([x, y]) => ({ x, y, sign: 1 }));
       initialBoard = placeStones(createBoard(size), stoneList);
     }
-    return replayMoves(game.moves, size, initialBoard).signMap;
+    return replayMoves(moves, size, initialBoard).signMap;
   }
 
   function formatMoveCoord(move) {
-    if (move.type === 'pass') return 'pass';
-    const col = String.fromCharCode(97 + move.x);
-    return `${col}${move.y + 1}`;
+    const [x, y] = move;
+    if (x < 0) return 'pass';
+    const col = String.fromCharCode(97 + x);
+    return `${col}${y + 1}`;
   }
 
   function formatOpeningMoves(moves) {
@@ -151,16 +173,18 @@
     {
       label: 'Correspondence',
       icon: '\ue019',
-      match: (tc) => tc?.type === 'correspondence'
+      match: (tc) => tc?.speed === 'correspondence'
     }
   ];
 
   function isLive(tc) {
-    return tc && (tc.type === 'byoyomi' || tc.type === 'fischer');
+    return tc && (tc.system === 'byoyomi' || tc.system === 'fischer');
   }
 
   function tcMins(tc) {
-    return (tc?.initial ?? 0) / 60;
+    if (!tc) return 0;
+    const initialSeconds = tc.system === 'byoyomi' ? tc.main_time : tc.initial_time;
+    return (initialSeconds ?? 0) / 60;
   }
 
   let activeCategory = $state(null);
@@ -205,7 +229,8 @@
   function myGameColor(game) {
     const name = data.profile.username;
     const ogsName = data.profile.ogs?.username;
-    if (game.blackName === name || game.blackName === ogsName) return 'black';
+    const blackName = gameBlackName(game);
+    if (blackName === name || blackName === ogsName) return 'black';
     return 'white';
   }
 
@@ -224,9 +249,9 @@
       if (!dayMap.has(key))
         dayMap.set(key, { ts: utcDayStart(ts), categories: new Map(), puzzles: [] });
       const day = dayMap.get(key);
-      const label = gameLabel(game.timeControl);
+      const label = gameLabel(gameTimeControl(game));
       if (!day.categories.has(label))
-        day.categories.set(label, { label, icon: gameIcon(game.timeControl), games: [] });
+        day.categories.set(label, { label, icon: gameIcon(gameTimeControl(game)), games: [] });
       day.categories.get(label).games.push(game);
     }
 
@@ -245,7 +270,7 @@
   }
 
   function gameOpponent(game) {
-    return myGameColor(game) === 'black' ? game.whiteName : game.blackName;
+    return myGameColor(game) === 'black' ? gameWhiteName(game) : gameBlackName(game);
   }
 
   const categoryCounts = $derived(
@@ -370,7 +395,7 @@
       <div class="games">
         {#if activeResult === 'imported'}
           {#each uploadedGames as game}
-            {@const size = game.size ?? 19}
+            {@const size = gameSize(game)}
             <article class="game-row">
               <a class="game-row__overlay" href="/play/{game.id}"></a>
               <div class="game-row__board mini-board" style="margin-right: 14px;">
@@ -379,7 +404,7 @@
               <div class="game-row__infos">
                 <div class="header">
                   <div class="header__text">
-                    <strong>{game.blackName} vs {game.whiteName} • {size}×{size}</strong>
+                    <strong>{gameBlackName(game)} vs {gameWhiteName(game)} • {size}×{size}</strong>
                     <span>{formatDate(game.createdAt)}</span>
                   </div>
                 </div>
@@ -398,36 +423,39 @@
           {/each}
         {:else}
           {#each pagedGames as game}
-            {@const size = game.size ?? 19}
+            {@const size = gameSize(game)}
+            {@const blackName = gameBlackName(game)}
+            {@const whiteName = gameWhiteName(game)}
+            {@const tc = gameTimeControl(game)}
             <article class="game-row">
               <a class="game-row__overlay" href="/play/{game.id}"></a>
               <div class="game-row__board mini-board" style="margin-right: 14px;">
                 <GoBoard signMap={signMapForGame(game)} {size} />
               </div>
               <div class="game-row__infos">
-                <div class="header" data-icon={gameIcon(game.timeControl)}>
+                <div class="header" data-icon={gameIcon(tc)}>
                   <div class="header__text">
                     <strong
-                      >{formatClock(game.timeControl)} • {gameLabel(game.timeControl)} • {game.size} x
-                      {game.size}</strong
+                      >{formatClock(tc)} • {gameLabel(tc)} • {size} x
+                      {size}</strong
                     >
                     <span>{formatDate(game.createdAt)}</span>
                   </div>
                 </div>
                 <div class="versus">
                   <div class="player white">
-                    {#if isLinkable(game.whiteName, game.gameType)}
-                      <a href="/profile/{game.whiteName}">{game.whiteName}</a>
+                    {#if isLinkable(whiteName, game.gameType)}
+                      <a href="/profile/{whiteName}">{whiteName}</a>
                     {:else}
-                      <span>{game.whiteName ?? 'Guest'}</span>
+                      <span>{whiteName ?? 'Guest'}</span>
                     {/if}
                   </div>
                   <div class="swords" data-icon="&#xe033;"></div>
                   <div class="player black">
-                    {#if isLinkable(game.blackName, game.gameType)}
-                      <a href="/profile/{game.blackName}">{game.blackName}</a>
+                    {#if isLinkable(blackName, game.gameType)}
+                      <a href="/profile/{blackName}">{blackName}</a>
                     {:else}
-                      <span>{game.blackName ?? 'Guest'}</span>
+                      <span>{blackName ?? 'Guest'}</span>
                     {/if}
                   </div>
                 </div>
@@ -435,7 +463,7 @@
                   <span class={resultClass(game)}>{resultText(game)}</span>
                 </div>
                 <div class="opening">
-                  <div class="pgn">{formatOpeningMoves(game.moves)}</div>
+                  <div class="pgn">{formatOpeningMoves(gameMoves(game))}</div>
                 </div>
               </div>
             </article>

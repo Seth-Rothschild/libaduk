@@ -164,10 +164,11 @@
     const res = await fetch(`/api/game/${gameId}`);
     if (!res.ok) return;
     const game = await res.json();
-    size = game.size ?? 19;
-    blackName = game.blackName ?? 'Black';
-    whiteName = game.whiteName ?? 'White';
-    komi = game.komi ?? 6.5;
+    const gamedata = game.gamedata ?? {};
+    size = gamedata.width ?? 19;
+    blackName = gamedata.players?.black?.username ?? 'Black';
+    whiteName = gamedata.players?.white?.username ?? 'White';
+    komi = gamedata.komi ?? 6.5;
     if (game.analysisTree) {
       analysis = new AnalysisState(size, komi);
       analysis.loadTree(game.analysisTree, null);

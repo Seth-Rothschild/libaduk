@@ -1,4 +1,5 @@
 import { MongoClient } from 'mongodb';
+import { toJgofTimeControl } from './games/gamedata.js';
 
 const MONGO_URL = process.env.MONGO_URL ?? 'mongodb://localhost:27017';
 const DB_NAME = process.env.MONGO_DB ?? 'libaduk';
@@ -191,47 +192,31 @@ export async function findGameByOgsId(ogsGameId) {
 
 export async function createGame({
   id,
-  size,
-  blackName,
-  whiteName,
-  creatorColor = 'black',
-  timeControl = { type: 'none' },
-  komi = 6.5,
-  handicap = 0,
-  handicapStones = [],
   gameType = 'hook',
+  owners = [],
+  creatorColor = 'black',
   status = 'waiting',
   aiDifficulty = null,
   ogsGameId = null,
   ogsUserId = null,
-  owners = [],
   gamedata = null
 }) {
   try {
     const game = {
       _id: id,
-      size,
-      blackName,
-      whiteName,
+      gameType,
       owners,
       creatorColor,
-      gameType,
-      moves: [],
       status,
-      timeControl,
-      komi,
-      handicap,
-      handicapStones,
       aiDifficulty,
       ogsGameId,
       ogsUserId,
       gamedata,
+      chat: [],
       createdAt: Date.now(),
       endedAt: null,
       winner: null,
-      result: null,
-      corrActiveColor: null,
-      corrTurnDeadline: null
+      result: null
     };
     const d = await getDb();
     await d.collection('games').insertOne(game);
@@ -283,24 +268,35 @@ export async function appendMove(id, moveEntry) {
   }
 }
 
+export async function appendGamedataMove(id, packedMove) {
+  try {
+    const d = await getDb();
+    await d.collection('games').updateOne({ _id: id }, { $push: { 'gamedata.moves': packedMove } });
+  } catch (err) {
+    console.error('[db] appendGamedataMove failed:', err.message);
+    throw err;
+  }
+}
+
 export async function findMatchingGame(size, timeControl, excludeUsername = null) {
   try {
     const d = await getDb();
+    const jgof = toJgofTimeControl(timeControl);
     const query = {
       status: 'waiting',
-      size,
       gameType: 'hook',
-      'timeControl.type': timeControl.type
+      'gamedata.width': size,
+      'gamedata.time_control.system': jgof.system
     };
-    if (timeControl.type === 'byoyomi') {
-      query['timeControl.initial'] = timeControl.initial;
-      query['timeControl.periods'] = timeControl.periods;
-      query['timeControl.periodTime'] = timeControl.periodTime;
-    } else if (timeControl.type === 'fischer') {
-      query['timeControl.initial'] = timeControl.initial;
-      query['timeControl.increment'] = timeControl.increment;
-    } else if (timeControl.type === 'correspondence') {
-      query['timeControl.days'] = timeControl.days;
+    if (jgof.system === 'byoyomi') {
+      query['gamedata.time_control.main_time'] = jgof.main_time;
+      query['gamedata.time_control.periods'] = jgof.periods;
+      query['gamedata.time_control.period_time'] = jgof.period_time;
+    } else if (jgof.system === 'fischer') {
+      query['gamedata.time_control.initial_time'] = jgof.initial_time;
+      query['gamedata.time_control.time_increment'] = jgof.time_increment;
+    } else if (jgof.system === 'simple') {
+      query['gamedata.time_control.per_move'] = jgof.per_move;
     }
     if (excludeUsername) {
       query.owners = { $ne: excludeUsername };
@@ -323,30 +319,32 @@ export async function getPendingGames(tcType = null) {
       'owners.0': { $exists: true }
     };
     if (tcType === 'correspondence') {
-      query['timeControl.type'] = 'correspondence';
+      query['gamedata.time_control.speed'] = 'correspondence';
     } else if (tcType === 'live') {
-      query['timeControl.type'] = { $ne: 'correspondence' };
+      query['gamedata.time_control.speed'] = { $ne: 'correspondence' };
     }
     const docs = await d.collection('games').find(query).toArray();
-    return docs.map((g) => ({
-      id: g._id,
-      creator: g.blackName || g.whiteName,
-      size: g.size,
-      timeControl: g.timeControl,
-      createdAt: g.createdAt
-    }));
+    return docs.map((g) => {
+      const players = g.gamedata?.players;
+      return {
+        id: g._id,
+        creator: players?.black?.username || players?.white?.username,
+        size: g.gamedata?.width ?? 19,
+        timeControl: g.gamedata?.time_control ?? { system: 'none' },
+        createdAt: g.createdAt
+      };
+    });
   } catch (err) {
     console.error('[db] getPendingGames failed:', err.message);
     throw err;
   }
 }
 
-function computeIsMyTurn(status, moves, handicapStones, myColor) {
-  if (status !== 'playing') return null;
-  const firstSign = handicapStones.length > 0 ? -1 : 1;
-  const currentSign = moves.length % 2 === 0 ? firstSign : -firstSign;
-  const mySign = myColor === 'black' ? 1 : -1;
-  return currentSign === mySign;
+function colorToMove(gamedata) {
+  const moveCount = (gamedata.moves ?? []).length;
+  const firstColor = gamedata.initial_player === 'white' ? 'white' : 'black';
+  const otherColor = firstColor === 'black' ? 'white' : 'black';
+  return moveCount % 2 === 0 ? firstColor : otherColor;
 }
 
 export async function getUserGames(username) {
@@ -360,23 +358,19 @@ export async function getUserGames(username) {
       })
       .toArray();
     return docs.map((g) => {
-      const moves = g.moves ?? [];
-      const handicapStones = g.handicapStones ?? [];
-      const myColor = g.blackName === username ? 'black' : 'white';
-      const isCorr = g.timeControl?.type === 'correspondence';
-      const isMyTurn = computeIsMyTurn(g.status, moves, handicapStones, myColor);
+      const gamedata = g.gamedata ?? {};
+      const players = gamedata.players ?? {};
+      const myColor = players.black?.username === username ? 'black' : 'white';
+      const opponentColor = myColor === 'black' ? 'white' : 'black';
+      const isCorr = gamedata.time_control?.speed === 'correspondence';
+      const isMyTurn = g.status === 'playing' ? colorToMove(gamedata) === myColor : null;
       return {
         id: g._id,
         status: g.status,
-        timeControl: g.timeControl,
-        opponent: g.blackName === username ? g.whiteName : g.blackName,
+        opponent: players[opponentColor]?.username ?? null,
         isMyTurn,
-        corrTurnDeadline: isCorr ? g.corrTurnDeadline : null,
-        moves,
-        size: g.size ?? 19,
-        blackName: g.blackName,
-        whiteName: g.whiteName,
-        handicapStones
+        corrTurnDeadline: isCorr ? (gamedata.clock?.expiration ?? null) : null,
+        gamedata
       };
     });
   } catch (err) {
@@ -496,43 +490,22 @@ export async function getAllUserGames(username) {
 
 // --- Leaderboards ---
 
+function liveTimeFilter(range) {
+  return {
+    $or: [
+      { 'gamedata.time_control.system': 'byoyomi', 'gamedata.time_control.main_time': range },
+      { 'gamedata.time_control.system': 'fischer', 'gamedata.time_control.initial_time': range }
+    ]
+  };
+}
+
 const LEADERBOARD_CATEGORIES = [
-  {
-    key: 'bullet',
-    filter: {
-      'timeControl.type': { $in: ['byoyomi', 'fischer'] },
-      'timeControl.initial': { $lte: 180 }
-    }
-  },
-  {
-    key: 'blitz',
-    filter: {
-      'timeControl.type': { $in: ['byoyomi', 'fischer'] },
-      'timeControl.initial': { $gt: 180, $lte: 600 }
-    }
-  },
-  {
-    key: 'rapid',
-    filter: {
-      'timeControl.type': { $in: ['byoyomi', 'fischer'] },
-      'timeControl.initial': { $gt: 600, $lte: 1800 }
-    }
-  },
-  {
-    key: 'classical',
-    filter: {
-      'timeControl.type': { $in: ['byoyomi', 'fischer'] },
-      'timeControl.initial': { $gt: 1800 }
-    }
-  },
-  {
-    key: 'correspondence',
-    filter: { 'timeControl.type': 'correspondence' }
-  },
-  {
-    key: 'unlimited',
-    filter: { 'timeControl.type': 'none' }
-  }
+  { key: 'bullet', filter: liveTimeFilter({ $lte: 180 }) },
+  { key: 'blitz', filter: liveTimeFilter({ $gt: 180, $lte: 600 }) },
+  { key: 'rapid', filter: liveTimeFilter({ $gt: 600, $lte: 1800 }) },
+  { key: 'classical', filter: liveTimeFilter({ $gt: 1800 }) },
+  { key: 'correspondence', filter: { 'gamedata.time_control.speed': 'correspondence' } },
+  { key: 'unlimited', filter: { 'gamedata.time_control.system': 'none' } }
 ];
 
 async function leaderboardForCategory(collection, filter) {

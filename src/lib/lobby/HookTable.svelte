@@ -43,7 +43,7 @@
           >
             <td>{game.creator}</td>
             <td>{formatTime(game.createdAt, now)}</td>
-            <td>{formatClock(game.timeControl)}</td>
+            <td>{formatOgsClock(game.timeControl)}</td>
             <td>{game.size}×{game.size}</td>
             <td>—</td>
             <td>—</td>

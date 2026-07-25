@@ -1,26 +1,37 @@
 <script>
   import GoBoard from '$lib/game/GoBoard.svelte';
-  import { replayMoves, placeStones, createBoard } from '$lib/game/board';
+  import { replayMoves, placeStones, createBoard, parseSgfCoords } from '$lib/game/board';
 
   let { games } = $props();
 
+  function moveEntries(game) {
+    const packed = game.gamedata?.moves ?? [];
+    return packed.map(([x, y]) => (x < 0 ? { type: 'pass' } : { type: 'move', x, y }));
+  }
+
+  function boardSize(game) {
+    return game.gamedata?.width ?? 19;
+  }
+
   function signMapForGame(game) {
-    const size = game.size ?? 19;
-    if (!game.moves || game.moves.length === 0) {
+    const size = boardSize(game);
+    const moves = moveEntries(game);
+    if (moves.length === 0) {
       return Array.from({ length: size }, () => Array(size).fill(0));
     }
     let initialBoard = null;
-    if (game.handicapStones?.length > 0) {
-      const stoneList = game.handicapStones.map(({ x, y }) => ({ x, y, sign: 1 }));
+    const handicapCoords = parseSgfCoords(game.gamedata?.initial_state?.black ?? '');
+    if (handicapCoords.length > 0) {
+      const stoneList = handicapCoords.map(([x, y]) => ({ x, y, sign: 1 }));
       initialBoard = placeStones(createBoard(size), stoneList);
     }
-    return replayMoves(game.moves, size, initialBoard).signMap;
+    return replayMoves(moves, size, initialBoard).signMap;
   }
 
-  function lastMove(moves) {
-    const last = moves.at(-1);
-    if (!last || last.type === 'pass') return null;
-    return [last.x, last.y];
+  function lastMove(game) {
+    const last = (game.gamedata?.moves ?? []).at(-1);
+    if (!last || last[0] < 0) return null;
+    return [last[0], last[1]];
   }
 </script>
 
@@ -30,8 +41,8 @@
       <div class="my-game-card__board">
         <GoBoard
           signMap={signMapForGame(game)}
-          size={game.size ?? 19}
-          lastMove={lastMove(game.moves)}
+          size={boardSize(game)}
+          lastMove={lastMove(game)}
           interactive={false}
         />
       </div>

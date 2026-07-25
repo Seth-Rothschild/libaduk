@@ -1,77 +1,9 @@
 import { WebSocketServer } from 'ws';
 import * as db from './db.js';
-import { handicapPoints } from '../game/board/helpers.js';
-import { createBoard, placeStones, replayMoves } from '../game/board/board.js';
-import { OgsAdapter } from './ogsAdapter.js';
 import * as tvRoom from './tvRoom.js';
-
-function createInitialClockState(tc, hasHandicap) {
-  if (!tc || (tc.type !== 'byoyomi' && tc.type !== 'fischer')) return null;
-  const mainMs = (tc.initial ?? 0) * 1000;
-  const isByoyomi = tc.type === 'byoyomi';
-  const periodMs = isByoyomi ? (tc.periodTime ?? 30) * 1000 : 0;
-  const clockEntry = {
-    mainMs,
-    byoMs: isByoyomi ? periodMs : 0,
-    byoPeriods: isByoyomi ? (tc.periods ?? 5) : 0,
-    inByoYomi: isByoyomi && mainMs === 0,
-    periodMs
-  };
-  return {
-    black: { ...clockEntry },
-    white: { ...clockEntry },
-    activeColor: hasHandicap ? 'white' : 'black',
-    turnStartedAt: null
-  };
-}
-
-function tickClockState(clockState) {
-  if (!clockState) return null;
-  const now = Date.now();
-  const movedColor = clockState.activeColor;
-  const clock = { ...clockState[movedColor] };
-  const elapsed = clockState.turnStartedAt ? now - clockState.turnStartedAt : 0;
-  if (clock.inByoYomi) {
-    const periodStep = clock.periodMs > 0 ? clock.periodMs : clock.byoMs;
-    let remaining = clock.byoMs - elapsed;
-    let periodsLeft = clock.byoPeriods;
-    while (remaining <= 0 && periodsLeft > 1) {
-      periodsLeft--;
-      remaining += periodStep;
-    }
-    clock.byoMs = clock.periodMs ?? clock.byoMs;
-    clock.byoPeriods = periodsLeft;
-  } else if (elapsed > 0) {
-    clock.mainMs = Math.max(0, clock.mainMs - elapsed);
-    if (clock.mainMs <= 0 && clock.byoPeriods > 0) {
-      clock.inByoYomi = true;
-    }
-  }
-  return {
-    ...clockState,
-    [movedColor]: clock,
-    activeColor: movedColor === 'black' ? 'white' : 'black',
-    turnStartedAt: now
-  };
-}
-
-function buildCurrentBoard(game) {
-  const size = game.size ?? 19;
-  const moves = game.moves ?? [];
-  const handicapStones = game.handicapStones ?? [];
-
-  let initialBoard = null;
-  if (handicapStones.length > 0) {
-    const stoneList = handicapStones.map(({ x, y }) => ({ x, y, sign: 1 }));
-    initialBoard = placeStones(createBoard(size), stoneList);
-  }
-
-  const board = replayMoves(moves, size, initialBoard);
-  const firstSign = handicapStones.length > 0 ? -1 : 1;
-  const currentSign = moves.length % 2 === 0 ? firstSign : -firstSign;
-
-  return { board, currentSign };
-}
+import { NativeGame } from './games/nativeHost.js';
+import { OgsGame } from './games/ogsProxy.js';
+import { newNativeGamedata } from './games/gamedata.js';
 
 if (!global.__lobbyClients) global.__lobbyClients = new Set();
 const lobbyClients = global.__lobbyClients;
@@ -82,8 +14,8 @@ const gameClients = global.__gameClients;
 if (!global.__onlinePlayers) global.__onlinePlayers = new Map();
 const onlinePlayers = global.__onlinePlayers;
 
-if (!global.__ogsAdapters) global.__ogsAdapters = new Map();
-const ogsAdapters = global.__ogsAdapters;
+if (!global.__gameConnections) global.__gameConnections = new Map();
+const gameConnections = global.__gameConnections;
 
 const ONLINE_TIMEOUT = 15000;
 
@@ -155,6 +87,14 @@ export function getConnectedGames() {
   return gameIds;
 }
 
+export function getLobbyStats() {
+  const { users, guests } = getOnlinePlayers();
+  return {
+    playersOnline: users.length + guests.length,
+    gamesInPlay: getConnectedGames().length
+  };
+}
+
 function generateId() {
   return Math.random().toString(36).slice(2, 8);
 }
@@ -174,14 +114,13 @@ export async function createRoom(
   extra = {}
 ) {
   const isAi = gameType === 'ai';
+  const isOgs = gameType === 'ogs';
   const id = await uniqueId();
   const creatorColor =
     color === 'random' ? (Math.random() > 0.5 ? 'black' : 'white') : (color ?? 'black');
 
-  const isOgs = gameType === 'ogs';
-
-  let blackName = !isOgs && creatorColor === 'black' && creatorName ? creatorName : null;
-  let whiteName = !isOgs && creatorColor === 'white' && creatorName ? creatorName : null;
+  let blackName = !isOgs && creatorColor === 'black' ? creatorName : null;
+  let whiteName = !isOgs && creatorColor === 'white' ? creatorName : null;
 
   if (isAi) {
     const aiLabel = `AI (strength ${extra.aiDifficulty ?? 5})`;
@@ -195,24 +134,28 @@ export async function createRoom(
   const creatorIsAuth = creatorName && /^(?!Guest\d{4}$)/.test(creatorName);
   const owners = creatorIsAuth ? [creatorName] : [];
 
+  const gamedata = isOgs
+    ? null
+    : newNativeGamedata({
+        id,
+        size,
+        komi: extra.komi ?? 6.5,
+        handicap: extra.handicap ?? 0,
+        timeControl,
+        blackName,
+        whiteName
+      });
+
   await db.createGame({
     id,
-    size,
-    blackName,
-    whiteName,
-    blackIsAuth: !!blackName && !isAi,
-    whiteIsAuth: !!whiteName && !isAi,
-    creatorColor,
-    owners,
-    timeControl,
     gameType,
+    owners,
+    creatorColor,
     status: isAi ? 'playing' : 'waiting',
     aiDifficulty: extra.aiDifficulty ?? null,
-    komi: extra.komi ?? 6.5,
-    handicap: extra.handicap ?? 0,
-    handicapStones: handicapPoints(size, extra.handicap ?? 0),
     ogsGameId: extra.ogsGameId ?? null,
-    ogsUserId: extra.ogsUserId ?? null
+    ogsUserId: extra.ogsUserId ?? null,
+    gamedata
   });
 
   return { id };
@@ -227,11 +170,14 @@ export async function joinGame(gameId, joinerName, joinerIsAuth = false) {
   if (!game || game.status !== 'waiting') return null;
 
   const openColor = game.creatorColor === 'black' ? 'white' : 'black';
-  const patch = { [`${openColor}Name`]: joinerName, status: 'playing' };
-  await db.updateGame(gameId, patch);
+  await db.updateGame(gameId, {
+    status: 'playing',
+    [`gamedata.players.${openColor}.username`]: joinerName
+  });
   if (joinerIsAuth) await db.addOwner(gameId, joinerName);
 
-  broadcast(gameId, { type: 'joined', color: openColor, name: joinerName });
+  const updated = await db.getGame(gameId);
+  emitToGame(gameId, `game/${gameId}/gamedata`, updated.gamedata);
 
   return { id: gameId, color: openColor };
 }
@@ -244,22 +190,14 @@ export async function getUserGames(username) {
   return await db.getUserGames(username);
 }
 
-export function getLobbyStats() {
-  const { users, guests } = getOnlinePlayers();
-  return {
-    playersOnline: users.length + guests.length,
-    gamesInPlay: getConnectedGames().length
-  };
+function frame(name, data) {
+  return JSON.stringify([name, data]);
 }
 
-export function getOgsAdapter(gameId) {
-  return ogsAdapters.get(gameId) ?? null;
-}
-
-export function broadcast(gameId, msg) {
+export function emitToGame(gameId, name, data) {
   const clients = gameClients.get(gameId);
   if (!clients) return;
-  const payload = JSON.stringify(msg);
+  const payload = frame(name, data);
   for (const socket of clients) {
     if (socket.readyState === socket.OPEN) {
       socket.send(payload);
@@ -267,10 +205,10 @@ export function broadcast(gameId, msg) {
   }
 }
 
-function broadcastToOthers(gameId, sender, msg) {
+function emitToOthers(gameId, sender, name, data) {
   const clients = gameClients.get(gameId);
   if (!clients) return;
-  const payload = JSON.stringify(msg);
+  const payload = frame(name, data);
   for (const socket of clients) {
     if (socket !== sender && socket.readyState === socket.OPEN) {
       socket.send(payload);
@@ -278,7 +216,13 @@ function broadcastToOthers(gameId, sender, msg) {
   }
 }
 
-function send(socket, msg) {
+function emitTo(socket, name, data) {
+  if (socket && socket.readyState === socket.OPEN) {
+    socket.send(frame(name, data));
+  }
+}
+
+function sendLegacy(socket, msg) {
   if (socket && socket.readyState === socket.OPEN) {
     socket.send(JSON.stringify(msg));
   }
@@ -314,22 +258,215 @@ function spectatorNames(gameId) {
   return names;
 }
 
+async function connectionForGame(game, ogsToken = null) {
+  const existing = gameConnections.get(game.id);
+  if (existing) return existing;
+
+  let connection;
+  if (game.gameType === 'ogs' || (game.gameType === 'uploaded' && game.ogsGameId)) {
+    connection = new OgsGame(game.id, game.ogsGameId, ogsToken, (name, data) =>
+      emitToGame(game.id, name, data)
+    );
+    await connection.connect();
+  } else {
+    connection = new NativeGame(game.id, (name, data) => emitToGame(game.id, name, data));
+  }
+  gameConnections.set(game.id, connection);
+  return connection;
+}
+
+async function handleJoin(socket, data) {
+  removeFromGame(socket);
+  const gameId = data.gameId;
+  addToGame(socket, gameId);
+  socket.playerColor = data.color ?? null;
+  socket.playerName = data.color && data.name ? data.name : null;
+  socket.spectatorName = !data.color && data.name ? data.name : null;
+
+  if (socket.playerColor) {
+    emitToGame(gameId, 'presence', { color: socket.playerColor, online: true });
+  } else {
+    emitToGame(gameId, 'spectators', { names: spectatorNames(gameId) });
+  }
+  const clients = gameClients.get(gameId);
+  for (const other of clients) {
+    if (other !== socket && other.playerColor) {
+      emitTo(socket, 'presence', { color: other.playerColor, online: true });
+    }
+  }
+  emitTo(socket, 'spectators', { names: spectatorNames(gameId) });
+
+  const game = await db.getGame(gameId);
+  if (!game) return;
+
+  const needsOgs = game.gameType === 'ogs' || (game.gameType === 'uploaded' && game.ogsGameId);
+  if (!needsOgs || data.ogsToken || game.gameType === 'uploaded') {
+    const connection = await connectionForGame(game, data.ogsToken ?? null);
+    await connection.sendState((name, payload) => emitTo(socket, name, payload));
+
+    const clock = game.gamedata?.clock;
+    const clockExpired = clock && Date.now() > clock.expiration;
+    if (game.status === 'playing' && clockExpired && connection instanceof NativeGame) {
+      await connection.timedOut();
+    }
+  }
+
+  if (game.analysisActive && game.analysisTree) {
+    emitTo(socket, 'analysis-enter', {
+      tree: game.analysisTree,
+      path: game.currentNodePath ?? null
+    });
+  }
+}
+
+async function handleGameCommand(socket, command, data) {
+  const gameId = socket.gameId;
+  if (!gameId) return;
+  const connection = gameConnections.get(gameId);
+  if (!connection) return;
+  const game = await db.getGame(gameId);
+  if (!game) return;
+
+  if (connection instanceof OgsGame) {
+    if (command === 'game/move') connection.move(data.move);
+    if (command === 'game/resign') connection.resign();
+    if (command === 'game/cancel') connection.cancel();
+    if (command === 'game/timed_out') connection.timedOut();
+    if (command === 'game/removed_stones/set') connection.setRemoved(data.stones, data.removed);
+    if (command === 'game/removed_stones/accept') connection.acceptRemoval(data.stones);
+    if (command === 'game/removed_stones/reject') connection.rejectRemoval();
+    if (command === 'game/chat') connection.chat(data.body, data.move_number);
+    return;
+  }
+
+  const color = socket.playerColor;
+  const allowAnyColor = game.gameType === 'ai';
+  if (command === 'game/move') {
+    if (!color) return;
+    await connection.move(color, data.move, { allowAnyColor });
+  }
+  if (command === 'game/resign' && color) await connection.resign(color);
+  if (command === 'game/cancel' && color) await connection.cancel(color);
+  if (command === 'game/timed_out') await connection.timedOut();
+  if (command === 'game/removed_stones/set' && color) {
+    await connection.setRemoved(color, data.stones, data.removed);
+  }
+  if (command === 'game/removed_stones/accept' && color) {
+    await connection.acceptRemoval(color, data.stones);
+  }
+  if (command === 'game/removed_stones/reject' && color) {
+    await connection.rejectRemoval(color);
+  }
+  if (command === 'room/force-resign' && color) {
+    const opponent = color === 'black' ? 'white' : 'black';
+    await connection.resign(opponent);
+  }
+  if (command === 'game/chat') {
+    const username = socket.playerName ?? socket.spectatorName ?? 'anon';
+    const playerId = color === 'black' ? 1 : color === 'white' ? 2 : 0;
+    await connection.chat(username, playerId, data.body, data.move_number);
+  }
+}
+
+async function handleCommand(socket, command, data) {
+  if (command === 'net/ping') {
+    emitTo(socket, 'net/pong', { client: data.client, server: Date.now() });
+    return;
+  }
+  if (command === 'authenticate') return;
+
+  if (command === 'room/join') {
+    await handleJoin(socket, data);
+    return;
+  }
+  if (command.startsWith('game/') || command === 'room/force-resign') {
+    await handleGameCommand(socket, command, data);
+    return;
+  }
+  if (command === 'typing' && socket.gameId) {
+    const name = socket.playerName ?? socket.spectatorName;
+    if (name) {
+      emitToGame(socket.gameId, 'typing', { user: name, isTyping: !!data.isTyping });
+    }
+    return;
+  }
+  if (command === 'analysis-enter' && socket.gameId) {
+    await db.updateGame(socket.gameId, {
+      analysisTree: data.tree,
+      currentNodePath: data.path ?? null,
+      analysisActive: true
+    });
+    emitToOthers(socket.gameId, socket, 'analysis-enter', {
+      tree: data.tree,
+      path: data.path ?? null
+    });
+    return;
+  }
+  if (command === 'analysis-exit' && socket.gameId) {
+    await db.updateGame(socket.gameId, { analysisActive: false });
+    emitToOthers(socket.gameId, socket, 'analysis-exit', {});
+    return;
+  }
+  if (command === 'analysis-tree' && socket.gameId) {
+    await db.updateGame(socket.gameId, {
+      analysisTree: data.tree,
+      currentNodePath: data.path ?? null
+    });
+    emitToOthers(socket.gameId, socket, 'analysis-tree', {
+      tree: data.tree,
+      path: data.path ?? null
+    });
+    return;
+  }
+  if (command === 'request-control' && socket.gameId) {
+    emitToGame(socket.gameId, 'request-control', { user: data.user });
+    return;
+  }
+  if (command === 'clear-control' && socket.gameId) {
+    emitToGame(socket.gameId, 'clear-control', {});
+  }
+}
+
+function handleLegacyMessage(socket, msg) {
+  if (msg.type === 'ping') {
+    if (msg.name) {
+      onlinePlayers.set(msg.name, { lastPing: Date.now(), isAuth: !!msg.isAuth });
+    }
+    sendLegacy(socket, { type: 'pong', ...getLobbyStats() });
+  }
+  if (msg.type === 'tv-join') {
+    socket.tvViewer = true;
+    const name = typeof msg.name === 'string' ? msg.name.slice(0, 50) : 'anon';
+    tvRoom.addClient(socket, name);
+    const state = tvRoom.getState();
+    sendLegacy(socket, {
+      type: 'tv-state',
+      gameId: state.gameId,
+      chat: state.chat,
+      viewers: state.viewers
+    });
+  }
+  if (msg.type === 'tv-set-game' && socket.tvViewer) {
+    if (tvRoom.getState().gameId == null && msg.gameId) {
+      tvRoom.setGame(msg.gameId, {
+        blackName: msg.blackName ?? null,
+        whiteName: msg.whiteName ?? null
+      });
+    }
+  }
+  if (msg.type === 'tv-chat' && socket.tvViewer) {
+    const text = typeof msg.text === 'string' ? msg.text.slice(0, 500).trim() : '';
+    const user = typeof msg.user === 'string' ? msg.user.slice(0, 50) : 'anon';
+    const moveNumber = Number.isFinite(msg.moveNumber) ? msg.moveNumber : null;
+    if (text) tvRoom.addChat({ user, text, t: Date.now(), moveNumber });
+  }
+  if (msg.type === 'tv-game-ended' && socket.tvViewer) {
+    tvRoom.clearGameIfMatches(msg.gameId);
+  }
+}
+
 export function attachWebSocketServer(httpServer) {
   const wss = new WebSocketServer({ noServer: true });
-
-  //// Stopgap to force synchronization. Confirming with users if the issues are resolved before removing.
-  // setInterval(async () => {
-  //   for (const [gameId, clients] of gameClients) {
-  //     const game = await db.getGame(gameId);
-  //     if (game?.analysisActive && game?.analysisTree) {
-  //       broadcast(gameId, {
-  //         type: 'analysis-tree',
-  //         tree: game.analysisTree,
-  //         path: game.currentNodePath ?? null
-  //       });
-  //     }
-  //   }
-  // }, 5000);
 
   httpServer.on('upgrade', (req, socket, head) => {
     if (req.url === '/ws') {
@@ -348,332 +485,19 @@ export function attachWebSocketServer(httpServer) {
       } catch {
         return;
       }
-      if (msg.type === 'ping') {
-        if (msg.name) {
-          onlinePlayers.set(msg.name, { lastPing: Date.now(), isAuth: !!msg.isAuth });
+      if (Array.isArray(msg)) {
+        const [command, data] = msg;
+        if (typeof command !== 'string') return;
+        try {
+          await handleCommand(socket, command, data ?? {});
+        } catch (err) {
+          console.error(`[rooms] ${command} failed:`, err.message);
         }
-        send(socket, { type: 'pong', ...getLobbyStats() });
+        return;
       }
-      if (msg.type === 'join' && msg.gameId) {
-        removeFromGame(socket);
-        addToGame(socket, msg.gameId);
-        socket.playerColor = msg.color ?? null;
-        socket.playerName = msg.color && msg.name ? msg.name : null;
-        socket.spectatorName = !msg.color && msg.name ? msg.name : null;
-        if (socket.playerColor) {
-          broadcast(msg.gameId, { type: 'presence', color: socket.playerColor, online: true });
-        } else {
-          broadcast(msg.gameId, { type: 'spectators', names: spectatorNames(msg.gameId) });
-        }
-        const clients = gameClients.get(msg.gameId);
-        for (const other of clients) {
-          if (other !== socket && other.playerColor) {
-            send(socket, { type: 'presence', color: other.playerColor, online: true });
-          }
-        }
-        send(socket, { type: 'spectators', names: spectatorNames(msg.gameId) });
-
-        const game = await db.getGame(msg.gameId);
-        if (
-          game?.status === 'playing' &&
-          game?.timeControl?.type === 'correspondence' &&
-          game?.corrTurnDeadline &&
-          Date.now() > game.corrTurnDeadline
-        ) {
-          const whiteFirst = (game.handicapStones ?? []).length > 0;
-          const moveCount = (game.moves ?? []).length;
-          const blackIsNext = whiteFirst ? moveCount % 2 !== 0 : moveCount % 2 === 0;
-          const timedOutColor = blackIsNext ? 'black' : 'white';
-          const winner = timedOutColor === 'black' ? 'white' : 'black';
-          await db.updateGame(msg.gameId, {
-            status: 'finished',
-            winner,
-            result: `${winner === 'black' ? 'B' : 'W'}+T`,
-            endedAt: Date.now()
-          });
-          broadcast(msg.gameId, {
-            type: 'gameover',
-            winner,
-            result: `${winner === 'black' ? 'B' : 'W'}+T`
-          });
-        }
-        if (game?.analysisActive && game?.analysisTree) {
-          send(socket, {
-            type: 'analysis-enter',
-            tree: game.analysisTree,
-            path: game.currentNodePath ?? null
-          });
-        }
-
-        if (game?.gamedata) {
-          send(socket, { type: 'gamedata', gamedata: game.gamedata });
-        }
-
-        if (game?.ogsGameId && (msg.ogsToken || game.gameType === 'uploaded')) {
-          let adapter = ogsAdapters.get(msg.gameId);
-          if (!adapter) {
-            const existingChat = await db.getChat(msg.gameId);
-            const persistedTs = new Set(existingChat.map((e) => e.t).filter(Boolean));
-            adapter = new OgsAdapter(game.ogsGameId, game.ogsUserId ?? null, msg.ogsToken, {
-              onBroadcast: (m) => {
-                if (m.type === 'move') db.appendMove(msg.gameId, { type: 'move', x: m.x, y: m.y });
-                if (m.type === 'pass') db.appendMove(msg.gameId, { type: 'pass' });
-                if (m.type === 'chat' && !persistedTs.has(m.t)) {
-                  persistedTs.add(m.t);
-                  db.appendChat(msg.gameId, { user: m.user, text: m.text, t: m.t });
-                }
-                if (m.type === 'gameover') {
-                  db.getGame(msg.gameId).then((current) => {
-                    if (!current || current.status === 'finished') return;
-                    const patch = {
-                      status: 'finished',
-                      winner: m.winner,
-                      result: m.result,
-                      deadStones: m.deadStones,
-                      endedAt: Date.now()
-                    };
-                    db.updateGame(msg.gameId, patch);
-                  });
-                }
-                broadcast(msg.gameId, m);
-              },
-              onUnicast: (m) => send(socket, m),
-              onGameStart: (myColor, blackName, whiteName, handicapStones, timeControl, komi) => {
-                if (game.gameType !== 'ogs' || game.status !== 'waiting') return;
-                socket.playerColor = myColor;
-                socket.spectatorName = null;
-                broadcast(msg.gameId, { type: 'presence', color: myColor, online: true });
-                broadcast(msg.gameId, { type: 'spectators', names: spectatorNames(msg.gameId) });
-                const stones = handicapStones.map(([x, y]) => ({ x, y }));
-                db.updateGame(msg.gameId, {
-                  blackName,
-                  whiteName,
-                  timeControl,
-                  status: 'playing',
-                  handicapStones: stones,
-                  komi
-                });
-              },
-              onGameData: (gameData) => {
-                broadcast(msg.gameId, { type: 'gamedata', gamedata: gameData });
-                if (!game.gamedata) {
-                  db.updateGame(msg.gameId, { gamedata: gameData });
-                  game.gamedata = gameData;
-                }
-                const dbMoveCount = game.moves.length;
-                const ogsMoveCount = gameData.moves.length;
-                if (dbMoveCount < ogsMoveCount) {
-                  const missingMoves = gameData.moves.slice(dbMoveCount);
-                  for (const m of missingMoves) {
-                    const [x, y] = m;
-                    if (x < 0) continue;
-                    db.appendMove(msg.gameId, { type: 'move', x, y });
-                  }
-                }
-              }
-            });
-            ogsAdapters.set(msg.gameId, adapter);
-            adapter.connect();
-          } else if (adapter.myColor) {
-            socket.playerColor = adapter.myColor;
-            socket.spectatorName = null;
-            broadcast(msg.gameId, { type: 'spectators', names: spectatorNames(msg.gameId) });
-            send(socket, { type: 'my-color', color: adapter.myColor, handicapStones: [] });
-          }
-        }
-      }
-      if (msg.type === 'move' && socket.gameId) {
-        const game = await db.getGame(socket.gameId);
-        if (!game || game.status !== 'playing') return;
-
-        if (game.gameType === 'ogs') {
-          const adapter = ogsAdapters.get(socket.gameId);
-          if (adapter) {
-            adapter.sendMove(msg.x, msg.y);
-            await db.appendMove(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
-            broadcast(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
-          }
-          return;
-        }
-        if (game.gameType === 'ai') {
-          await db.appendMove(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
-          broadcastToOthers(socket.gameId, socket, { type: 'move', x: msg.x, y: msg.y });
-          return;
-        }
-        const { board, currentSign } = buildCurrentBoard(game);
-        const analysis = board.analyzeMove(currentSign, [msg.x, msg.y]);
-        if (analysis.overwrite || analysis.suicide || analysis.ko) return;
-        const hasHandicap = (game.handicapStones ?? []).length > 0;
-        const clockState = tickClockState(
-          game.clockState ?? createInitialClockState(game.timeControl, hasHandicap)
-        );
-        await db.appendMove(socket.gameId, { type: 'move', x: msg.x, y: msg.y });
-        const movePatch = { consecutivePasses: 0 };
-        if (clockState) movePatch.clockState = clockState;
-        if (game.timeControl?.type === 'correspondence') {
-          const turnDeadline = Date.now() + (game.timeControl.days ?? 3) * 24 * 60 * 60 * 1000;
-          movePatch.corrTurnDeadline = turnDeadline;
-          broadcast(socket.gameId, { type: 'move', x: msg.x, y: msg.y, turnDeadline });
-          await db.updateGame(socket.gameId, movePatch);
-          return;
-        }
-        await db.updateGame(socket.gameId, movePatch);
-        broadcast(socket.gameId, { type: 'move', x: msg.x, y: msg.y, clockState });
-      }
-      if (msg.type === 'pass' && socket.gameId) {
-        const game = await db.getGame(socket.gameId);
-        if (!game || game.status !== 'playing') return;
-
-        if (game.gameType === 'ogs') {
-          const adapter = ogsAdapters.get(socket.gameId);
-          if (adapter) {
-            adapter.sendPass();
-            await db.appendMove(socket.gameId, { type: 'pass' });
-            broadcast(socket.gameId, { type: 'pass' });
-          }
-          return;
-        }
-        if (game.gameType === 'ai') {
-          await db.appendMove(socket.gameId, { type: 'pass' });
-          broadcastToOthers(socket.gameId, socket, { type: 'pass' });
-          return;
-        }
-        const hasHandicap = (game.handicapStones ?? []).length > 0;
-        const clockState = tickClockState(
-          game.clockState ?? createInitialClockState(game.timeControl, hasHandicap)
-        );
-        const consecutivePasses = (game.consecutivePasses ?? 0) + 1;
-        await db.appendMove(socket.gameId, { type: 'pass' });
-        const patch = { consecutivePasses };
-        if (clockState) patch.clockState = clockState;
-        if (consecutivePasses >= 2) patch.status = 'scoring';
-        await db.updateGame(socket.gameId, patch);
-        broadcast(socket.gameId, { type: 'pass', clockState });
-      }
-      if (msg.type === 'approve-score' && socket.gameId) {
-        const game = await db.getGame(socket.gameId);
-        if (!game) return;
-        if (game.gameType === 'ogs') {
-          const adapter = ogsAdapters.get(socket.gameId);
-          if (adapter) adapter.acceptScoring();
-        } else {
-          broadcastToOthers(socket.gameId, socket, { type: 'approve-score', color: msg.color });
-        }
-      }
-      if (msg.type === 'scoring-mark' && socket.gameId) {
-        const game = await db.getGame(socket.gameId);
-        if (!game) return;
-        if (game.gameType === 'ogs') {
-          const adapter = ogsAdapters.get(socket.gameId);
-          if (adapter) adapter.toggleDeadStone(msg.x, msg.y);
-        } else {
-          broadcast(socket.gameId, { type: 'scoring-mark', x: msg.x, y: msg.y });
-        }
-      }
-      if (msg.type === 'scoring-resume' && socket.gameId) {
-        const game = await db.getGame(socket.gameId);
-        if (!game) return;
-        if (game.gameType === 'ogs') {
-          const adapter = ogsAdapters.get(socket.gameId);
-          if (adapter) adapter.rejectScoring();
-        } else {
-          await db.updateGame(socket.gameId, { status: 'playing', consecutivePasses: 0 });
-          broadcast(socket.gameId, { type: 'scoring-resume' });
-        }
-      }
-      if (msg.type === 'analysis-enter' && socket.gameId) {
-        await db.updateGame(socket.gameId, {
-          analysisTree: msg.tree,
-          currentNodePath: msg.path ?? null,
-          analysisActive: true
-        });
-        broadcastToOthers(socket.gameId, socket, {
-          type: 'analysis-enter',
-          tree: msg.tree,
-          path: msg.path ?? null
-        });
-      }
-      if (msg.type === 'analysis-exit' && socket.gameId) {
-        await db.updateGame(socket.gameId, { analysisActive: false });
-        broadcastToOthers(socket.gameId, socket, { type: 'analysis-exit' });
-      }
-      if (msg.type === 'analysis-tree' && socket.gameId) {
-        await db.updateGame(socket.gameId, {
-          analysisTree: msg.tree,
-          currentNodePath: msg.path ?? null
-        });
-        broadcastToOthers(socket.gameId, socket, {
-          type: 'analysis-tree',
-          tree: msg.tree,
-          path: msg.path ?? null
-        });
-      }
-      if (msg.type === 'request-control' && socket.gameId) {
-        broadcast(socket.gameId, { type: 'request-control', user: msg.user });
-      }
-      if (msg.type === 'clear-control' && socket.gameId) {
-        broadcast(socket.gameId, { type: 'clear-control' });
-      }
-      if (msg.type === 'tv-join') {
-        socket.tvViewer = true;
-        const name = typeof msg.name === 'string' ? msg.name.slice(0, 50) : 'anon';
-        tvRoom.addClient(socket, name);
-        const state = tvRoom.getState();
-        send(socket, {
-          type: 'tv-state',
-          gameId: state.gameId,
-          chat: state.chat,
-          viewers: state.viewers
-        });
-      }
-      if (msg.type === 'tv-set-game' && socket.tvViewer) {
-        if (tvRoom.getState().gameId == null && msg.gameId) {
-          tvRoom.setGame(msg.gameId, {
-            blackName: msg.blackName ?? null,
-            whiteName: msg.whiteName ?? null
-          });
-        }
-      }
-      if (msg.type === 'tv-chat' && socket.tvViewer) {
-        const text = typeof msg.text === 'string' ? msg.text.slice(0, 500).trim() : '';
-        const user = typeof msg.user === 'string' ? msg.user.slice(0, 50) : 'anon';
-        const moveNumber = Number.isFinite(msg.moveNumber) ? msg.moveNumber : null;
-        if (text) tvRoom.addChat({ user, text, t: Date.now(), moveNumber });
-      }
-      if (msg.type === 'tv-game-ended' && socket.tvViewer) {
-        tvRoom.clearGameIfMatches(msg.gameId);
-      }
-      if (msg.type === 'typing' && socket.gameId) {
-        const name = socket.playerName ?? socket.spectatorName;
-        if (name)
-          broadcast(socket.gameId, { type: 'typing', user: name, isTyping: !!msg.isTyping });
-      }
-      if (msg.type === 'cancel' && socket.gameId) {
-        const game = await db.getGame(socket.gameId);
-        if (!game || !socket.playerColor) return;
-        const moveCount = (game.moves ?? []).length;
-        const canCancel = game.status === 'waiting' || (game.status === 'playing' && moveCount < 2);
-        if (canCancel) {
-          await db.updateGame(socket.gameId, { status: 'cancelled', endedAt: Date.now() });
-          broadcast(socket.gameId, { type: 'cancel' });
-        }
-      }
-      if (msg.type === 'gameover' && socket.gameId) {
-        const game = await db.getGame(socket.gameId);
-        if (game && game.status !== 'finished') {
-          if (game.gameType === 'ogs' && msg.result?.endsWith('+R')) {
-            const adapter = ogsAdapters.get(socket.gameId);
-            if (adapter) adapter.sendResign();
-          }
-          const winner = msg.winner;
-          const result = msg.result ?? null;
-          const patch = { status: 'finished', winner, result, endedAt: Date.now() };
-          if (msg.clockState) patch.clockState = msg.clockState;
-          await db.updateGame(socket.gameId, patch);
-          broadcast(socket.gameId, { type: 'gameover', winner, result });
-        }
-      }
+      handleLegacyMessage(socket, msg);
     });
+
     socket.on('close', async () => {
       lobbyClients.delete(socket);
       if (socket.tvViewer) tvRoom.removeClient(socket);
@@ -682,24 +506,25 @@ export function attachWebSocketServer(httpServer) {
       const wasSpectator = !color && !!socket.spectatorName;
       removeFromGame(socket);
       if (gameId && color) {
-        broadcast(gameId, { type: 'presence', color, online: false });
+        emitToGame(gameId, 'presence', { color, online: false });
       } else if (gameId && wasSpectator) {
-        broadcast(gameId, { type: 'spectators', names: spectatorNames(gameId) });
+        emitToGame(gameId, 'spectators', { names: spectatorNames(gameId) });
       }
       if (gameId && !gameClients.has(gameId)) {
         const game = await db.getGame(gameId);
-        const isCorrespondence = game.timeControl?.type === 'correspondence';
+        const isCorrespondence = game?.gamedata?.time_control?.speed === 'correspondence';
         const isAbandoned =
+          game &&
           !isCorrespondence &&
           ((game.status === 'waiting' && game.gameType === 'hook') ||
-            (game.gameType === 'ai' && game.status !== 'finished'));
-        if (game && isAbandoned) {
+            (game.gameType === 'ai' && game.status !== 'finished' && game.status !== 'cancelled'));
+        if (isAbandoned) {
           await db.updateGame(gameId, { status: 'cancelled', endedAt: Date.now() });
         }
-        const adapter = ogsAdapters.get(gameId);
-        if (adapter) {
-          adapter.destroy();
-          ogsAdapters.delete(gameId);
+        const connection = gameConnections.get(gameId);
+        if (connection) {
+          if (connection instanceof OgsGame) connection.destroy();
+          gameConnections.delete(gameId);
         }
       }
     });

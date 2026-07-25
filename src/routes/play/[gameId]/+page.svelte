@@ -52,12 +52,12 @@
     colorName,
     computeScore,
     buildScoreBoard,
-    toggleDeadStones,
     scoreVerdictShort,
     exportSgf,
     parseSgfCoords,
     formatVertex
   } from '$lib/game/board';
+  import { encodeMove } from '$lib/goban.js';
   import { initEngine, generateMove, hasModel, isReady, dispose } from '$lib/ai/engine.js';
   import { t } from '$lib/i18n/i18n.svelte.js';
   import ModelManager from '$lib/ai/ModelManager.svelte';
@@ -72,11 +72,20 @@
     return null;
   }
 
+  function resolveViewerColor(gamedata) {
+    if (data.viewerColor) return data.viewerColor;
+    const ogsUsername = getMe()?.ogs?.username;
+    if (!ogsUsername || !gamedata?.players) return null;
+    if (gamedata.players.black?.username === ogsUsername) return 'black';
+    if (gamedata.players.white?.username === ogsUsername) return 'white';
+    return null;
+  }
+
   let { data } = $props();
   const username = $derived(data.user?.username ?? '');
   const displayName = $derived(username || getGuestId());
 
-  let komi = $state(data.game.komi ?? 6.5);
+  let komi = $state(data.game.gamedata?.komi ?? 6.5);
 
   const gameId = $derived(page.params.gameId);
   const isOgs = $derived(data.game.gameType === 'ogs');
@@ -86,8 +95,8 @@
   let chatInputText = $state('');
   let typingUsers = $state(new Set());
   const typingTimers = new Map();
-  let blackName = $state(data.game.blackName ?? null);
-  let whiteName = $state(data.game.whiteName ?? null);
+  let blackName = $state(data.game.gamedata?.players?.black?.username ?? null);
+  let whiteName = $state(data.game.gamedata?.players?.white?.username ?? null);
   let blackOnline = $state(false);
   let whiteOnline = $state(false);
   let spectators = $state([]);
@@ -98,7 +107,6 @@
   const isAI = $derived(data.game.gameType === 'ai');
   const aiDifficulty = $derived(data.game.aiDifficulty ?? 5);
   let aiThinking = $state(false);
-  let aiMoveHistory = $state([]);
   let showModelPrompt = $state(false);
   let engineError = $state(null);
   let engineLoading = $state(false);
@@ -114,16 +122,11 @@
   }
 
   $effect(() => {
-    gameSocket.send({ type: 'typing', isTyping: chatInputText.trim().length > 0 });
+    gameSocket.send('typing', { isTyping: chatInputText.trim().length > 0 });
   });
 
   function handleChatSend(text) {
-    chatMessages.push({ user: displayName, text });
-    fetch('/api/game/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gameId, user: displayName, text })
-    });
+    gameSocket.send('game/chat', { body: text, move_number: gs.totalPly });
   }
 
   let gs = $state(new GameState());
@@ -140,7 +143,7 @@
     gs.status = 'playing';
     if (color === 'black') blackName = displayName;
     else whiteName = displayName;
-    gameSocket.send({ type: 'join', gameId, color });
+    gameSocket.join(gameId, color, null, displayName);
   }
 
   const isSpectator = $derived(gs.mySign === null);
@@ -162,19 +165,7 @@
   function handleTimeout(loser) {
     if (gs.status !== 'playing') return;
     gs.timedOutColor = loser;
-    gs.status = 'gameover';
-    const winnerColor = loser === 'black' ? 'white' : 'black';
-    gs.winner = winnerColor === 'black' ? 1 : -1;
-    gs.winnerResult = `${winnerColor === 'black' ? 'B' : 'W'}+T`;
-    fetch('/api/game/finish', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        gameId,
-        winner: winnerColor,
-        result: gs.winnerResult
-      })
-    });
+    gameSocket.send('game/timed_out', { game_id: gameId });
   }
 
   const hasClock = $derived(
@@ -224,20 +215,29 @@
   const aiSign = $derived(isAI ? (mySign === 1 ? -1 : 1) : null);
   const aiColor = $derived(isAI ? colorName(aiSign) : null);
 
-  function buildAiMoveHistory() {
-    const moves = data.game.moves ?? [];
-    return moves.map((m, i) => {
-      const color = i % 2 === 0 ? 1 : -1;
-      if (m.type === 'pass') return { color, x: -1, y: -1 };
-      return { color, x: m.x, y: m.y };
-    });
+  function currentMoveHistory() {
+    const firstColor = gs.gamedata?.initial_player === 'white' ? -1 : 1;
+    const history = [];
+    for (let i = 1; i < gs.lastMoveHistory.length; i++) {
+      const vertex = gs.lastMoveHistory[i];
+      const color = i % 2 === 1 ? firstColor : -firstColor;
+      if (vertex) {
+        history.push({ color, x: vertex[0], y: vertex[1] });
+      } else {
+        history.push({ color, x: -1, y: -1 });
+      }
+    }
+    return history;
   }
 
-  async function triggerAiMove() {
+  function maybeTriggerAiMove() {
     if (!isAI || !isReady() || aiThinking) return;
     if (gs.status !== 'playing') return;
     if (gs.currentSign !== aiSign) return;
+    triggerAiMove();
+  }
 
+  async function triggerAiMove() {
     aiThinking = true;
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     try {
@@ -245,44 +245,26 @@
         gs.board.signMap,
         aiSign,
         komi,
-        aiMoveHistory,
+        currentMoveHistory(),
         aiDifficulty
       );
       if (gs.status !== 'playing') return;
 
       if (result.move === 'pass') {
-        applyAiPass();
+        gameSocket.send('game/move', { game_id: gameId, move: '..' });
       } else {
         const moveResult = gs.board.analyzeMove(aiSign, [result.x, result.y]);
-        if (moveResult.overwrite || moveResult.suicide || moveResult.ko) {
-          applyAiPass();
+        const isIllegal = moveResult.overwrite || moveResult.suicide || moveResult.ko;
+        if (isIllegal) {
+          gameSocket.send('game/move', { game_id: gameId, move: '..' });
         } else {
-          gs.applyMove(result.x, result.y, aiSign);
-          gs.tickClock();
-          aiMoveHistory.push({ color: aiSign, x: result.x, y: result.y });
-          gameSocket.send({ type: 'move', x: result.x, y: result.y });
+          gameSocket.send('game/move', { game_id: gameId, move: encodeMove(result.x, result.y) });
         }
       }
     } catch (err) {
       console.error('[AI] Move generation failed:', err);
-    }
-    aiThinking = false;
-  }
-
-  function applyAiPass() {
-    gs.consecutivePasses++;
-    gs.lastMove = null;
-    gs.animatedVertex = null;
-    gs.currentSign = gs.currentSign === 1 ? -1 : 1;
-    gs.recordPass();
-    gs.tickClock();
-    aiMoveHistory.push({ color: aiSign, x: -1, y: -1 });
-    gameSocket.send({ type: 'pass' });
-    if (gs.consecutivePasses >= 2) {
-      gs.status = 'scoring';
-      gs.deadStones = [];
-      gs.blackApproved = false;
-      gs.whiteApproved = false;
+    } finally {
+      aiThinking = false;
     }
   }
 
@@ -299,10 +281,7 @@
     try {
       await initEngine();
       engineLoading = false;
-      aiMoveHistory = buildAiMoveHistory();
-      if (gs.status === 'playing' && gs.currentSign === aiSign) {
-        triggerAiMove();
-      }
+      maybeTriggerAiMove();
     } catch (e) {
       engineError = e.message;
       engineLoading = false;
@@ -316,10 +295,7 @@
     try {
       await initEngine();
       engineLoading = false;
-      aiMoveHistory = buildAiMoveHistory();
-      if (gs.status === 'playing' && gs.currentSign === aiSign) {
-        triggerAiMove();
-      }
+      maybeTriggerAiMove();
     } catch (err) {
       engineError = err.message;
       engineLoading = false;
@@ -368,7 +344,7 @@
     const ogsHandicap = gs.gamedata?.initial_state?.black;
     const handicapStones = ogsHandicap
       ? parseSgfCoords(ogsHandicap).map(([x, y]) => ({ x, y }))
-      : (data.game.handicapStones ?? []);
+      : [];
     const moves = [];
     for (let i = 1; i < gs.lastMoveHistory.length; i++) {
       const vertex = gs.lastMoveHistory[i];
@@ -509,110 +485,42 @@
         return;
       }
       pendingMove = null;
-      if (isAI) {
-        gs.applyMove(x, y, mySign);
-        gs.tickClock();
-        aiMoveHistory.push({ color: mySign, x, y });
-        gameSocket.send({ type: 'move', x, y });
-        triggerAiMove();
-      } else {
-        gameSocket.send({ type: 'move', x, y });
-      }
+      gameSocket.send('game/move', { game_id: gameId, move: encodeMove(x, y) });
     } else if (gs.status === 'scoring') {
-      gameSocket.send({ type: 'scoring-mark', x, y });
+      const isMarked = gs.deadStones.some(([dx, dy]) => dx === x && dy === y);
+      gameSocket.send('game/removed_stones/set', {
+        game_id: gameId,
+        stones: encodeMove(x, y),
+        removed: !isMarked
+      });
     }
   }
 
   function resumePlay() {
-    gameSocket.send({ type: 'scoring-resume' });
+    gameSocket.send('game/removed_stones/reject', { game_id: gameId });
   }
 
   function pass() {
     if (!isMyTurn) return;
-    if (isAI) {
-      applyPass();
-      aiMoveHistory.push({ color: mySign, x: -1, y: -1 });
-      gameSocket.send({ type: 'pass' });
-      if (gs.consecutivePasses < 2) {
-        triggerAiMove();
-      }
-    } else {
-      gameSocket.send({ type: 'pass' });
-    }
-  }
-
-  function applyPass() {
-    gs.consecutivePasses++;
-    gs.lastMove = null;
-    gs.animatedVertex = null;
-    gs.currentSign = gs.currentSign === 1 ? -1 : 1;
-    gs.recordPass();
-    gs.tickClock();
-    if (gs.consecutivePasses >= 2) {
-      gs.status = 'scoring';
-      gs.deadStones = [];
-      gs.blackApproved = false;
-      gs.whiteApproved = false;
-    }
+    gameSocket.send('game/move', { game_id: gameId, move: '..' });
   }
 
   function cancel() {
-    gameSocket.send({ type: 'cancel' });
-  }
-
-  function serializeClockState() {
-    if (!gs.clockState) return null;
-    return {
-      black: { ...gs.clockState.black },
-      white: { ...gs.clockState.white }
-    };
+    gameSocket.send('game/cancel', { game_id: gameId });
   }
 
   function resign() {
-    const winner = myColor === 'black' ? 'white' : 'black';
-    const result = winner === 'white' ? 'W+R' : 'B+R';
-    gs.status = 'gameover';
-    gs.winner = winner === 'black' ? 1 : -1;
-    gs.winnerResult = result;
-    gameSocket.send({ type: 'gameover', winner, result, clockState: serializeClockState() });
+    gameSocket.send('game/resign', { game_id: gameId });
   }
 
   function forceResign() {
-    const result = myColor === 'white' ? 'W+R' : 'B+R';
-    gameSocket.send({
-      type: 'gameover',
-      winner: myColor,
-      result,
-      clockState: serializeClockState()
-    });
+    gameSocket.send('room/force-resign', { game_id: gameId });
   }
 
   function approveScore() {
     if (myColor === 'black') gs.blackApproved = true;
     else gs.whiteApproved = true;
-    if (isAI) {
-      gs.blackApproved = true;
-      gs.whiteApproved = true;
-    }
-    gameSocket.send({ type: 'approve-score', color: myColor });
-    checkBothApproved();
-  }
-
-  function checkBothApproved() {
-    if (!gs.blackApproved || !gs.whiteApproved) return;
-    const finalScore = score;
-    const winner = finalScore.blackScore > finalScore.whiteScore ? 1 : -1;
-    const resultString = scoreVerdictShort(finalScore);
-    gs.status = 'gameover';
-    gs.winner = winner;
-    gs.finalScore = finalScore;
-    gameSocket.send({
-      type: 'gameover',
-      winner: winner === 1 ? 'black' : 'white',
-      result: resultString,
-      clockState: serializeClockState(),
-      deadStones: gs.deadStones
-    });
+    gameSocket.send('game/removed_stones/accept', { game_id: gameId, stones: gs.removedString });
   }
 
   const opponentOnline = $derived(
@@ -742,7 +650,9 @@
     const currentGameId = gameId;
 
     untrack(() => {
-      gs.initFromData(data.game, data.viewerColor);
+      if (data.game.gamedata) {
+        gs.initFromGamedata(data.game.gamedata, resolveViewerColor(data.game.gamedata));
+      }
       if (page.url.searchParams.has('analysis') && gs.totalPly > 0) {
         enterAnalysis();
       }
@@ -752,152 +662,150 @@
       }
       chatMessages = data.chat ?? [];
 
-      gameSocket.onMessage((msg) => {
-        if (msg.type === 'joined') {
-          gs.status = 'playing';
-          if (msg.color === 'black') blackName = msg.name;
-          else whiteName = msg.name;
+      const ogsToken = data.game.ogsGameId ? getOgsToken() : null;
+      gameSocket.join(currentGameId, data.viewerColor ?? null, ogsToken, displayName);
+
+      const prefix = `game/${currentGameId}/`;
+
+      gameSocket.on(`${prefix}gamedata`, (gamedata) => {
+        gs.initFromGamedata(gamedata, resolveViewerColor(gamedata));
+        blackName = gamedata.players?.black?.username ?? blackName;
+        whiteName = gamedata.players?.white?.username ?? whiteName;
+        komi = gamedata.komi ?? komi;
+        if (page.url.searchParams.has('analysis') && !analysis) {
+          enterAnalysis();
         }
-        if (msg.type === 'move') {
-          const opponentSign = gs.currentSign;
-          gs.applyMove(msg.x, msg.y, opponentSign);
-          if (msg.clockState) {
-            gs.clockState = msg.clockState;
-          } else if (!isOgs) {
-            gs.tickClock();
-          }
+        maybeTriggerAiMove();
+      });
+
+      gameSocket.on(`${prefix}move`, (moveEvent) => {
+        const [x, y] = moveEvent.move;
+        if (x < 0) {
+          gs.recordPass();
+        } else {
+          gs.applyMove(x, y, gs.currentSign);
         }
-        if (msg.type === 'pass') {
-          applyPass();
-          if (msg.clockState) {
-            gs.clockState = msg.clockState;
-          }
-        }
-        if (msg.type === 'approve-score') {
-          if (msg.color === 'black') gs.blackApproved = true;
-          else gs.whiteApproved = true;
-          checkBothApproved();
-        }
-        if (msg.type === 'scoring-mark') {
-          gs.deadStones = toggleDeadStones(gs.board, gs.deadStones, msg.x, msg.y);
+        maybeTriggerAiMove();
+      });
+
+      gameSocket.on(`${prefix}clock`, (clock) => {
+        gs.applyClock(clock);
+      });
+
+      gameSocket.on(`${prefix}phase`, (phase) => {
+        if (phase === 'stone removal') {
+          gs.status = 'scoring';
+          gs.deadStones = [];
+          gs.removedString = '';
           gs.blackApproved = false;
           gs.whiteApproved = false;
-        }
-        if (msg.type === 'scoring-resume') {
+        } else if (phase === 'play') {
           gs.status = 'playing';
           gs.consecutivePasses = 0;
           gs.deadStones = [];
+          gs.removedString = '';
           gs.blackApproved = false;
           gs.whiteApproved = false;
-        }
-        if (msg.type === 'typing') {
-          if (msg.user === displayName) return;
-          clearTimeout(typingTimers.get(msg.user));
-          if (msg.isTyping) {
-            typingUsers = new Set([...typingUsers, msg.user]);
-            typingTimers.set(
-              msg.user,
-              setTimeout(() => {
-                typingUsers = new Set([...typingUsers].filter((u) => u !== msg.user));
-              }, 4000)
-            );
-          } else {
-            typingUsers = new Set([...typingUsers].filter((u) => u !== msg.user));
-            typingTimers.delete(msg.user);
-          }
-        }
-        if (msg.type === 'chat') {
-          const isDuplicate = msg.t
-            ? chatMessages.some((m) => m.t === msg.t)
-            : chatMessages.some((m) => m.user === msg.user && m.text === msg.text);
-          if (!isDuplicate) {
-            chatMessages.push({ user: msg.user, text: msg.text, t: msg.t });
-          }
-        }
-        if (msg.type === 'presence') {
-          if (msg.color === 'black') blackOnline = msg.online;
-          else if (msg.color === 'white') whiteOnline = msg.online;
-        }
-        if (msg.type === 'spectators') {
-          spectators = msg.names ?? [];
-        }
-        if (msg.type === 'gameover') {
+        } else if (phase === 'finished') {
           gs.status = 'gameover';
-          if (msg.winner) gs.winner = msg.winner === 'black' ? 1 : -1;
-          if (msg.result) gs.winnerResult = msg.result;
-          if (msg.deadStones) gs.deadStones = msg.deadStones;
-        }
-        if (msg.type === 'cancel') {
-          gs.status = 'cancelled';
-        }
-        if (msg.type === 'analysis-enter') {
-          savedAnalysisTree = msg.tree;
-          savedAnalysisPath = msg.path ?? null;
-          enterAnalysisFromTree(msg.tree, msg.path ?? null);
-          const bookmarkId = page.url.searchParams.get('bookmark');
-          if (bookmarkId) {
-            const target = findNodeById(analysis.root, bookmarkId);
-            if (target) analysis.currentNode = target;
-          }
-        }
-        if (msg.type === 'analysis-exit') {
-          analysis = null;
-          controlRequest = null;
-        }
-        if (msg.type === 'request-control') {
-          controlRequest = msg.user;
-        }
-        if (msg.type === 'clear-control') {
-          controlRequest = null;
-        }
-        if (msg.type === 'analysis-tree' && analysis) {
-          if (analysis.status === 'scoring' || analysis.showEstimate || memorize?.active) {
-            pendingAnalysisTree = { tree: msg.tree, path: msg.path ?? null };
-            return;
-          }
-          const prevPath = getNodePath(analysis.currentNode);
-          analysis.loadTree(msg.tree, msg.path ?? null);
-          const newPath = getNodePath(analysis.currentNode);
-          const isOneStepForward =
-            newPath.length === prevPath.length + 1 && prevPath.every((v, i) => v === newPath[i]);
-          if (isOneStepForward) {
-            analysis.animatedVertex = analysis.currentNode.lastMove ?? null;
-          }
-        }
-        if (msg.type === 'gamedata') {
-          gs.initFromGamedata(msg.gamedata, data.viewerColor);
-          blackName = msg.gamedata.players?.black?.username ?? blackName;
-          whiteName = msg.gamedata.players?.white?.username ?? whiteName;
-          komi = msg.gamedata.komi ?? komi;
-          if (page.url.searchParams.has('analysis')) {
-            enterAnalysis();
-          }
-        }
-        if (msg.type === 'my-color') {
-          if (msg.color) gs.mySign = msg.color === 'black' ? 1 : -1;
-          if (gs.status === 'waiting') gs.status = 'playing';
-          if (msg.komi != null) komi = msg.komi;
-          if (gs.totalPly === 0 && msg.handicapStones?.length > 0) {
-            for (const [x, y] of msg.handicapStones) {
-              gs.applyMove(x, y, 1);
-            }
-            gs.currentSign = -1;
-          }
-        }
-        if (msg.type === 'clock') {
-          gs.clockState = msg.clockState;
-        }
-        if (msg.type === 'scoring-start') {
-          gs.status = 'scoring';
-          gs.deadStones = [];
-        }
-        if (msg.type === 'dead-stones') {
-          gs.deadStones = msg.stones;
         }
       });
 
-      const ogsToken = data.game.ogsGameId ? getOgsToken() : null;
-      gameSocket.join(currentGameId, data.viewerColor ?? null, ogsToken, displayName);
+      gameSocket.on(`${prefix}removed_stones`, (removal) => {
+        if (removal.all_removed === undefined) return;
+        gs.removedString = removal.all_removed;
+        gs.deadStones = parseSgfCoords(removal.all_removed);
+        gs.blackApproved = false;
+        gs.whiteApproved = false;
+      });
+
+      gameSocket.on(`${prefix}removed_stones_accepted`, (accepted) => {
+        if (accepted.phase !== 'finished') return;
+        gs.status = 'gameover';
+        const blackId = gs.gamedata?.players?.black?.id;
+        if (accepted.winner != null && blackId != null) {
+          gs.winner = accepted.winner === blackId ? 1 : -1;
+          const margin = String(accepted.outcome ?? '').replace(' points', '');
+          gs.winnerResult = `${gs.winner === 1 ? 'B' : 'W'}+${margin}`;
+        }
+      });
+
+      gameSocket.on(`${prefix}chat`, (chatEvent) => {
+        const line = chatEvent.line ?? chatEvent;
+        const t = line.date ? line.date * 1000 : null;
+        const isDuplicate = t
+          ? chatMessages.some((m) => m.t === t)
+          : chatMessages.some((m) => m.user === line.username && m.text === line.body);
+        if (!isDuplicate) {
+          chatMessages.push({ user: line.username, text: line.body, t });
+        }
+      });
+
+      gameSocket.on('presence', (presence) => {
+        if (presence.color === 'black') blackOnline = presence.online;
+        else if (presence.color === 'white') whiteOnline = presence.online;
+      });
+
+      gameSocket.on('spectators', (event) => {
+        spectators = event.names ?? [];
+      });
+
+      gameSocket.on('typing', (typing) => {
+        if (typing.user === displayName) return;
+        clearTimeout(typingTimers.get(typing.user));
+        if (typing.isTyping) {
+          typingUsers = new Set([...typingUsers, typing.user]);
+          typingTimers.set(
+            typing.user,
+            setTimeout(() => {
+              typingUsers = new Set([...typingUsers].filter((u) => u !== typing.user));
+            }, 4000)
+          );
+        } else {
+          typingUsers = new Set([...typingUsers].filter((u) => u !== typing.user));
+          typingTimers.delete(typing.user);
+        }
+      });
+
+      gameSocket.on('analysis-enter', (event) => {
+        savedAnalysisTree = event.tree;
+        savedAnalysisPath = event.path ?? null;
+        enterAnalysisFromTree(event.tree, event.path ?? null);
+        const bookmarkId = page.url.searchParams.get('bookmark');
+        if (bookmarkId) {
+          const target = findNodeById(analysis.root, bookmarkId);
+          if (target) analysis.currentNode = target;
+        }
+      });
+
+      gameSocket.on('analysis-exit', () => {
+        analysis = null;
+        controlRequest = null;
+      });
+
+      gameSocket.on('analysis-tree', (event) => {
+        if (!analysis) return;
+        if (analysis.status === 'scoring' || analysis.showEstimate || memorize?.active) {
+          pendingAnalysisTree = { tree: event.tree, path: event.path ?? null };
+          return;
+        }
+        const prevPath = getNodePath(analysis.currentNode);
+        analysis.loadTree(event.tree, event.path ?? null);
+        const newPath = getNodePath(analysis.currentNode);
+        const isOneStepForward =
+          newPath.length === prevPath.length + 1 && prevPath.every((v, i) => v === newPath[i]);
+        if (isOneStepForward) {
+          analysis.animatedVertex = analysis.currentNode.lastMove ?? null;
+        }
+      });
+
+      gameSocket.on('request-control', (event) => {
+        controlRequest = event.user;
+      });
+
+      gameSocket.on('clear-control', () => {
+        controlRequest = null;
+      });
 
       if (data.game.gameType === 'ai') {
         initAiEngine();
@@ -908,7 +816,6 @@
 
     return () => {
       document.removeEventListener('keydown', handleKeydown);
-      gameSocket.onMessage(null);
       gameSocket.leave();
       if (data.game.gameType === 'ai') {
         dispose();

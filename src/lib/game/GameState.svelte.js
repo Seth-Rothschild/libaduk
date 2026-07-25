@@ -9,7 +9,7 @@ import {
 
 export { replayMoves } from '$lib/game/board';
 
-function fromOgsTimeControl(tc) {
+export function fromOgsTimeControl(tc) {
   if (!tc) return { type: 'none' };
   if (tc.system === 'byoyomi') {
     return {
@@ -27,10 +27,44 @@ function fromOgsTimeControl(tc) {
       max: tc.max_time
     };
   }
-  if (tc.system === 'correspondence') {
-    return { type: 'correspondence', days: tc.per_move ?? 3 };
+  if (tc.system === 'simple' && tc.speed === 'correspondence') {
+    return { type: 'correspondence', days: Math.round(tc.per_move / 86400) };
   }
   return { type: 'none' };
+}
+
+export function resultFromGamedata(gamedata) {
+  const outcome = gamedata.outcome ?? '';
+  if (!outcome || outcome === 'Cancellation') return null;
+  const winnerSign = winnerSignFromGamedata(gamedata);
+  if (winnerSign === null) return null;
+  const prefix = winnerSign === 1 ? 'B' : 'W';
+  if (outcome === 'Resignation') return `${prefix}+R`;
+  if (outcome === 'Timeout') return `${prefix}+T`;
+  return `${prefix}+${String(outcome).replace(' points', '')}`;
+}
+
+function winnerSignFromGamedata(gamedata) {
+  const winner = gamedata.winner;
+  if (winner === null || winner === undefined) return null;
+  if (winner === 'black') return 1;
+  if (winner === 'white') return -1;
+  if (winner === gamedata.players?.black?.id) return 1;
+  if (winner === gamedata.players?.white?.id) return -1;
+  return null;
+}
+
+function playerClockData(t) {
+  if (!t) return null;
+  const mainMs = t.thinking_time * 1000;
+  const periodMs = (t.period_time ?? 0) * 1000;
+  return {
+    mainMs,
+    byoMs: periodMs,
+    byoPeriods: t.periods ?? 0,
+    periodMs,
+    inByoYomi: mainMs <= 0 && (t.periods ?? 0) > 0
+  };
 }
 
 export class GameState {
@@ -48,6 +82,7 @@ export class GameState {
   clockState = $state(null);
   corrState = $state(null);
   deadStones = $state([]);
+  removedString = $state('');
   blackApproved = $state(false);
   whiteApproved = $state(false);
   finalScore = $state(null);
@@ -108,115 +143,11 @@ export class GameState {
     this.viewPly = null;
   }
 
-  constructor() {}
-
-  initFromData(game, viewerColor) {
-    this.boardSize = game.size ?? 19;
-    this.timeControl = game.timeControl ?? { type: 'none' };
-    this.shiftMap = emptyShiftMap(this.boardSize);
-
-    if (viewerColor === 'black') this.mySign = 1;
-    else if (viewerColor === 'white') this.mySign = -1;
-    else this.mySign = null;
-
-    const stones = game.handicapStones ?? [];
-    const hasHandicap = stones.length > 0;
-    const stoneSetup = stones.map(({ x, y }) => ({ x, y, sign: 1 }));
-    const initialBoard = hasHandicap ? applySetup(createBoard(this.boardSize), stoneSetup) : null;
-
-    if (game.moves && game.moves.length > 0) {
-      const replay = replayMovesWithHistory(game.moves, this.boardSize, initialBoard);
-      this.board = replay.board;
-      this.shiftMap = replay.shiftMap;
-      this.boardHistory = replay.boards;
-      this.lastMoveHistory = replay.lastMoves;
-      this.shiftMapHistory = replay.shiftMaps;
-      this.consecutivePasses = 0;
-      const whiteFirst = hasHandicap;
-      this.currentSign = game.moves.length % 2 === 0 ? (whiteFirst ? -1 : 1) : whiteFirst ? 1 : -1;
-      const lastMoveEntry = game.moves.at(-1);
-      if (lastMoveEntry?.type === 'move') this.lastMove = [lastMoveEntry.x, lastMoveEntry.y];
-    } else if (hasHandicap) {
-      this.board = initialBoard;
-      this.boardHistory = [initialBoard];
-      this.lastMoveHistory = [null];
-      this.shiftMapHistory = [emptyShiftMap(this.boardSize)];
-      this.currentSign = -1;
-    } else {
-      this.board = createBoard(this.boardSize);
-      this.boardHistory = [this.board];
-      this.lastMoveHistory = [null];
-      this.shiftMapHistory = [emptyShiftMap(this.boardSize)];
-    }
-
-    const tc = this.timeControl;
-    const hasRealTimeClock = tc.type === 'byoyomi' || tc.type === 'fischer';
-    if (hasRealTimeClock && game.clockState) {
-      this.clockState = {
-        black: { ...game.clockState.black },
-        white: { ...game.clockState.white },
-        activeColor: game.clockState.activeColor ?? null,
-        turnStartedAt: game.clockState.turnStartedAt ?? null
-      };
-    } else if (hasRealTimeClock) {
-      const mainMs = (tc.initial ?? 0) * 1000;
-      const isByoyomi = tc.type === 'byoyomi';
-      const periodMs = isByoyomi ? (tc.periodTime ?? 30) * 1000 : 0;
-      const clockEntry = {
-        mainMs,
-        byoMs: isByoyomi ? periodMs : 0,
-        byoPeriods: isByoyomi ? (tc.periods ?? 5) : 0,
-        inByoYomi: isByoyomi && mainMs === 0,
-        periodMs
-      };
-      const moves = game.moves ?? [];
-      const activeColor = moves.length % 2 === (hasHandicap ? 1 : 0) ? 'black' : 'white';
-      this.clockState = {
-        black: { ...clockEntry },
-        white: { ...clockEntry },
-        activeColor,
-        turnStartedAt: null,
-        periodMs
-      };
-    } else {
-      this.clockState = null;
-    }
-
-    if (tc.type === 'correspondence') {
-      this.corrState = { turnDeadline: game.corrTurnDeadline };
-    } else {
-      this.corrState = null;
-    }
-
-    if (game.scoringActive) {
-      this.status = 'scoring';
-      this.deadStones = game.deadStones ?? [];
-      this.blackApproved = game.scoringBlackApproved ?? false;
-      this.whiteApproved = game.scoringWhiteApproved ?? false;
-    } else if (game.status === 'finished') {
-      this.status = 'gameover';
-      this.winner = game.winner === 'black' ? 1 : game.winner === 'white' ? -1 : null;
-      this.deadStones = game.deadStones ?? [];
-      this.winnerResult = game.result ?? null;
-    } else if (game.status === 'abandoned') {
-      this.status = 'abandoned';
-    } else if (game.status === 'cancelled') {
-      this.status = 'cancelled';
-    } else {
-      this.status = game.status ?? 'waiting';
-    }
-  }
-
   initFromGamedata(gamedata, viewerColor) {
     this.gamedata = gamedata;
     this.boardSize = gamedata.width ?? 19;
     this.timeControl = fromOgsTimeControl(gamedata.time_control);
     this.shiftMap = emptyShiftMap(this.boardSize);
-    this.deadStones = [];
-    this.blackApproved = false;
-    this.whiteApproved = false;
-    this.clockState = null;
-    this.corrState = null;
 
     if (viewerColor === 'black') this.mySign = 1;
     else if (viewerColor === 'white') this.mySign = -1;
@@ -226,6 +157,7 @@ export class GameState {
     const hasHandicap = handicapCoords.length > 0;
     const stoneSetup = handicapCoords.map(([x, y]) => ({ x, y, sign: 1 }));
     const initialBoard = hasHandicap ? applySetup(createBoard(this.boardSize), stoneSetup) : null;
+    const whiteFirst = gamedata.initial_player === 'white';
 
     const moves = (gamedata.moves ?? []).map(([x, y]) =>
       x < 0 ? { type: 'pass' } : { type: 'move', x, y }
@@ -238,34 +170,61 @@ export class GameState {
       this.boardHistory = replay.boards;
       this.lastMoveHistory = replay.lastMoves;
       this.shiftMapHistory = replay.shiftMaps;
-      this.consecutivePasses = 0;
-      const whiteFirst = hasHandicap;
       this.currentSign = moves.length % 2 === 0 ? (whiteFirst ? -1 : 1) : whiteFirst ? 1 : -1;
       const lastMove = moves.at(-1);
-      if (lastMove?.type === 'move') this.lastMove = [lastMove.x, lastMove.y];
-    } else if (hasHandicap) {
-      this.board = initialBoard;
-      this.boardHistory = [initialBoard];
-      this.lastMoveHistory = [null];
-      this.shiftMapHistory = [emptyShiftMap(this.boardSize)];
-      this.currentSign = -1;
+      this.lastMove = lastMove?.type === 'move' ? [lastMove.x, lastMove.y] : null;
     } else {
-      this.board = createBoard(this.boardSize);
+      this.board = initialBoard ?? createBoard(this.boardSize);
       this.boardHistory = [this.board];
       this.lastMoveHistory = [null];
       this.shiftMapHistory = [emptyShiftMap(this.boardSize)];
+      this.currentSign = whiteFirst ? -1 : 1;
+      this.lastMove = null;
     }
 
-    const outcome = gamedata.outcome ?? '';
-    if (gamedata.phase === 'stone removal') {
-      this.status = 'scoring';
-    } else if (gamedata.phase === 'finished') {
-      this.status = 'gameover';
-      this.winnerResult = outcome || null;
-      this.winner = outcome.startsWith('B') ? 1 : outcome.startsWith('W') ? -1 : null;
-    } else {
-      this.status = 'playing';
+    const lastTwo = (gamedata.moves ?? []).slice(-2);
+    const bothPasses = lastTwo.length === 2 && lastTwo.every(([x]) => x < 0);
+    this.consecutivePasses = bothPasses ? 2 : lastTwo.at(-1)?.[0] < 0 ? 1 : 0;
+
+    this.removedString = gamedata.removed ?? '';
+    this.deadStones = parseSgfCoords(this.removedString);
+    this.blackApproved = gamedata.players?.black?.accepted_stones != null;
+    this.whiteApproved = gamedata.players?.white?.accepted_stones != null;
+    this.winner = winnerSignFromGamedata(gamedata);
+    this.winnerResult = resultFromGamedata(gamedata);
+
+    this.applyClock(gamedata.clock);
+    this.status = this.#deriveStatus(gamedata);
+  }
+
+  #deriveStatus(gamedata) {
+    if (gamedata.phase === 'stone removal') return 'scoring';
+    if (gamedata.phase === 'finished') {
+      return gamedata.outcome === 'Cancellation' ? 'cancelled' : 'gameover';
     }
+    const players = gamedata.players ?? {};
+    const bothSeated = !!players.black?.username && !!players.white?.username;
+    return bothSeated ? 'playing' : 'waiting';
+  }
+
+  applyClock(clock) {
+    if (!clock) {
+      this.clockState = null;
+      this.corrState = null;
+      return;
+    }
+    if (typeof clock.black_time === 'number') {
+      this.corrState = { turnDeadline: clock.expiration };
+      this.clockState = null;
+      return;
+    }
+    const black = playerClockData(clock.black_time);
+    const white = playerClockData(clock.white_time);
+    if (!black || !white) return;
+    const activeColor = clock.current_player === clock.black_player_id ? 'black' : 'white';
+    const serverOffset = Date.now() - (clock.now ?? Date.now());
+    const turnStartedAt = clock.last_move ? serverOffset + clock.last_move : null;
+    this.clockState = { black, white, activeColor, turnStartedAt };
   }
 
   applyMove(x, y, sign) {
@@ -289,37 +248,12 @@ export class GameState {
   }
 
   recordPass() {
+    this.consecutivePasses++;
+    this.lastMove = null;
+    this.animatedVertex = null;
+    this.currentSign = this.currentSign === 1 ? -1 : 1;
     this.boardHistory.push(this.board);
     this.lastMoveHistory.push(null);
     this.shiftMapHistory.push(this.shiftMap.map((row) => [...row]));
-  }
-
-  tickClock() {
-    if (!this.clockState) return;
-
-    const now = Date.now();
-    const movedColor = this.clockState.activeColor;
-    const clock = this.clockState[movedColor];
-    const elapsed = this.clockState.turnStartedAt ? now - this.clockState.turnStartedAt : 0;
-
-    if (clock.inByoYomi) {
-      const periodStep = clock.periodMs > 0 ? clock.periodMs : clock.byoMs;
-      let remaining = clock.byoMs - elapsed;
-      let periodsLeft = clock.byoPeriods;
-      while (remaining <= 0 && periodsLeft > 1) {
-        periodsLeft--;
-        remaining += periodStep;
-      }
-      clock.byoMs = clock.periodMs ?? clock.byoMs;
-      clock.byoPeriods = periodsLeft;
-    } else if (elapsed > 0) {
-      clock.mainMs = Math.max(0, clock.mainMs - elapsed);
-      if (clock.mainMs <= 0 && clock.byoPeriods > 0) {
-        clock.inByoYomi = true;
-      }
-    }
-
-    this.clockState.activeColor = movedColor === 'black' ? 'white' : 'black';
-    this.clockState.turnStartedAt = now;
   }
 }

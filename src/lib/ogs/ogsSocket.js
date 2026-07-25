@@ -1,4 +1,4 @@
-import { GobanSocket } from 'goban-engine';
+import { GobanSocket } from '$lib/goban.js';
 
 const OGS_SOCKET_URL = 'wss://wsp.online-go.com/';
 const OGS_CONFIG_URL = 'https://online-go.com/api/v1/ui/config/';
