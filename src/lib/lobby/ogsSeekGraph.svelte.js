@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { getMe } from '$lib/state/user.svelte.js';
+import { fetchOgsConfig, openOgsSocket } from '$lib/ogs/ogsSocket.js';
 
 class OgsSeekGraph {
   challenges = $state([]);
@@ -8,17 +9,13 @@ class OgsSeekGraph {
   tokenExpired = $state(false);
 
   #map = new Map();
-  #ws = null;
-  #pingInterval = null;
-  #msgId = 1;
-  #drift = 0;
-  #latency = 0;
+  #socket = null;
   #pendingChallengeId = null;
   #onChallengeAccepted = null;
   #keepaliveInterval = null;
 
   async start() {
-    if (!browser || this.#ws) return;
+    if (!browser || this.#socket) return;
 
     this.token = this.#getCookie('ogs_token');
     if (!this.token) {
@@ -26,87 +23,55 @@ class OgsSeekGraph {
       return;
     }
 
-    const configRes = await fetch('https://online-go.com/api/v1/ui/config/', {
-      headers: { Authorization: `Bearer ${this.token}` }
-    });
-    if (!configRes.ok) {
+    const config = await fetchOgsConfig(this.token);
+    if (!config) {
       this.tokenExpired = true;
       return;
     }
-    this.tokenExpired = false;
-    const config = await configRes.json();
-    if (config.user.anonymous) {
-      this.tokenExpired = true;
-    }
+    this.tokenExpired = !!config.user.anonymous;
     const jwt = config.user_jwt;
     if (!jwt) return;
     this.userId = config.user?.id ?? null;
 
-    const ws = new WebSocket('wss://wsp.online-go.com/');
-    this.#ws = ws;
+    const socket = openOgsSocket(jwt);
+    this.#socket = socket;
 
-    ws.onopen = () => {
-      this.#send('authenticate', { jwt });
-      this.#send('seek_graph/connect', { channel: 'global' });
-      this.#pingInterval = setInterval(() => {
-        this.#send('net/ping', { client: Date.now(), drift: this.#drift, latency: this.#latency });
-      }, 10000);
-    };
+    socket.on('connect', () => {
+      socket.send('seek_graph/connect', { channel: 'global' });
+    });
 
-    ws.onmessage = (event) => {
-      let msg;
-      try {
-        msg = JSON.parse(event.data);
-      } catch {
-        return;
+    socket.on('notification', (payload) => {
+      if (payload?.type !== 'gameStarted' || !this.#pendingChallengeId) return;
+      const gameId = payload.game_id;
+      if (gameId) {
+        this.#pendingChallengeId = null;
+        this.#onChallengeAccepted?.(gameId);
+        this.#onChallengeAccepted = null;
       }
-      const name = msg[0];
-      const payload = msg[1];
-      if (typeof name === 'number') return;
+    });
 
-      if (name === 'net/pong') {
-        const now = Date.now();
-        this.#latency = now - payload.client;
-        this.#drift = now - this.#latency / 2 - payload.server;
-        return;
-      }
-
-      if (name === 'notification' && payload?.type === 'gameStarted' && this.#pendingChallengeId) {
-        const gameId = payload.game_id;
-        if (gameId) {
-          this.#pendingChallengeId = null;
-          this.#onChallengeAccepted?.(gameId);
-          this.#onChallengeAccepted = null;
-        }
-      }
-
-      if (name === 'seekgraph/global') {
-        for (const entry of payload) {
-          if (entry.delete || entry.game_started) {
-            this.#map.delete(entry.challenge_id);
-            if (entry.game_started && entry.challenge_id === this.#pendingChallengeId) {
-              this.#pendingChallengeId = null;
-              this.#onChallengeAccepted?.(entry.game_id);
-              this.#onChallengeAccepted = null;
-            }
-          } else if (
-            !entry.ranked &&
-            entry.time_control_parameters?.speed !== 'correspondence' &&
-            entry.min_rank <= getMe()?.ogs?.ranking &&
-            getMe()?.ogs?.ranking <= entry.max_rank
-          ) {
-            this.#map.set(entry.challenge_id, entry);
+    socket.on('seekgraph/global', (payload) => {
+      for (const entry of payload) {
+        if (entry.delete || entry.game_started) {
+          this.#map.delete(entry.challenge_id);
+          if (entry.game_started && entry.challenge_id === this.#pendingChallengeId) {
+            this.#pendingChallengeId = null;
+            this.#onChallengeAccepted?.(entry.game_id);
+            this.#onChallengeAccepted = null;
           }
+        } else if (this.#isJoinableChallenge(entry)) {
+          this.#map.set(entry.challenge_id, entry);
         }
-        this.challenges = [...this.#map.values()].slice(0, 15);
       }
-    };
+      this.challenges = [...this.#map.values()].slice(0, 15);
+    });
+  }
 
-    ws.onclose = () => {
-      clearInterval(this.#pingInterval);
-      this.#pingInterval = null;
-      this.#ws = null;
-    };
+  #isJoinableChallenge(entry) {
+    if (entry.ranked) return false;
+    if (entry.time_control_parameters?.speed === 'correspondence') return false;
+    const myRanking = getMe()?.ogs?.ranking;
+    return entry.min_rank <= myRanking && myRanking <= entry.max_rank;
   }
 
   async createChallenge({ size, mainTime, periods, periodTime }) {
@@ -157,7 +122,10 @@ class OgsSeekGraph {
 
     this.#pendingChallengeId = data.challenge;
     this.#keepaliveInterval = setInterval(() => {
-      this.#send('challenge/keepalive', { challenge_id: data.challenge, game_id: data.game });
+      this.#socket?.send('challenge/keepalive', {
+        challenge_id: data.challenge,
+        game_id: data.game
+      });
     }, 1000);
     return new Promise((resolve) => {
       const timeout = setTimeout(() => this.cancelPendingChallenge(), 60000);
@@ -196,20 +164,13 @@ class OgsSeekGraph {
   }
 
   stop() {
-    clearInterval(this.#pingInterval);
-    if (this.#ws) {
-      this.#send('seek_graph/disconnect', { channel: 'global' });
-      this.#ws.close();
-      this.#ws = null;
+    if (this.#socket) {
+      this.#socket.send('seek_graph/disconnect', { channel: 'global' });
+      this.#socket.disconnect();
+      this.#socket = null;
     }
     this.#map.clear();
     this.challenges = [];
-  }
-
-  #send(command, payload) {
-    if (this.#ws?.readyState === WebSocket.OPEN) {
-      this.#ws.send(JSON.stringify([command, payload, this.#msgId++]));
-    }
   }
 
   #getCookie(name) {

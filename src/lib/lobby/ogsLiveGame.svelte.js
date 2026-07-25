@@ -3,6 +3,7 @@ import { formatOgsClock } from '$lib/lobby/ogsSeekGraph.svelte.js';
 import GoBoardLib from '@sabaki/go-board';
 import { applyMoveWithShifts, parseSgfCoords } from '$lib/game/board';
 import { emptyShiftMap } from '$lib/game/board/helpers.js';
+import { fetchOgsConfig, openOgsSocket } from '$lib/ogs/ogsSocket.js';
 
 class OgsLiveGame {
   game = $state(null);
@@ -26,118 +27,82 @@ class OgsLiveGame {
   onGameStart = null;
   onGameEnd = null;
 
-  #ws = null;
-  #pingInterval = null;
-  #msgId = 1;
-  #drift = 0;
-  #latency = 0;
+  #socket = null;
   #gameId = null;
+  #listenersAttachedFor = null;
   #moveCount = 0;
   #firstColor = 1;
   #endedFired = false;
 
   async start(gameId = null) {
-    if (!browser || this.#ws) return;
+    if (!browser || this.#socket) return;
 
-    const configRes = await fetch('https://online-go.com/api/v1/ui/config/');
-    if (!configRes.ok) return;
-    const config = await configRes.json();
-    const jwt = config.user_jwt;
+    const config = await fetchOgsConfig();
+    const jwt = config?.user_jwt;
     if (!jwt) return;
 
-    const ws = new WebSocket('wss://wsp.online-go.com/');
-    this.#ws = ws;
+    const socket = openOgsSocket(jwt);
+    this.#socket = socket;
 
-    ws.onopen = () => {
-      this.#send('authenticate', { jwt });
-      if (gameId) {
-        this.#gameId = gameId;
-        this.#send('game/connect', { game_id: gameId, chat: false });
+    socket.on('connect', () => {
+      if (this.#gameId ?? gameId) {
+        this.#gameId = this.#gameId ?? gameId;
+        this.#connectToGame(this.#gameId);
       } else {
-        this.#send('gamelist/query', {
-          list: 'live',
-          sort_by: 'rank',
-          where: { hide_bot_games: true },
-          from: 0,
-          limit: 1,
-          channel: ''
-        });
+        this.#queryTopGame();
       }
-      this.#pingInterval = setInterval(() => {
-        this.#send('net/ping', { client: Date.now(), drift: this.#drift, latency: this.#latency });
-      }, 10000);
+    });
+  }
+
+  #queryTopGame() {
+    const query = {
+      list: 'live',
+      sort_by: 'rank',
+      where: { hide_bot_games: true },
+      from: 0,
+      limit: 1,
+      channel: ''
     };
+    this.#socket.send('gamelist/query', query, (response) => {
+      const topGame = response?.results?.[0];
+      if (!topGame) return;
+      this.game = topGame;
+      this.#gameId = topGame.id;
+      this.#connectToGame(topGame.id);
+      if (typeof this.onGameStart === 'function') this.onGameStart(topGame);
+    });
+  }
 
-    ws.onmessage = (event) => {
-      let msg;
-      try {
-        msg = JSON.parse(event.data);
-      } catch {
-        return;
-      }
+  #connectToGame(gameId) {
+    const socket = this.#socket;
+    const prefix = `game/${gameId}/`;
 
-      const name = msg[0];
-      const data = msg[1];
-
-      if (typeof name === 'number') {
-        this.#handleAck(data);
-        return;
-      }
-
-      if (name === 'net/pong') {
-        const now = Date.now();
-        this.#latency = now - data.client;
-        this.#drift = now - this.#latency / 2 - data.server;
-        return;
-      }
-
-      if (!this.#gameId) return;
-      const prefix = `game/${this.#gameId}/`;
-
-      if (name === `${prefix}gamedata`) {
-        this.#handleGamedata(data);
-        return;
-      }
-
-      if (name === `${prefix}move`) {
-        this.#handleMove(data);
-        return;
-      }
-
-      if (name === `${prefix}clock`) {
-        this.#handleClock(data);
-        return;
-      }
-
-      if (name === `${prefix}phase`) {
+    if (this.#listenersAttachedFor !== gameId) {
+      this.#listenersAttachedFor = gameId;
+      socket.on(`${prefix}gamedata`, (data) => this.#handleGamedata(data));
+      socket.on(`${prefix}move`, (data) => this.#handleMove(data));
+      socket.on(`${prefix}clock`, (data) => this.#handleClock(data));
+      socket.on(`${prefix}phase`, (data) => {
         if (data === 'finished') this.#fireGameEnd();
-        return;
-      }
-
-      if (name === `${prefix}removed_stones_accepted`) {
+      });
+      socket.on(`${prefix}removed_stones_accepted`, (data) => {
         if (data.phase === 'finished') {
           this.result = this.#computeResultFromData(data);
           this.#fireGameEnd();
         }
-        return;
-      }
-    };
+      });
+    }
 
-    ws.onclose = () => {
-      clearInterval(this.#pingInterval);
-      this.#pingInterval = null;
-      this.#ws = null;
-    };
+    socket.send('game/connect', { game_id: gameId, chat: false });
   }
 
   stop() {
-    clearInterval(this.#pingInterval);
-    if (this.#ws) {
+    if (this.#socket) {
       if (this.#gameId) {
-        this.#send('game/disconnect', { game_id: this.#gameId });
+        this.#socket.send('game/disconnect', { game_id: this.#gameId });
       }
-      this.#ws.close();
-      this.#ws = null;
+      this.#socket.disconnect();
+      this.#socket = null;
     }
     this.game = null;
     this.board = null;
@@ -149,18 +114,10 @@ class OgsLiveGame {
     this.moves = [];
     this.result = null;
     this.#gameId = null;
+    this.#listenersAttachedFor = null;
     this.#moveCount = 0;
     this.#firstColor = 1;
     this.#endedFired = false;
-  }
-
-  #handleAck(data) {
-    if (!data?.results?.length) return;
-    const topGame = data.results[0];
-    this.game = topGame;
-    this.#gameId = topGame.id;
-    this.#send('game/connect', { game_id: this.#gameId, chat: false });
-    if (typeof this.onGameStart === 'function') this.onGameStart(topGame);
   }
 
   #fireGameEnd() {
@@ -294,12 +251,6 @@ class OgsLiveGame {
       inByoYomi: mainMs <= 0,
       periodMs
     };
-  }
-
-  #send(command, payload) {
-    if (this.#ws?.readyState === WebSocket.OPEN) {
-      this.#ws.send(JSON.stringify([command, payload, this.#msgId++]));
-    }
   }
 }
 

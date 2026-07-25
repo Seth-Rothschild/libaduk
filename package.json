@@ -55,6 +55,7 @@
     "@simplewebauthn/browser": "^13.3.0",
     "@simplewebauthn/server": "^13.3.1",
     "@sveltejs/adapter-node": "^5.5.4",
+    "goban-engine": "^8.3.226",
     "mongodb": "^7.1.0",
     "onnxruntime-web": "^1.24.3",
     "qrcode": "^1.5.4",
