@@ -1,4 +1,6 @@
 <script>
+  import { fromOgsTimeControl } from '$lib/game/GameState.svelte.js';
+
   let { game, joinerName, onJoined } = $props();
 
   let dialog = $state(null);
@@ -9,6 +11,8 @@
   });
 
   const openColor = game.creatorColor === 'black' ? 'white' : 'black';
+  const boardSize = game.gamedata?.width ?? 19;
+  const timeControl = fromOgsTimeControl(game.gamedata?.time_control);
 
   function timeControlLabel(tc) {
     if (tc.type === 'none') return 'Unlimited';
@@ -51,11 +55,11 @@
       <div class="join-info">
         <div class="join-row">
           <span class="join-label">Board</span>
-          <span class="join-value">{game.size}×{game.size}</span>
+          <span class="join-value">{boardSize}×{boardSize}</span>
         </div>
         <div class="join-row">
           <span class="join-label">Time</span>
-          <span class="join-value">{timeControlLabel(game.timeControl)}</span>
+          <span class="join-value">{timeControlLabel(timeControl)}</span>
         </div>
         <div class="join-row">
           <span class="join-label">You play</span>

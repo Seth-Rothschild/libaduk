@@ -793,7 +793,7 @@ export async function getSiteStats() {
       { status: 'finished', gameType: { $ne: 'uploaded' } },
       {
         sort: { endedAt: -1 },
-        projection: { _id: 1, blackName: 1, whiteName: 1, result: 1, endedAt: 1 }
+        projection: { _id: 1, 'gamedata.players': 1, result: 1, endedAt: 1 }
       }
     )
   ]);
@@ -803,8 +803,8 @@ export async function getSiteStats() {
   const recentGame = recentCompletedGame
     ? {
         id: recentCompletedGame._id,
-        blackName: recentCompletedGame.blackName,
-        whiteName: recentCompletedGame.whiteName,
+        blackName: recentCompletedGame.gamedata?.players?.black?.username ?? null,
+        whiteName: recentCompletedGame.gamedata?.players?.white?.username ?? null,
         result: recentCompletedGame.result,
         endedAt: recentCompletedGame.endedAt
       }
@@ -832,7 +832,7 @@ export async function getRecentActivity() {
       .collection('games')
       .find(
         { status: 'finished', endedAt: { $gte: oneDayAgo }, gameType: { $ne: 'uploaded' } },
-        { projection: { _id: 1, blackName: 1, whiteName: 1, result: 1, endedAt: 1 } }
+        { projection: { _id: 1, 'gamedata.players': 1, result: 1, endedAt: 1 } }
       )
       .sort({ endedAt: -1 })
       .toArray(),
@@ -845,8 +845,8 @@ export async function getRecentActivity() {
 
   const games = gameDocs.map((g) => ({
     id: g._id,
-    blackName: g.blackName,
-    whiteName: g.whiteName,
+    blackName: g.gamedata?.players?.black?.username ?? null,
+    whiteName: g.gamedata?.players?.white?.username ?? null,
     result: g.result,
     endedAt: g.endedAt
   }));

@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import GoBoard from '$lib/game/GoBoard.svelte';
-  import { replayMoves, placeStones, createBoard } from '$lib/game/board';
+  import { replayMoves, placeStones, createBoard, parseSgfCoords } from '$lib/game/board';
   import { formatOgsRank } from '$lib/lobby/ogsSeekGraph.svelte.js';
   import './library.css';
 
@@ -71,15 +71,18 @@
 
   function signMapForGame(game) {
     const size = boardSize(game);
-    if (!game.moves || game.moves.length === 0) {
+    const packed = game.gamedata?.moves ?? [];
+    if (packed.length === 0) {
       return Array.from({ length: size }, () => Array(size).fill(0));
     }
+    const moves = packed.map(([x, y]) => (x < 0 ? { type: 'pass' } : { type: 'move', x, y }));
     let initialBoard = null;
-    if (game.handicapStones?.length > 0) {
-      const stoneList = game.handicapStones.map(({ x, y }) => ({ x, y, sign: 1 }));
+    const handicapCoords = parseSgfCoords(game.gamedata?.initial_state?.black ?? '');
+    if (handicapCoords.length > 0) {
+      const stoneList = handicapCoords.map(([x, y]) => ({ x, y, sign: 1 }));
       initialBoard = placeStones(createBoard(size), stoneList);
     }
-    return replayMoves(game.moves, size, initialBoard).signMap;
+    return replayMoves(moves, size, initialBoard).signMap;
   }
 
   function playerLabel(player, fallback) {

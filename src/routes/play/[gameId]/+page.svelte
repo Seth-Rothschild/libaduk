@@ -74,10 +74,11 @@
 
   function resolveViewerColor(gamedata) {
     if (data.viewerColor) return data.viewerColor;
-    const ogsUsername = getMe()?.ogs?.username;
-    if (!ogsUsername || !gamedata?.players) return null;
-    if (gamedata.players.black?.username === ogsUsername) return 'black';
-    if (gamedata.players.white?.username === ogsUsername) return 'white';
+    const players = gamedata?.players;
+    if (!players) return null;
+    const myNames = [displayName, getMe()?.ogs?.username].filter(Boolean);
+    if (myNames.includes(players.black?.username)) return 'black';
+    if (myNames.includes(players.white?.username)) return 'white';
     return null;
   }
 
