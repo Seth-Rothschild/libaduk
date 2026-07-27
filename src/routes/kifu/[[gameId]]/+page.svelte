@@ -76,10 +76,6 @@
   function buildGameState(moves, setup, size) {
     let board = applySetup(createBoard(size), setup);
     const numberAt = new Map();
-    const displaySignMap = Array.from({ length: size }, () => Array(size).fill(0));
-    for (const { x, y, sign } of setup) {
-      displaySignMap[y][x] = sign;
-    }
 
     for (const move of moves) {
       if (move.type === 'pass') continue;
@@ -91,7 +87,6 @@
       }
       const key = `${move.x},${move.y}`;
       if (!numberAt.has(key)) {
-        displaySignMap[move.y][move.x] = move.sign;
         numberAt.set(key, move.number);
       }
       board = nextBoard;
@@ -100,10 +95,12 @@
     const markerMap = Array.from({ length: size }, () => Array(size).fill(null));
     for (const [key, num] of numberAt) {
       const [x, y] = key.split(',').map(Number);
-      markerMap[y][x] = { type: 'label', label: String(num) };
+      if (board.signMap[y][x] !== 0) {
+        markerMap[y][x] = { type: 'label', label: String(num) };
+      }
     }
 
-    return { board, displaySignMap, markerMap, numberAt };
+    return { board, displaySignMap: board.signMap, markerMap, numberAt };
   }
 
   function placeSetupStone(x, y) {
