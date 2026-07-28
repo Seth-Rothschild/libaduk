@@ -31,6 +31,9 @@
     boardSettings.init();
     stoneTheme.init();
     pingState.start();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js');
+    }
     return () => pingState.stop();
   });
 
