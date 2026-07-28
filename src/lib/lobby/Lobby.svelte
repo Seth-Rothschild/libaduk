@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { ogsSeekGraph } from './ogsSeekGraph.svelte.js';
   import GameSetupModal from './GameSetupModal.svelte';
+  import ConnectOgsModal from './ConnectOgsModal.svelte';
   import LobbyTabs from './LobbyTabs.svelte';
   import LobbyBackground from './LobbyBackground.svelte';
   import LobbyAbout from './LobbyAbout.svelte';
@@ -69,20 +70,22 @@
   }
 
   async function createGame(pool = null) {
-    const ogsSettings = getMe()?.settings;
-    const useOgs = ogsSettings?.createOGSGames ?? false;
     const body = { size: pool?.size ?? 19, color: 'random', creatorName: displayName };
     if (pool) {
       body.timeControl = pool.timeControl;
-      if (useOgs) {
-        const ogs = await createOgsGame(pool);
-        if (ogs === 'cancelled') return;
-        if (ogs) {
-          body.gameType = ogs.gameType;
-          body.ogsGameId = ogs.ogsGameId;
-          body.ogsUserId = ogs.ogsUserId;
-        }
+      if (!(getMe()?.settings?.createOGSGames ?? true)) {
+        setupModal = 'connect-ogs';
+        return;
       }
+      const ogs = await createOgsGame(pool);
+      if (ogs === 'cancelled') return;
+      if (!ogs) {
+        setupModal = 'connect-ogs';
+        return;
+      }
+      body.gameType = ogs.gameType;
+      body.ogsGameId = ogs.ogsGameId;
+      body.ogsUserId = ogs.ogsUserId;
     }
     const res = await fetch('/api/game', {
       method: 'POST',
@@ -260,7 +263,9 @@
     <LobbyPuzzle puzzle={data.dailyPuzzle} />
   {/if}
 
-  {#if setupModal}
+  {#if setupModal === 'connect-ogs'}
+    <ConnectOgsModal onClose={() => (setupModal = null)} />
+  {:else if setupModal}
     <GameSetupModal
       gameType={setupModal}
       creatorName={displayName}

@@ -152,7 +152,7 @@ class OgsSeekGraph {
       },
       body: JSON.stringify(body)
     });
-    if (!res.ok) return null;
+    if (!res.ok) return;
     const data = await res.json();
 
     this.#pendingChallengeId = data.challenge;
