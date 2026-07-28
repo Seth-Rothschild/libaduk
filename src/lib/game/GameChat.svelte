@@ -234,8 +234,7 @@
             : 'Please be nice in the chat!'}
         aria-label="Chat message"
         bind:value={inputText}
-        onkeydown={handleKeydown}
-      ></textarea>
+        onkeydown={handleKeydown}></textarea>
       {#if presetsVisible && !readOnly}
         <div class="mchat__presets" role="group" aria-label="Quick messages">
           {#each activePresets as preset}
@@ -264,8 +263,7 @@
       <textarea
         placeholder="Type private notes about this game here. Only you can see them."
         bind:value={noteText}
-        oninput={saveNote}
-      ></textarea>
+        oninput={saveNote}></textarea>
     </div>
   {/if}
 </section>

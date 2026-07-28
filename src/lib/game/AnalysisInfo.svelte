@@ -72,8 +72,7 @@
       class="comment-input"
       placeholder="Add a comment..."
       value={comment}
-      oninput={handleCommentInput}
-    ></textarea>
+      oninput={handleCommentInput}></textarea>
   </div>
 </section>
 
