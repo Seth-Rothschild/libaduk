@@ -123,11 +123,6 @@
       return;
     }
     const newNumber = moves.length + 1;
-    const previousNumber = gameState.numberAt.get(`${x},${y}`);
-    if (previousNumber !== undefined) {
-      const line = `${newNumber} is at ${previousNumber}`;
-      notes = notes ? `${notes}\n${line}` : line;
-    }
     const updatedMoves = [...moves, { type: 'move', x, y, sign: currentSign, number: newNumber }];
     moves = updatedMoves;
     if (gameId) syncMoves(updatedMoves);
