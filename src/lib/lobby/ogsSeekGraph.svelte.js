@@ -21,7 +21,10 @@ class OgsSeekGraph {
     if (!browser || this.#ws) return;
 
     this.token = this.#getCookie('ogs_token');
-    if (!this.token) return;
+    if (!this.token) {
+      this.tokenExpired = getMe()?.ogs != null;
+      return;
+    }
 
     const configRes = await fetch('https://online-go.com/api/v1/ui/config/', {
       headers: { Authorization: `Bearer ${this.token}` }
