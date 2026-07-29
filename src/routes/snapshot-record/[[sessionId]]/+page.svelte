@@ -302,6 +302,9 @@
 {/snippet}
 
 <div class="snapshot-record">
+  <p class="snapshot-record__warning">
+    Experimental &middot; still being tested, expect rough edges
+  </p>
   {#if phase !== 'review'}
     <div
       class="snapshot-record__camera"
@@ -400,6 +403,13 @@
     padding: 1rem;
     gap: 0.75rem;
     box-sizing: border-box;
+  }
+
+  .snapshot-record__warning {
+    margin: 0;
+    text-align: center;
+    font-size: 0.8rem;
+    opacity: 0.6;
   }
 
   .snapshot-record__camera {

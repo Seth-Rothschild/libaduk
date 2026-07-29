@@ -49,6 +49,7 @@
       <a href="/scratch" data-sveltekit-preload-data="off">{t('Scratch board')}</a>
       <a href="/kifu" data-sveltekit-preload-data="off">{t('Create Kifu')}</a>
       <a href="/import">{t('Import game')}</a>
+      <a href="/snapshot-record" data-sveltekit-preload-data="off">{t('Snapshot record')}</a>
     </div>
   </section>
 </nav>

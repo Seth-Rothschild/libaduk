@@ -57,6 +57,7 @@
       <a href="/scratch" onclick={onClose}>{t('Scratch board')}</a>
       <a href="/kifu" onclick={onClose}>{t('Create Kifu')}</a>
       <a href="/import" onclick={onClose}>{t('Import game')}</a>
+      <a href="/snapshot-record" onclick={onClose}>{t('Snapshot record')}</a>
     </div>
   </section>
 </nav>
