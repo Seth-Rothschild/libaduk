@@ -57,6 +57,7 @@
     "@sveltejs/adapter-node": "^5.5.4",
     "mongodb": "^7.1.0",
     "onnxruntime-web": "^1.24.3",
+    "qrcode": "^1.5.4",
     "ws": "^8.19.0"
   }
 }

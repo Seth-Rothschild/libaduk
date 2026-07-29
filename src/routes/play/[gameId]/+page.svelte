@@ -47,6 +47,7 @@
   import EditBar from '$lib/game/EditBar.svelte';
   import GameGraph from '$lib/game/GameGraph.svelte';
   import JoinGameModal from '$lib/game/JoinGameModal.svelte';
+  import ShareModal from '$lib/game/ShareModal.svelte';
   import {
     colorName,
     computeScore,
@@ -92,6 +93,7 @@
   let spectators = $state([]);
   let pendingMove = $state(null);
   let controlRequest = $state(null);
+  let showShareModal = $state(false);
 
   const isAI = $derived(data.game.gameType === 'ai');
   const aiDifficulty = $derived(data.game.aiDifficulty ?? 5);
@@ -1358,6 +1360,7 @@
           { label: t('Export SGF'), onclick: downloadSgf },
           { label: t('Open as Kifu'), href: `/kifu/${gameId}` },
           { label: t('Open scratch board'), href: `/scratch/${gameId}` },
+          { label: t('Share'), onclick: () => (showShareModal = true) },
           { label: t('Reset analysis'), onclick: resetAnalysis },
           { label: t('Back to game'), onclick: exitAnalysis }
         ]}
@@ -1403,6 +1406,10 @@
 
 {#if showJoinModal}
   <JoinGameModal game={data.game} joinerName={displayName} onJoined={handleJoined} />
+{/if}
+
+{#if showShareModal}
+  <ShareModal url={page.url.href} onClose={() => (showShareModal = false)} />
 {/if}
 
 <style>
