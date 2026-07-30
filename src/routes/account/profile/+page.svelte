@@ -62,7 +62,8 @@
       class="form-control"
       rows="5"
       maxlength="400"
-      bind:value={biography}></textarea>
+      bind:value={biography}
+    ></textarea>
   </div>
 
   <div class="form-group">
