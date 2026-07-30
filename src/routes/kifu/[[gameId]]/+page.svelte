@@ -4,6 +4,7 @@
   import { page } from '$app/state';
   import { getMe } from '$lib/state/user.svelte.js';
   import GoBoard from '$lib/game/GoBoard.svelte';
+  import NavigationButtons from '$lib/game/NavigationButtons.svelte';
   import {
     createBoard,
     applyMove,
@@ -22,37 +23,41 @@
   let blackName = $state('');
   let whiteName = $state('');
   let komi = $state(6.5);
+  let result = $state('');
   let notes = $state('');
   let moves = $state([]);
   let setup = $state([]);
   let handicapMode = $state(false);
 
-  const gameState = $derived.by(() => buildGameState(moves, setup, size));
+  let cursor = $state(0);
+  const atLiveEdge = $derived(cursor === moves.length);
+  const displayedMoves = $derived.by(() => moves.slice(0, cursor));
+  const gameState = $derived.by(() => buildGameState(displayedMoves, setup, size));
   const currentSign = $derived.by(() => {
     if (handicapMode) return 1;
     const hasHandicap = setup.length >= 2;
     return hasHandicap ? (moves.length % 2 === 0 ? -1 : 1) : moves.length % 2 === 0 ? 1 : -1;
   });
 
-  let cursor = $state(0);
   const highlightVertex = $derived.by(() => {
-    if (cursor < 1 || cursor >= moves.length) return null;
+    if (atLiveEdge) return null;
+    if (cursor < 1 || cursor > moves.length) return null;
     const move = moves[cursor - 1];
     if (move.type === 'pass') return null;
     return [move.x, move.y];
   });
 
   function navFirst() {
-    if (moves.length > 0) cursor = 1;
+    cursor = 0;
   }
   function navPrev() {
-    if (cursor > 1) cursor -= 1;
+    if (cursor > 0) cursor -= 1;
   }
   function navNext() {
     if (cursor < moves.length) cursor += 1;
   }
   function navLast() {
-    if (moves.length > 0) cursor = moves.length;
+    cursor = moves.length;
   }
 
   function loadMovesFromGame(game) {
@@ -117,6 +122,7 @@
       placeSetupStone(x, y);
       return;
     }
+    if (!atLiveEdge) return;
     try {
       applyMove(gameState.board, currentSign, x, y);
     } catch {
@@ -125,12 +131,15 @@
     const newNumber = moves.length + 1;
     const updatedMoves = [...moves, { type: 'move', x, y, sign: currentSign, number: newNumber }];
     moves = updatedMoves;
+    cursor = updatedMoves.length;
     if (gameId) syncMoves(updatedMoves);
   }
 
   function pass() {
+    if (!atLiveEdge) return;
     const updatedMoves = [...moves, { type: 'pass', sign: currentSign, number: moves.length + 1 }];
     moves = updatedMoves;
+    cursor = updatedMoves.length;
     if (gameId) syncMoves(updatedMoves);
   }
 
@@ -157,7 +166,7 @@
     if (moves.length === 0) return;
     const updatedMoves = moves.slice(0, -1);
     moves = updatedMoves;
-    if (cursor > moves.length) cursor = moves.length;
+    cursor = moves.length;
     if (gameId) syncMoves(updatedMoves);
   }
 
@@ -187,11 +196,12 @@
         whiteName,
         size,
         komi,
+        result,
         username: getMe()?.username ?? null
       })
     });
     const { id } = await res.json();
-    goto(`/kifu/${id}`);
+    await goto(`/kifu/${id}`);
   }
 
   function buildSgfTree(moves, setup, size, comment) {
@@ -283,7 +293,7 @@
     size = parsed.size;
     setup = rootSetup;
     moves = newMoves;
-    cursor = 0;
+    cursor = newMoves.length;
   }
 
   onMount(async () => {
@@ -295,90 +305,109 @@
     blackName = game.blackName ?? '';
     whiteName = game.whiteName ?? '';
     komi = game.komi ?? 6.5;
+    result = game.result ?? '';
     setup = (game.handicapStones ?? []).map(({ x, y }) => ({ x, y, sign: 1 }));
     moves = loadMovesFromGame(game);
+    cursor = moves.length;
   });
 </script>
 
-<div class="kifu">
-  <div class="kifu__board">
-    <GoBoard
-      signMap={gameState.displaySignMap}
-      markerMap={gameState.markerMap}
-      {size}
-      showCoords={true}
-      {currentSign}
-      {highlightVertex}
-      onVertexClick={placeStone}
-      useTheme={false}
+<div class="round">
+  <aside class="round__side">
+    <div class="game__meta">
+      <section>
+        <div class="game__meta__infos" data-icon="&#xe015;">
+          <div class="setup">Kifu</div>
+        </div>
+      </section>
+      <div class="kifu-fields">
+        <label class="kifu-field">
+          <span>Size</span>
+          <select
+            value={size}
+            onchange={(e) => changeSize(Number(e.target.value))}
+            disabled={!!gameId || moves.length > 0 || setup.length > 0}
+          >
+            <option value={9}>9×9</option>
+            <option value={13}>13×13</option>
+            <option value={19}>19×19</option>
+          </select>
+        </label>
+        <label class="kifu-field">
+          <span>Black</span>
+          <input type="text" placeholder="player name" bind:value={blackName} />
+        </label>
+        <label class="kifu-field">
+          <span>White</span>
+          <input type="text" placeholder="player name" bind:value={whiteName} />
+        </label>
+        <label class="kifu-field">
+          <span>Komi</span>
+          <input type="number" step="0.5" bind:value={komi} />
+        </label>
+        <label class="kifu-field">
+          <span>Result</span>
+          <input type="text" placeholder="e.g. B+R" bind:value={result} />
+        </label>
+        <textarea class="kifu-notes" placeholder="Notes..." bind:value={notes}></textarea>
+      </div>
+    </div>
+  </aside>
+
+  <div class="kifu-app">
+    <div class="round__app__board kifu-board">
+      <div class="round__app__board__inner">
+        <GoBoard
+          signMap={gameState.displaySignMap}
+          markerMap={gameState.markerMap}
+          {size}
+          showCoords={true}
+          {currentSign}
+          {highlightVertex}
+          onVertexClick={placeStone}
+          interactive={handicapMode || atLiveEdge}
+          useTheme={false}
+        />
+      </div>
+    </div>
+
+    <div class="rcontrols">
+      <div class="kifu-move-count">Move {moves.length}</div>
+      {#if !gameId}
+        {#if handicapMode}
+          <button class="button button-metal" onclick={doneHandicap}>Done placing</button>
+        {:else if moves.length === 0}
+          <button class="button button-metal" onclick={startHandicap}>Set handicap</button>
+        {/if}
+      {/if}
+      <button class="button button-metal" onclick={undo} disabled={moves.length === 0}>Undo</button>
+      <button class="button button-metal" onclick={pass} disabled={handicapMode || !atLiveEdge}
+        >Pass</button
+      >
+      {#if gameId}
+        <a class="button button-metal" href={`/play/${gameId}`}>View game record</a>
+      {:else}
+        <button class="button button-metal" onclick={createGameRecord} disabled={moves.length === 0}
+          >Save game record</button
+        >
+      {/if}
+    </div>
+
+    <NavigationButtons
+      canPrev={cursor > 0}
+      canNext={cursor < moves.length}
+      onFirst={navFirst}
+      onPrev={navPrev}
+      onNext={navNext}
+      onLast={navLast}
+      menuItems={[
+        ...(moves.length > 0 || setup.length > 0
+          ? [{ label: 'Download SGF', onclick: downloadSgf }]
+          : []),
+        ...(!gameId ? [{ label: 'Upload SGF', onclick: () => fileInput.click() }] : [])
+      ]}
     />
   </div>
-
-  <div class="kifu__actions">
-    <button
-      data-icon="&#xe035;"
-      aria-label="First move"
-      disabled={moves.length === 0 || cursor === 1}
-      onclick={navFirst}
-    ></button>
-    <button data-icon="&#xe037;" aria-label="Previous move" disabled={cursor <= 1} onclick={navPrev}
-    ></button>
-    <button
-      data-icon="&#xe036;"
-      aria-label="Next move"
-      disabled={cursor >= moves.length}
-      onclick={navNext}
-    ></button>
-    <button
-      data-icon="&#xe034;"
-      aria-label="Last move"
-      disabled={moves.length === 0 || cursor === moves.length}
-      onclick={navLast}
-    ></button>
-    <button onclick={undo} disabled={moves.length === 0}>Undo</button>
-    <button onclick={pass} disabled={handicapMode}>Pass</button>
-    <button onclick={downloadSgf} disabled={moves.length === 0 && setup.length === 0}
-      >Download SGF</button
-    >
-    {#if !gameId}
-      {#if handicapMode}
-        <button onclick={doneHandicap}>Done placing</button>
-      {:else if moves.length === 0}
-        <button onclick={startHandicap}>Set handicap</button>
-      {/if}
-      <button onclick={() => fileInput.click()}>Upload SGF</button>
-      <button onclick={createGameRecord} disabled={moves.length === 0}>Create game record</button>
-    {/if}
-    <span>Move {moves.length}</span>
-  </div>
-  <div class="kifu__names">
-    <label class="kifu__name">
-      <span>Size</span>
-      <select
-        value={size}
-        onchange={(e) => changeSize(Number(e.target.value))}
-        disabled={!!gameId || moves.length > 0 || setup.length > 0}
-      >
-        <option value={9}>9×9</option>
-        <option value={13}>13×13</option>
-        <option value={19}>19×19</option>
-      </select>
-    </label>
-    <label class="kifu__name">
-      <span>Black</span>
-      <input type="text" placeholder="player name" bind:value={blackName} />
-    </label>
-    <label class="kifu__name">
-      <span>White</span>
-      <input type="text" placeholder="player name" bind:value={whiteName} />
-    </label>
-    <label class="kifu__name">
-      <span>Komi</span>
-      <input type="number" step="0.5" bind:value={komi} />
-    </label>
-  </div>
-
-  <textarea class="kifu__notes" placeholder="Notes..." bind:value={notes}></textarea>
 </div>
 
 {#if !gameId}

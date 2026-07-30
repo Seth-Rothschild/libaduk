@@ -2673,160 +2673,87 @@ path.go-marker-on-empty {
    Black/white board, numbered stones, no wood, no shadows.
    ============================================================= */
 
-.kifu .go-chat-highlight {
-  background: none;
-  border: none;
-  outline: 4px solid rgba(59, 130, 246, 0.7);
-  outline-offset: -3px;
-  border-radius: 50%;
-}
-
-.kifu {
-  grid-area: main;
+.kifu-app {
+  grid-area: app;
   display: grid;
-  grid-template-rows: 1fr auto auto auto;
-  gap: 1em;
-  padding: 1em;
-  max-width: 900px;
-  margin: 0 auto;
-  height: calc(100vh - var(---site-header-height, 40px) - 3rem);
+  gap: var(---block-gap, 10px);
+  grid-template-areas: 'board' 'buttons' 'controls';
 }
 
-.kifu__names {
-  display: flex;
-  gap: 1em;
-  justify-content: space-between;
-  flex-wrap: wrap;
+@media (min-width: 800px) {
+  .kifu-app {
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 240px);
+    grid-template-rows: 1fr auto auto 1fr;
+    grid-template-areas:
+      'board .'
+      'board controls'
+      'board buttons'
+      'board .';
+    column-gap: var(---block-gap, 15px);
+    height: calc(100vh - var(---site-header-height, 40px) - 3rem);
+  }
 }
 
-.kifu__name {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  font-size: 1.05em;
-}
-
-.kifu__name input,
-.kifu__name select {
-  background: var(--c-bg-box);
-  border: 1px solid var(--c-border);
-  color: var(--c-font);
-  font: inherit;
-  padding: 0.3em 0.5em;
-  border-radius: 4px;
-  width: 14em;
-}
-
-.kifu__name input[type='number'] {
-  width: 5em;
-}
-
-.kifu__board {
-  min-height: 0;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.kifu__board .go-goban {
-  --go-board-border-color: var(--c-font-clearer);
-  --go-board-background-color: var(--c-bg-box);
-  --go-board-foreground-color: var(--c-font-clearer);
-  --go-white-foreground-color: var(--c-bg-box);
-  --go-black-foreground-color: var(--c-font-clearer);
-}
-
-.kifu__board .go-goban-image {
-  background-image: none;
-  background: var(--c-bg-box);
-}
-
-.kifu__board .go-goban::after {
-  display: none;
-}
-
-.kifu__board .go-stone::before {
-  display: none;
-}
-
-.kifu__board .go-inner.go-sign_1 {
-  background-image: none;
-  background: var(--c-bg-box);
-  box-shadow: inset 0 0 0 1px var(--c-font-clearer);
-}
-
-.kifu__board .go-inner.go-sign_-1 {
-  background-image: none;
-  background: var(--c-font-clearer);
-}
-
-.kifu__board .go-last-marker {
-  display: none;
-}
-
-.kifu__board .go-marker-label {
-  font-size: 0.5em;
-  font-weight: 400;
-}
-
-.kifu__board .go-interactive.go-turn-black .go-vertex.go-empty:hover,
-.kifu__board .go-interactive.go-turn-white .go-vertex.go-empty:hover {
-  background: color-mix(in srgb, var(--c-font-clearer) 20%, transparent);
-}
-
-html.light .kifu__board .go-goban {
-  --go-board-border-color: var(--c-font);
-  --go-board-background-color: var(--c-bg-page);
-  --go-board-foreground-color: var(--c-font);
-  --go-black-foreground-color: var(--c-bg-page);
-  --go-white-foreground-color: var(--c-font);
-}
-
-html.light .kifu__board .go-goban-image {
-  background: var(--c-bg-page);
-}
-
-html.light .kifu__board .go-inner.go-sign_1 {
-  background: var(--c-font);
-}
-
-html.light .kifu__board .go-inner.go-sign_-1 {
-  background: var(--c-bg-page);
-  box-shadow: inset 0 0 0 1px var(--c-font);
-}
-
-.kifu__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.6em;
-  font-size: 0.9em;
+.kifu-move-count {
+  text-align: center;
+  font-size: 0.85em;
   color: var(--c-font-dim);
 }
 
-.kifu__actions button {
-  background: var(--c-bg-box);
+.kifu-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9em;
+  padding: 0.6em 0.8em;
+}
+
+.kifu-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+
+.kifu-field span {
+  color: var(--c-font-dim);
+  font-size: 0.75em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.kifu-field input,
+.kifu-field select {
+  background: var(--c-bg-input, var(--c-bg-zebra));
   border: 1px solid var(--c-border);
-  color: var(--c-font);
-  font: inherit;
-  font-size: 0.9em;
-  padding: 0.3em 0.8em;
   border-radius: 4px;
-  cursor: pointer;
-  touch-action: manipulation;
+  color: var(--c-font);
+  padding: 0.45em 0.6em;
+  font-size: 0.95em;
+  font-family: inherit;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
-.kifu__actions button:hover:not([disabled]) {
-  background: var(--c-bg-zebra);
+.kifu-field input:hover:not(:disabled),
+.kifu-field select:hover:not(:disabled) {
+  border-color: var(--c-font-dim);
 }
 
-.kifu__actions button[disabled] {
-  opacity: 0.4;
+.kifu-field input:focus,
+.kifu-field select:focus {
+  outline: none;
+  border-color: var(--c-primary);
+  background: var(--c-bg-box);
+}
+
+.kifu-field select:disabled,
+.kifu-field input:disabled {
+  opacity: 0.5;
   cursor: default;
 }
 
-.kifu__notes {
+.kifu-notes {
   background: var(--c-bg-box);
   border: 1px solid var(--c-border);
   color: var(--c-font);
@@ -2838,6 +2765,81 @@ html.light .kifu__board .go-inner.go-sign_-1 {
   outline: none;
 }
 
-.kifu__notes:focus {
+.kifu-notes:focus {
   border-color: var(--c-primary);
+}
+
+.kifu-board .go-chat-highlight {
+  background: none;
+  border: none;
+  outline: 4px solid rgba(59, 130, 246, 0.7);
+  outline-offset: -3px;
+  border-radius: 50%;
+}
+
+.kifu-board .go-goban {
+  --go-board-border-color: var(--c-font-clearer);
+  --go-board-background-color: var(--c-bg-box);
+  --go-board-foreground-color: var(--c-font-clearer);
+  --go-white-foreground-color: var(--c-bg-box);
+  --go-black-foreground-color: var(--c-font-clearer);
+}
+
+.kifu-board .go-goban-image {
+  background-image: none;
+  background: var(--c-bg-box);
+}
+
+.kifu-board .go-goban::after {
+  display: none;
+}
+
+.kifu-board .go-stone::before {
+  display: none;
+}
+
+.kifu-board .go-inner.go-sign_1 {
+  background-image: none;
+  background: var(--c-bg-box);
+  box-shadow: inset 0 0 0 1px var(--c-font-clearer);
+}
+
+.kifu-board .go-inner.go-sign_-1 {
+  background-image: none;
+  background: var(--c-font-clearer);
+}
+
+.kifu-board .go-last-marker {
+  display: none;
+}
+
+.kifu-board .go-marker-label {
+  font-size: 0.5em;
+  font-weight: 400;
+}
+
+.kifu-board .go-interactive.go-turn-black .go-vertex.go-empty:hover,
+.kifu-board .go-interactive.go-turn-white .go-vertex.go-empty:hover {
+  background: color-mix(in srgb, var(--c-font-clearer) 20%, transparent);
+}
+
+html.light .kifu-board .go-goban {
+  --go-board-border-color: var(--c-font);
+  --go-board-background-color: var(--c-bg-page);
+  --go-board-foreground-color: var(--c-font);
+  --go-black-foreground-color: var(--c-bg-page);
+  --go-white-foreground-color: var(--c-font);
+}
+
+html.light .kifu-board .go-goban-image {
+  background: var(--c-bg-page);
+}
+
+html.light .kifu-board .go-inner.go-sign_1 {
+  background: var(--c-font);
+}
+
+html.light .kifu-board .go-inner.go-sign_-1 {
+  background: var(--c-bg-page);
+  box-shadow: inset 0 0 0 1px var(--c-font);
 }
