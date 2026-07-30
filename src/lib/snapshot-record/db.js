@@ -33,10 +33,10 @@ function runTransaction(db, storeNames, mode, work) {
   });
 }
 
-export async function createSession(sessionId) {
+export async function createSession(sessionId, startedAt = Date.now()) {
   const db = await openDb();
   await runTransaction(db, SESSIONS_STORE, 'readwrite', (tx) => {
-    tx.objectStore(SESSIONS_STORE).put({ sessionId, status: 'recording', startedAt: Date.now() });
+    tx.objectStore(SESSIONS_STORE).put({ sessionId, status: 'recording', startedAt });
   });
 }
 
