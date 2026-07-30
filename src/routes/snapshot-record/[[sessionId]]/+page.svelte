@@ -50,7 +50,8 @@
   );
   const reviewMenuItems = $derived([
     { label: isBuilding ? 'Building video…' : 'Download video', onclick: downloadVideo },
-    { label: isExporting ? 'Exporting…' : 'Export images (.zip)', onclick: exportImages }
+    { label: isExporting ? 'Exporting…' : 'Export images (.zip)', onclick: exportImages },
+    { label: 'Reconstruct moves', href: `/snapshot-record/${activeSessionId}/reconstruct` }
   ]);
 
   function formatElapsed(totalSeconds) {

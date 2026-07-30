@@ -1021,6 +1021,15 @@ html.light .color-icon.white::before {
   animation-delay: -1.3s;
 }
 
+.go-hint-ring-black {
+  stroke: #1a1a1a;
+}
+
+.go-hint-ring-white {
+  stroke: #f5f5f5;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.7));
+}
+
 @keyframes go-hint-pulse {
   0% {
     transform: scale(0.5);
