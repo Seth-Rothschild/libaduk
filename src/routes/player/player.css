@@ -22,6 +22,11 @@
   text-transform: none;
   font-size: 0.95em;
 }
+@media (max-width: 1019.29px) {
+  .page-menu:has(.community, .activity) .sub-ratings h3 {
+    display: inline-block;
+  }
+}
 
 /* -------------------------------------------------------------
    .community — content box that shares bg with the active nav
