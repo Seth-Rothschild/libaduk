@@ -11,7 +11,8 @@ export async function POST({ request }) {
     komi,
     result,
     username,
-    handicapStones
+    handicapStones,
+    status
   } = await request.json();
 
   const id = Math.random().toString(36).slice(2, 8);
@@ -23,7 +24,7 @@ export async function POST({ request }) {
     blackName: blackName || 'Black',
     whiteName: whiteName || 'White',
     gameType: 'uploaded',
-    status: 'finished',
+    status: status || 'finished',
     komi: komi ?? 6.5,
     owners,
     handicapStones,

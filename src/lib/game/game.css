@@ -2769,6 +2769,54 @@ path.go-marker-on-empty {
   border-color: var(--c-primary);
 }
 
+.kifu-field-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.kifu-field-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.kifu-claim-btn {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  color: var(--c-font-dim);
+  cursor: pointer;
+  font-size: 0.75em;
+  padding: 0.3em 0.5em;
+  white-space: nowrap;
+}
+
+.kifu-claim-btn:hover {
+  border-color: var(--c-primary);
+  color: var(--c-font);
+}
+
+.kifu-inline-actions {
+  display: flex;
+  gap: 0.4em;
+}
+
+.kifu-inline-actions .button {
+  flex: 1;
+}
+
+.kifu-edit-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: 0.6em;
+  background: var(--c-bg-zebra);
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  font-size: 0.85em;
+}
+
 .kifu-board .go-chat-highlight {
   background: none;
   border: none;

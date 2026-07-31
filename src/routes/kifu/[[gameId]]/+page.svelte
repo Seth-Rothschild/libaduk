@@ -28,16 +28,29 @@
   let moves = $state([]);
   let setup = $state([]);
   let handicapMode = $state(false);
+  let status = $state('waiting');
+
+  const me = $derived(getMe()?.username ?? null);
+  const isFinished = $derived(status === 'finished');
 
   let cursor = $state(0);
   const atLiveEdge = $derived(cursor === moves.length);
-  const displayedMoves = $derived.by(() => moves.slice(0, cursor));
+  const displayedMoves = $derived.by(() => {
+    if (editMode === 'replace') return moves.slice(0, editTargetIndex - 1);
+    return moves.slice(0, cursor);
+  });
   const gameState = $derived.by(() => buildGameState(displayedMoves, setup, size));
   const currentSign = $derived.by(() => {
     if (handicapMode) return 1;
     const hasHandicap = setup.length >= 2;
-    return hasHandicap ? (moves.length % 2 === 0 ? -1 : 1) : moves.length % 2 === 0 ? 1 : -1;
+    const n = displayedMoves.length;
+    return hasHandicap ? (n % 2 === 0 ? -1 : 1) : n % 2 === 0 ? 1 : -1;
   });
+
+  let editMode = $state(null);
+  let editTargetIndex = $state(null);
+  let editSnapshot = $state(null);
+  const isEditing = $derived(editMode !== null);
 
   const highlightVertex = $derived.by(() => {
     if (atLiveEdge) return null;
@@ -58,6 +71,40 @@
   }
   function navLast() {
     cursor = moves.length;
+  }
+
+  function renumber(list) {
+    return list.map((m, i) => ({ ...m, number: i + 1 }));
+  }
+
+  function startReplace() {
+    if (cursor < 1) return;
+    editMode = 'replace';
+    editTargetIndex = cursor;
+  }
+
+  function startInsert() {
+    editMode = 'insert';
+    editTargetIndex = cursor;
+    editSnapshot = moves;
+  }
+
+  function cancelEdit() {
+    if (editMode === 'insert' && editSnapshot) {
+      moves = editSnapshot;
+    }
+    editMode = null;
+    editTargetIndex = null;
+    editSnapshot = null;
+    cursor = moves.length;
+  }
+
+  function finishInsert() {
+    editMode = null;
+    editTargetIndex = null;
+    editSnapshot = null;
+    cursor = moves.length;
+    if (gameId) syncMoves(moves);
   }
 
   function loadMovesFromGame(game) {
@@ -122,7 +169,35 @@
       placeSetupStone(x, y);
       return;
     }
-    if (!atLiveEdge) return;
+    if (editMode === 'replace') {
+      try {
+        applyMove(gameState.board, currentSign, x, y);
+      } catch {
+        return;
+      }
+      const updated = [...moves];
+      updated[editTargetIndex - 1] = { type: 'move', x, y, sign: currentSign, number: 0 };
+      moves = renumber(updated);
+      editMode = null;
+      editTargetIndex = null;
+      cursor = moves.length;
+      if (gameId) syncMoves(moves);
+      return;
+    }
+    if (editMode === 'insert') {
+      try {
+        applyMove(gameState.board, currentSign, x, y);
+      } catch {
+        return;
+      }
+      const updated = [...moves];
+      updated.splice(editTargetIndex, 0, { type: 'move', x, y, sign: currentSign, number: 0 });
+      moves = renumber(updated);
+      editTargetIndex += 1;
+      cursor = editTargetIndex;
+      return;
+    }
+    if (isFinished || !atLiveEdge) return;
     try {
       applyMove(gameState.board, currentSign, x, y);
     } catch {
@@ -136,7 +211,7 @@
   }
 
   function pass() {
-    if (!atLiveEdge) return;
+    if (isFinished || isEditing || !atLiveEdge) return;
     const updatedMoves = [...moves, { type: 'pass', sign: currentSign, number: moves.length + 1 }];
     moves = updatedMoves;
     cursor = updatedMoves.length;
@@ -163,7 +238,7 @@
   }
 
   function undo() {
-    if (moves.length === 0) return;
+    if (isFinished || isEditing || moves.length === 0) return;
     const updatedMoves = moves.slice(0, -1);
     moves = updatedMoves;
     cursor = moves.length;
@@ -197,11 +272,68 @@
         size,
         komi,
         result,
+        status: 'playing',
         username: getMe()?.username ?? null
       })
     });
     const { id } = await res.json();
     await goto(`/kifu/${id}`);
+  }
+
+  async function syncDetails() {
+    if (!gameId) return;
+    await fetch('/api/game/details', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId, blackName, whiteName, komi, result })
+    });
+  }
+
+  function claimColor(color) {
+    if (!me) return;
+    if (color === 'black') {
+      blackName = me;
+      if (whiteName === me) whiteName = '';
+    } else {
+      whiteName = me;
+      if (blackName === me) blackName = '';
+    }
+    syncDetails();
+  }
+
+  let showFinishDialog = $state(false);
+  let finishWinner = $state('black');
+  let finishResult = $state('');
+  let finishDialogEl;
+
+  function openFinishDialog() {
+    finishWinner = 'black';
+    finishResult = result || '';
+    showFinishDialog = true;
+    finishDialogEl?.showModal();
+  }
+
+  function closeFinishDialog() {
+    showFinishDialog = false;
+    finishDialogEl?.close();
+  }
+
+  async function confirmFinish() {
+    status = 'finished';
+    result = finishResult;
+    if (gameId) {
+      await fetch('/api/game/details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gameId,
+          status: 'finished',
+          winner: finishWinner,
+          result: finishResult
+        })
+      });
+    }
+    closeFinishDialog();
   }
 
   function buildSgfTree(moves, setup, size, comment) {
@@ -306,6 +438,7 @@
     whiteName = game.whiteName ?? '';
     komi = game.komi ?? 6.5;
     result = game.result ?? '';
+    status = game.status ?? 'waiting';
     setup = (game.handicapStones ?? []).map(({ x, y }) => ({ x, y, sign: 1 }));
     moves = loadMovesFromGame(game);
     cursor = moves.length;
@@ -335,19 +468,45 @@
         </label>
         <label class="kifu-field">
           <span>Black</span>
-          <input type="text" placeholder="player name" bind:value={blackName} />
+          <div class="kifu-field-row">
+            <input
+              type="text"
+              placeholder="player name"
+              bind:value={blackName}
+              onchange={syncDetails}
+            />
+            {#if me && blackName !== me}
+              <button class="kifu-claim-btn" onclick={() => claimColor('black')}>This is me</button>
+            {/if}
+          </div>
         </label>
         <label class="kifu-field">
           <span>White</span>
-          <input type="text" placeholder="player name" bind:value={whiteName} />
+          <div class="kifu-field-row">
+            <input
+              type="text"
+              placeholder="player name"
+              bind:value={whiteName}
+              onchange={syncDetails}
+            />
+            {#if me && whiteName !== me}
+              <button class="kifu-claim-btn" onclick={() => claimColor('white')}>This is me</button>
+            {/if}
+          </div>
         </label>
         <label class="kifu-field">
           <span>Komi</span>
-          <input type="number" step="0.5" bind:value={komi} />
+          <input type="number" step="0.5" bind:value={komi} onchange={syncDetails} />
         </label>
         <label class="kifu-field">
           <span>Result</span>
-          <input type="text" placeholder="e.g. B+R" bind:value={result} />
+          <input
+            type="text"
+            placeholder="e.g. B+R"
+            bind:value={result}
+            onchange={syncDetails}
+            disabled={isFinished}
+          />
         </label>
         <textarea class="kifu-notes" placeholder="Notes..." bind:value={notes}></textarea>
       </div>
@@ -365,13 +524,28 @@
           {currentSign}
           {highlightVertex}
           onVertexClick={placeStone}
-          interactive={handicapMode || atLiveEdge}
+          interactive={handicapMode || atLiveEdge || isEditing}
           useTheme={false}
         />
       </div>
     </div>
 
     <div class="rcontrols">
+      {#if isEditing}
+        <div class="kifu-edit-bar">
+          <span>
+            {editMode === 'replace'
+              ? 'Click the correct spot for this move.'
+              : 'Placing inserted moves…'}
+          </span>
+          <div class="kifu-inline-actions">
+            {#if editMode === 'insert'}
+              <button class="button button-metal" onclick={finishInsert}>Done inserting</button>
+            {/if}
+            <button class="button button-metal" onclick={cancelEdit}>Cancel</button>
+          </div>
+        </div>
+      {/if}
       <div class="kifu-move-count">Move {moves.length}</div>
       {#if !gameId}
         {#if handicapMode}
@@ -380,10 +554,19 @@
           <button class="button button-metal" onclick={startHandicap}>Set handicap</button>
         {/if}
       {/if}
-      <button class="button button-metal" onclick={undo} disabled={moves.length === 0}>Undo</button>
-      <button class="button button-metal" onclick={pass} disabled={handicapMode || !atLiveEdge}
-        >Pass</button
+      <button
+        class="button button-metal"
+        onclick={undo}
+        disabled={isFinished || isEditing || moves.length === 0}>Undo</button
       >
+      <button
+        class="button button-metal"
+        onclick={pass}
+        disabled={isFinished || isEditing || handicapMode || !atLiveEdge}>Pass</button
+      >
+      {#if gameId && !isFinished}
+        <button class="button button-metal" onclick={openFinishDialog}>Game over</button>
+      {/if}
       {#if gameId}
         <a class="button button-metal" href={`/play/${gameId}`}>View game record</a>
       {:else}
@@ -394,8 +577,8 @@
     </div>
 
     <NavigationButtons
-      canPrev={cursor > 0}
-      canNext={cursor < moves.length}
+      canPrev={!isEditing && cursor > 0}
+      canNext={!isEditing && cursor < moves.length}
       onFirst={navFirst}
       onPrev={navPrev}
       onNext={navNext}
@@ -404,11 +587,45 @@
         ...(moves.length > 0 || setup.length > 0
           ? [{ label: 'Download SGF', onclick: downloadSgf }]
           : []),
-        ...(!gameId ? [{ label: 'Upload SGF', onclick: () => fileInput.click() }] : [])
+        ...(!gameId ? [{ label: 'Upload SGF', onclick: () => fileInput.click() }] : []),
+        ...(!isEditing && !handicapMode && cursor > 0
+          ? [{ label: 'Replace this move', onclick: startReplace }]
+          : []),
+        ...(!isEditing && !handicapMode
+          ? [{ label: 'Insert moves here', onclick: startInsert }]
+          : [])
       ]}
     />
   </div>
 </div>
+
+<dialog
+  bind:this={finishDialogEl}
+  class="ai-model-dialog"
+  onclose={() => (showFinishDialog = false)}
+>
+  {#if showFinishDialog}
+    <h2>Mark game over</h2>
+    <p>Recording stops once a game is marked done. You can still browse the moves afterward.</p>
+    <div class="kifu-fields">
+      <label class="kifu-field">
+        <span>Winner</span>
+        <select bind:value={finishWinner}>
+          <option value="black">Black</option>
+          <option value="white">White</option>
+        </select>
+      </label>
+      <label class="kifu-field">
+        <span>Result</span>
+        <input type="text" placeholder="e.g. B+R" bind:value={finishResult} />
+      </label>
+    </div>
+    <div class="kifu-inline-actions">
+      <button class="button button-metal" onclick={closeFinishDialog}>Cancel</button>
+      <button class="button button-green" onclick={confirmFinish}>Confirm</button>
+    </div>
+  {/if}
+</dialog>
 
 {#if !gameId}
   <input
