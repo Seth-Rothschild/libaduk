@@ -29,6 +29,7 @@
   let setup = $state([]);
   let handicapMode = $state(false);
   let status = $state('waiting');
+  let winner = $state(null);
 
   const me = $derived(getMe()?.username ?? null);
   const isFinished = $derived(status === 'finished');
@@ -74,7 +75,13 @@
   }
 
   function renumber(list) {
-    return list.map((m, i) => ({ ...m, number: i + 1 }));
+    const hasHandicap = setup.length >= 2;
+    let sign = hasHandicap ? -1 : 1;
+    return list.map((m, i) => {
+      const next = { ...m, number: i + 1, sign };
+      sign = sign === 1 ? -1 : 1;
+      return next;
+    });
   }
 
   function startReplace() {
@@ -87,6 +94,15 @@
     editMode = 'insert';
     editTargetIndex = cursor;
     editSnapshot = moves;
+  }
+
+  function removeMove() {
+    if (isEditing || handicapMode || cursor < 1 || cursor > moves.length) return;
+    const updated = [...moves];
+    updated.splice(cursor - 1, 1);
+    moves = renumber(updated);
+    cursor = moves.length;
+    if (gameId) syncMoves(moves);
   }
 
   function cancelEdit() {
@@ -197,7 +213,7 @@
       cursor = editTargetIndex;
       return;
     }
-    if (isFinished || !atLiveEdge) return;
+    if (!atLiveEdge) return;
     try {
       applyMove(gameState.board, currentSign, x, y);
     } catch {
@@ -211,7 +227,7 @@
   }
 
   function pass() {
-    if (isFinished || isEditing || !atLiveEdge) return;
+    if (isEditing || !atLiveEdge) return;
     const updatedMoves = [...moves, { type: 'pass', sign: currentSign, number: moves.length + 1 }];
     moves = updatedMoves;
     cursor = updatedMoves.length;
@@ -225,8 +241,25 @@
     handicapMode = true;
   }
 
+  function editHandicap() {
+    if (cursor !== 0 || isEditing) return;
+    handicapMode = true;
+  }
+
   function doneHandicap() {
     handicapMode = false;
+    moves = renumber(moves);
+    cursor = moves.length;
+    if (gameId) syncHandicap();
+  }
+
+  async function syncHandicap() {
+    const handicapStones = setup.map(({ x, y }) => ({ x, y }));
+    await fetch('/api/game/details', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId, handicapStones })
+    });
   }
 
   function changeSize(newSize) {
@@ -238,7 +271,7 @@
   }
 
   function undo() {
-    if (isFinished || isEditing || moves.length === 0) return;
+    if (isEditing || moves.length === 0) return;
     const updatedMoves = moves.slice(0, -1);
     moves = updatedMoves;
     cursor = moves.length;
@@ -307,7 +340,7 @@
   let finishDialogEl;
 
   function openFinishDialog() {
-    finishWinner = 'black';
+    finishWinner = winner || 'black';
     finishResult = result || '';
     showFinishDialog = true;
     finishDialogEl?.showModal();
@@ -320,6 +353,7 @@
 
   async function confirmFinish() {
     status = 'finished';
+    winner = finishWinner;
     result = finishResult;
     if (gameId) {
       await fetch('/api/game/details', {
@@ -439,6 +473,7 @@
     komi = game.komi ?? 6.5;
     result = game.result ?? '';
     status = game.status ?? 'waiting';
+    winner = game.winner ?? null;
     setup = (game.handicapStones ?? []).map(({ x, y }) => ({ x, y, sign: 1 }));
     moves = loadMovesFromGame(game);
     cursor = moves.length;
@@ -500,13 +535,7 @@
         </label>
         <label class="kifu-field">
           <span>Result</span>
-          <input
-            type="text"
-            placeholder="e.g. B+R"
-            bind:value={result}
-            onchange={syncDetails}
-            disabled={isFinished}
-          />
+          <input type="text" placeholder="e.g. B+R" bind:value={result} onchange={syncDetails} />
         </label>
         <textarea class="kifu-notes" placeholder="Notes..." bind:value={notes}></textarea>
       </div>
@@ -547,25 +576,25 @@
         </div>
       {/if}
       <div class="kifu-move-count">Move {moves.length}</div>
-      {#if !gameId}
-        {#if handicapMode}
-          <button class="button button-metal" onclick={doneHandicap}>Done placing</button>
-        {:else if moves.length === 0}
-          <button class="button button-metal" onclick={startHandicap}>Set handicap</button>
-        {/if}
+      {#if handicapMode}
+        <button class="button button-metal" onclick={doneHandicap}>Done placing</button>
+      {:else if !gameId && moves.length === 0}
+        <button class="button button-metal" onclick={startHandicap}>Set handicap</button>
+      {:else if gameId && cursor === 0 && !isEditing}
+        <button class="button button-metal" onclick={editHandicap}>Edit handicap</button>
       {/if}
-      <button
-        class="button button-metal"
-        onclick={undo}
-        disabled={isFinished || isEditing || moves.length === 0}>Undo</button
+      <button class="button button-metal" onclick={undo} disabled={isEditing || moves.length === 0}
+        >Undo</button
       >
       <button
         class="button button-metal"
         onclick={pass}
-        disabled={isFinished || isEditing || handicapMode || !atLiveEdge}>Pass</button
+        disabled={isEditing || handicapMode || !atLiveEdge}>Pass</button
       >
-      {#if gameId && !isFinished}
-        <button class="button button-metal" onclick={openFinishDialog}>Game over</button>
+      {#if gameId}
+        <button class="button button-metal" onclick={openFinishDialog}
+          >{isFinished ? 'Edit result' : 'Game over'}</button
+        >
       {/if}
       {#if gameId}
         <a class="button button-metal" href={`/play/${gameId}`}>View game record</a>
@@ -589,7 +618,10 @@
           : []),
         ...(!gameId ? [{ label: 'Upload SGF', onclick: () => fileInput.click() }] : []),
         ...(!isEditing && !handicapMode && cursor > 0
-          ? [{ label: 'Replace this move', onclick: startReplace }]
+          ? [
+              { label: 'Replace this move', onclick: startReplace },
+              { label: 'Remove this move', onclick: removeMove }
+            ]
           : []),
         ...(!isEditing && !handicapMode
           ? [{ label: 'Insert moves here', onclick: startInsert }]

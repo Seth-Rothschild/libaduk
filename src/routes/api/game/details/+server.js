@@ -7,7 +7,15 @@ export async function POST({ request }) {
   if (!gameId) return json({ error: 'missing gameId' }, { status: 400 });
 
   const patch = {};
-  for (const field of ['blackName', 'whiteName', 'komi', 'result', 'winner', 'status']) {
+  for (const field of [
+    'blackName',
+    'whiteName',
+    'komi',
+    'result',
+    'winner',
+    'status',
+    'handicapStones'
+  ]) {
     if (field in body) patch[field] = body[field];
   }
   if (body.status === 'finished') patch.endedAt = Date.now();
