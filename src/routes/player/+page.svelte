@@ -10,6 +10,7 @@
     { key: 'rapid', label: 'Rapid', icon: '\ue002' },
     { key: 'classical', label: 'Classical', icon: '\ue00a' },
     { key: 'correspondence', label: 'Correspondence', icon: '\ue019' },
+    { key: 'unlimited', label: 'Unlimited', icon: '\ue04e' },
     { key: 'puzzles', label: 'Puzzles', icon: '\ue00c' }
   ];
 

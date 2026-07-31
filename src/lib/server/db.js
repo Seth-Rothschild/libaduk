@@ -528,6 +528,10 @@ const LEADERBOARD_CATEGORIES = [
   {
     key: 'correspondence',
     filter: { 'timeControl.type': 'correspondence' }
+  },
+  {
+    key: 'unlimited',
+    filter: { 'timeControl.type': 'none' }
   }
 ];
 
