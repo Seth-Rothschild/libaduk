@@ -757,6 +757,20 @@ body.clinput #clinput input {
   text-align: center;
 }
 
+.site-buttons .dasher .dropdown .announcements-open {
+  padding: 0.6rem 0.5rem 0.4rem;
+}
+
+.site-buttons .dasher .dropdown .announcements-open .button {
+  width: 100%;
+  color: var(--c-over);
+}
+
+.site-buttons .dasher .dropdown .announcements-open .button:hover {
+  background: var(--c-primary);
+  color: var(--c-over);
+}
+
 .site-buttons .dasher .dropdown .selector button {
   padding: 1em;
 }

@@ -1,9 +1,11 @@
 <script>
   import PingStatus from './PingStatus.svelte';
+  import AnnouncementsPane from './AnnouncementsPane.svelte';
   import BackgroundPane from './BackgroundPane.svelte';
   import BoardPane from './BoardPane.svelte';
   import LanguagePane from './LanguagePane.svelte';
   import { t } from '$lib/i18n/i18n.svelte.js';
+  import { announcementsUi } from '$lib/announcements/announcementsUi.svelte.js';
 
   let { username, onSignOut } = $props();
 
@@ -35,6 +37,11 @@
     onSignOut();
     close();
   };
+
+  const showAnnouncements = () => {
+    announcementsUi.requestOpen();
+    close();
+  };
 </script>
 
 <svelte:window onclick={closeOnClickAway} onkeydown={closeOnEscape} />
@@ -43,7 +50,9 @@
   <div class="dasher" class:shown={open} bind:this={dasherEl}>
     <button id="user_tag" class="link" onclick={toggle}>{username}</button>
     <div class="dropdown">
-      {#if pane === 'background'}
+      {#if pane === 'announcements'}
+        <AnnouncementsPane onBack={() => (pane = 'main')} onOpen={showAnnouncements} />
+      {:else if pane === 'background'}
         <BackgroundPane onBack={() => (pane = 'main')} />
       {:else if pane === 'board'}
         <BoardPane onBack={() => (pane = 'main')} />
@@ -59,6 +68,9 @@
         >
         <button class="text signout" data-icon="&#xe055;" onclick={signOut}>{t('Sign out')}</button>
         <hr />
+        <button class="text" data-icon-right="&#xe026;" onclick={() => (pane = 'announcements')}
+          >{t('Announcements')}</button
+        >
         <button class="text" data-icon-right="&#xe026;" onclick={() => (pane = 'language')}
           >{t('Language')}</button
         >

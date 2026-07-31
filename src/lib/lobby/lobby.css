@@ -995,6 +995,127 @@ group.radio.ai-strength {
 }
 
 /* -------------------------------------------------------------
+   Announcement modal (.announcement-modal)
+   Reuses .game-setup for dialog chrome
+   ------------------------------------------------------------- */
+
+.announcement-close-x {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  background: var(--c-bg-box);
+  border: none;
+  border-radius: 50%;
+  font-size: 1rem;
+  cursor: pointer;
+  color: var(--c-font-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.announcement-close-x:hover {
+  background: var(--c-bg-zebra2);
+  color: var(--c-font);
+}
+
+.announcement-close-x:focus {
+  outline: none;
+}
+
+.announcement-close-x:focus-visible {
+  outline: 2px solid var(--c-border-light);
+}
+
+.game-setup.announcement-modal .scrollable {
+  height: 34rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-setup.announcement-modal h2 {
+  margin-bottom: 0.3rem;
+}
+
+.announcement-subheading {
+  margin: 0 1.5rem 0.2rem;
+  color: var(--c-font-dim);
+  font-size: 0.9rem;
+}
+
+.announcement-date {
+  margin: 0 1.5rem 1rem;
+  color: var(--c-font-dimmer);
+  font-size: 0.8rem;
+}
+
+.game-setup.announcement-modal .announcement-body {
+  flex: 1;
+  overflow-y: auto;
+  gap: 0.2rem;
+}
+
+.announcement-body h3,
+.announcement-body h4,
+.announcement-body h5 {
+  margin: 0 0 0.6rem;
+}
+
+.announcement-body p {
+  margin: 0 0 0.5rem;
+}
+
+.announcement-body ul {
+  margin: 0 0 0.5rem;
+  padding-left: 1.4rem;
+}
+
+.announcement-body a {
+  color: var(--c-link);
+}
+
+.announcement-body a:hover {
+  color: var(--c-link-hover);
+}
+
+.game-setup .announcement-footer {
+  display: flex;
+  justify-content: center;
+}
+
+.announcement-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.announcement-nav-btn {
+  background: none;
+  border: none;
+  color: var(--c-font-dim);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+}
+
+.announcement-nav-btn:hover:not(:disabled) {
+  color: var(--c-font);
+}
+
+.announcement-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.announcement-counter {
+  color: var(--c-font-dim);
+  font-size: 0.9rem;
+}
+
+/* -------------------------------------------------------------
    .pool-spinner — circle loader on pool cards
    ------------------------------------------------------------- */
 

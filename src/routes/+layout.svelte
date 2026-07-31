@@ -19,6 +19,7 @@
   import { onMount } from 'svelte';
   import SiteHeader from '$lib/nav/SiteHeader.svelte';
   import GameSetupModal from '$lib/lobby/GameSetupModal.svelte';
+  import AnnouncementModal from '$lib/announcements/AnnouncementModal.svelte';
   import { getGuestId } from '$lib/state/guestId.js';
 
   let { children, data } = $props();
@@ -71,6 +72,8 @@
     }}
   />
 {/if}
+
+<AnnouncementModal />
 {#if ogsSeekGraph.tokenExpired && !ogsWarningDismissed}
   <div class="ogs-token-warning">
     Your OGS token has expired. Go to <a href="/account/preferences/ogs">OGS Settings</a> to
