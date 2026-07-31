@@ -17,6 +17,7 @@
   let onlineUsers = $state([]);
   let onlineGuests = $state([]);
   let liveGames = $state([]);
+  let tvActive = $state(false);
   let stats = $state(null);
 
   async function refreshOnline() {
@@ -25,6 +26,7 @@
     onlineUsers = result.users;
     onlineGuests = result.guests;
     liveGames = result.games;
+    tvActive = result.tvActive;
   }
 
   async function refreshStats() {
@@ -75,6 +77,12 @@
   <div class="community__live">
     <h2>Live Rooms</h2>
     <ol class="online-list">
+      {#if tvActive}
+        <li>
+          <span class="online-dot"></span>
+          <a href="/tv">TV Room</a>
+        </li>
+      {/if}
       {#each liveGames as gameId}
         <li>
           <span class="online-dot"></span>
@@ -82,7 +90,7 @@
         </li>
       {/each}
     </ol>
-    {#if liveGames.length === 0}
+    {#if liveGames.length === 0 && !tvActive}
       <div class="online-empty">No live rooms right now.</div>
     {/if}
   </div>

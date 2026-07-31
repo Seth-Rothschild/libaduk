@@ -68,6 +68,10 @@ function pushChat(entry) {
   broadcast({ type: 'tv-chat', entry });
 }
 
+export function hasViewers() {
+  return room.clients.size > 0;
+}
+
 export function getConnectedUsers() {
   const users = [];
   const guests = [];
