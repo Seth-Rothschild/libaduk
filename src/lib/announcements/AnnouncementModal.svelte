@@ -115,6 +115,10 @@
     if (e.target === e.currentTarget) close();
   }
 
+  function onBodyClick(e) {
+    if (e.target.closest('a')) close();
+  }
+
   function closeAndDismiss() {
     if (current) dismiss(current.id);
     close();
@@ -144,7 +148,7 @@
       <p class="announcement-subheading">{current.subtitle}</p>
       <p class="announcement-date">{formatTime(current.date)}</p>
 
-      <div class="setup-content announcement-body">
+      <div class="setup-content announcement-body" onclick={onBodyClick}>
         {@html renderedBody}
       </div>
 
