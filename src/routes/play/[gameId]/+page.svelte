@@ -834,6 +834,11 @@
           savedAnalysisTree = msg.tree;
           savedAnalysisPath = msg.path ?? null;
           enterAnalysisFromTree(msg.tree, msg.path ?? null);
+          const bookmarkId = page.url.searchParams.get('bookmark');
+          if (bookmarkId) {
+            const target = findNodeById(analysis.root, bookmarkId);
+            if (target) analysis.currentNode = target;
+          }
         }
         if (msg.type === 'analysis-exit') {
           analysis = null;
