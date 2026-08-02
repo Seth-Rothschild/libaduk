@@ -113,7 +113,8 @@ export class OgsGame {
       const line = data.line ?? data;
       if (!line.chat_id || this.#seenChatIds.has(line.chat_id)) return;
       this.#seenChatIds.add(line.chat_id);
-      await db.appendChat(this.#gameId, line);
+      const body = typeof line.body === 'string' ? line.body : JSON.stringify(line.body);
+      await db.appendChat(this.#gameId, { ...line, body });
       return;
     }
     if (suffix === 'removed_stones') {

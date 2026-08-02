@@ -186,7 +186,11 @@ class OgsSeekGraph {
 export const ogsSeekGraph = new OgsSeekGraph();
 
 export function formatOgsRank(input) {
-  if (input != null && typeof input === 'object') {
+  if (input == null) {
+    return null;
+  }
+
+  if (typeof input === 'object') {
     const ranking = input.ranking ?? input.rank;
     const isPro = input.pro || input.professional;
     if (isPro) {

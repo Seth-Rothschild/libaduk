@@ -375,7 +375,7 @@
     }
     const tree = serializeTree(analysis.root);
     const path = getNodePath(analysis.currentNode);
-    gameSocket.send({ type: 'analysis-enter', tree, path });
+    gameSocket.send('analysis-enter', { tree, path });
   }
 
   function downloadSgf() {
@@ -398,17 +398,17 @@
     analysis = null;
     memorize = null;
     controlRequest = null;
-    gameSocket.send({ type: 'analysis-exit' });
+    gameSocket.send('analysis-exit', {});
   }
 
   function requestControl() {
     controlRequest = displayName;
-    gameSocket.send({ type: 'request-control', user: displayName });
+    gameSocket.send('request-control', { user: displayName });
   }
 
   function clearControl() {
     controlRequest = null;
-    gameSocket.send({ type: 'clear-control' });
+    gameSocket.send('clear-control', {});
   }
 
   function resetAnalysis() {
@@ -425,7 +425,7 @@
     const path = getNodePath(analysis.currentNode);
     savedAnalysisTree = tree;
     savedAnalysisPath = path;
-    gameSocket.send({ type: 'analysis-tree', tree, path });
+    gameSocket.send('analysis-tree', { tree, path });
   }
 
   function navigateAnalysis(target = null) {

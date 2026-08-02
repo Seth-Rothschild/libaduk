@@ -353,6 +353,10 @@ async function handleGameCommand(socket, command, data) {
   }
   if (command === 'game/removed_stones/accept' && color) {
     await connection.acceptRemoval(color, data.stones);
+    if (allowAnyColor) {
+      const otherColor = color === 'black' ? 'white' : 'black';
+      await connection.acceptRemoval(otherColor, data.stones);
+    }
   }
   if (command === 'game/removed_stones/reject' && color) {
     await connection.rejectRemoval(color);

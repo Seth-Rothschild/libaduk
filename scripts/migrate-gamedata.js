@@ -148,7 +148,15 @@ async function migrate() {
 
   const legacyDocs = await games.find({ gamedata: null, gameType: { $ne: 'ogs' } }).toArray();
   const ogsLegacyDocs = await games.find({ gamedata: { $exists: false } }).toArray();
-  const toMigrate = [...legacyDocs, ...ogsLegacyDocs];
+  const legacyChatDocs = await games
+    .find({ chat: { $elemMatch: { chat_id: { $exists: false } } } })
+    .toArray();
+
+  const docsById = new Map();
+  for (const doc of [...legacyDocs, ...ogsLegacyDocs, ...legacyChatDocs]) {
+    docsById.set(doc._id, doc);
+  }
+  const toMigrate = [...docsById.values()];
 
   let migrated = 0;
   for (const doc of toMigrate) {
