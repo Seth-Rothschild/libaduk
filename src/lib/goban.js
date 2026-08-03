@@ -1,6 +1,9 @@
+// @ts-check
 import * as gobanModule from 'goban-engine';
 
-const goban = gobanModule.default ?? gobanModule;
+const goban = /** @type {typeof gobanModule} */ (
+  /** @type {any} */ (gobanModule).default ?? gobanModule
+);
 
 export const GobanEngine = goban.GobanEngine;
 export const GobanSocket = goban.GobanSocket;

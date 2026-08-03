@@ -10,9 +10,9 @@
   import {
     AnalysisState,
     makeAnalysisNode,
-    getAnalysisMoveName,
-    serializeTree
+    getAnalysisMoveName
   } from '$lib/game/analysisState.svelte.js';
+  import { collectReviewEntries } from '$lib/game/reviewCodec.js';
   import { getMe } from '$lib/state/user.svelte.js';
   import { page } from '$app/state';
   import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
@@ -108,7 +108,10 @@
         parent,
         moveName,
         comment,
-        setup
+        setup,
+        null,
+        undefined,
+        move?.sign ?? null
       );
 
       for (const childSgf of sgfNode.children) {
@@ -130,12 +133,12 @@
   }
 
   async function saveGame() {
-    const tree = serializeTree(analysis.root);
+    const reviewEntries = collectReviewEntries(analysis.root);
     const username = getMe()?.username ?? null;
     const res = await fetch('/api/game/upload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ analysisTree: tree, blackName, whiteName, size, komi, username })
+      body: JSON.stringify({ reviewEntries, blackName, whiteName, size, komi, username })
     });
     const { id } = await res.json();
     goto(`/play/${id}`);
@@ -169,9 +172,11 @@
     blackName = gamedata.players?.black?.username ?? 'Black';
     whiteName = gamedata.players?.white?.username ?? 'White';
     komi = gamedata.komi ?? 6.5;
-    if (game.analysisTree) {
+    if (game.reviewEntries?.length > 0) {
       analysis = new AnalysisState(size, komi);
-      analysis.loadTree(game.analysisTree, null);
+      for (const entry of game.reviewEntries) {
+        analysis.applyReviewEntry(entry, { follow: true });
+      }
     }
   });
   onDestroy(() => document.removeEventListener('keydown', handleKeydown));

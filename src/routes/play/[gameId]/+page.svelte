@@ -1,4 +1,5 @@
 <script>
+  // @ts-check
   import { untrack } from 'svelte';
   import { page } from '$app/state';
   import influence from '@sabaki/influence';
@@ -12,9 +13,9 @@
   import { GameState } from '$lib/game/GameState.svelte.js';
   import {
     AnalysisState,
-    serializeTree,
     getNodePath,
-    findNodeById
+    findNodeById,
+    followNodePath
   } from '$lib/game/analysisState.svelte.js';
 
   function getNodeMoveNum(node) {
@@ -127,7 +128,12 @@
   });
 
   function handleChatSend(text) {
-    gameSocket.send('game/chat', { body: text, move_number: gs.totalPly });
+    gameSocket.send('game/chat', {
+      game_id: gameId,
+      type: 'main',
+      body: text,
+      move_number: gs.totalPly
+    });
   }
 
   let gs = $state(new GameState());
@@ -319,33 +325,39 @@
     return null;
   });
 
-  // Tracks the latest analysis tree. data.game.analysisTree is a page-load snapshot
-  // and goes stale as moves are made, so we keep our own up-to-date copy.
-  let savedAnalysisTree = null;
+  // The review holds this game's shared analysis tree (review id === game id).
+  // Entries arrive as OGS move-strings via review/connect's full_state and the
+  // live review/{id}/r broadcast; savedAnalysisPath is local-only, just where
+  // this client was looking, so exiting and re-entering resumes in place.
   let savedAnalysisPath = null;
-
-  let pendingAnalysisTree = null;
+  let reviewConnected = false;
+  let pendingReviewEntries = [];
 
   function flushPendingAnalysisTree() {
-    if (!pendingAnalysisTree || !analysis) return;
+    if (pendingReviewEntries.length === 0 || !analysis) return;
     if (analysis.status === 'scoring' || analysis.showEstimate) return;
-    analysis.loadTree(pendingAnalysisTree.tree, pendingAnalysisTree.path);
-    analysis.animatedVertex = null;
-    pendingAnalysisTree = null;
+    for (const entry of pendingReviewEntries) {
+      analysis.applyReviewEntry(entry, { follow: true });
+    }
+    analysis.animatedVertex = analysis.currentNode.lastMove ?? null;
+    pendingReviewEntries = [];
   }
 
-  function enterAnalysisFromTree(tree, path = null) {
-    analysis = new AnalysisState(gs.boardSize, komi);
-    analysis.loadTree(tree, path);
-    memorize = new MemorizeState(analysis, gs.boardSize);
+  function connectReview() {
+    if (reviewConnected) return;
+    reviewConnected = true;
+    gameSocket.send('review/connect', { review_id: gameId });
   }
 
   function enterAnalysisFromMoves() {
     analysis = new AnalysisState(gs.boardSize, komi);
-    const ogsHandicap = gs.gamedata?.initial_state?.black;
-    const handicapStones = ogsHandicap
-      ? parseSgfCoords(ogsHandicap).map(([x, y]) => ({ x, y }))
-      : [];
+    const blackSetup = gs.gamedata?.initial_state?.black ?? '';
+    const whiteSetup = gs.gamedata?.initial_state?.white ?? '';
+    const stoneSetup = [
+      ...parseSgfCoords(blackSetup).map(([x, y]) => ({ x, y, sign: 1 })),
+      ...parseSgfCoords(whiteSetup).map(([x, y]) => ({ x, y, sign: -1 }))
+    ];
+    const initialSign = gs.gamedata?.initial_player === 'white' ? -1 : 1;
     const moves = [];
     for (let i = 1; i < gs.lastMoveHistory.length; i++) {
       const vertex = gs.lastMoveHistory[i];
@@ -355,27 +367,25 @@
         moves.push({ type: 'pass' });
       }
     }
-    analysis.loadMoves(moves, handicapStones);
+    analysis.loadMoves(moves, stoneSetup, initialSign);
     memorize = new MemorizeState(analysis, gs.boardSize);
   }
 
-  function enterAnalysis() {
+  function enterAnalysis(remoteEntries = null) {
     if (analysis) return;
-    if (savedAnalysisTree) {
-      enterAnalysisFromTree(savedAnalysisTree, savedAnalysisPath);
-    } else if (data.game.analysisTree) {
-      enterAnalysisFromTree(data.game.analysisTree, data.game.currentNodePath ?? null);
-    } else {
-      enterAnalysisFromMoves();
+    enterAnalysisFromMoves();
+    connectReview();
+    for (const entry of remoteEntries ?? []) {
+      analysis.applyReviewEntry(entry, { follow: true });
+    }
+    if (!remoteEntries && savedAnalysisPath) {
+      analysis.currentNode = followNodePath(analysis.root, savedAnalysisPath);
     }
     const bookmarkId = page.url.searchParams.get('bookmark');
     if (bookmarkId) {
       const target = findNodeById(analysis.root, bookmarkId);
       if (target) analysis.currentNode = target;
     }
-    const tree = serializeTree(analysis.root);
-    const path = getNodePath(analysis.currentNode);
-    gameSocket.send('analysis-enter', { tree, path });
   }
 
   function downloadSgf() {
@@ -393,12 +403,10 @@
   }
 
   function exitAnalysis() {
-    savedAnalysisTree = serializeTree(analysis.root);
     savedAnalysisPath = getNodePath(analysis.currentNode);
     analysis = null;
     memorize = null;
     controlRequest = null;
-    gameSocket.send('analysis-exit', {});
   }
 
   function requestControl() {
@@ -412,20 +420,24 @@
   }
 
   function resetAnalysis() {
-    savedAnalysisTree = null;
+    // Local-only: the review log is append-only, so this clears this client's
+    // view but doesn't erase shared history. A later full_state refetch (e.g.
+    // a fresh page load) will still show branches recorded before the reset.
     savedAnalysisPath = null;
     analysis = null;
     memorize = null;
     enterAnalysisFromMoves();
-    persistAnalysisTree();
   }
 
   function persistAnalysisTree() {
-    const tree = serializeTree(analysis.root);
-    const path = getNodePath(analysis.currentNode);
-    savedAnalysisTree = tree;
-    savedAnalysisPath = path;
-    gameSocket.send('analysis-tree', { tree, path });
+    if (!analysis) return;
+    savedAnalysisPath = getNodePath(analysis.currentNode);
+    gameSocket.send('review/append', {
+      review_id: gameId,
+      m: analysis.encodeCurrentPath(),
+      t: analysis.currentComment,
+      bookmark: analysis.currentBookmark
+    });
   }
 
   function navigateAnalysis(target = null) {
@@ -521,7 +533,11 @@
   function approveScore() {
     if (myColor === 'black') gs.blackApproved = true;
     else gs.whiteApproved = true;
-    gameSocket.send('game/removed_stones/accept', { game_id: gameId, stones: gs.removedString });
+    gameSocket.send('game/removed_stones/accept', {
+      game_id: gameId,
+      stones: gs.removedString,
+      strict_seki_mode: false
+    });
   }
 
   const opponentOnline = $derived(
@@ -665,8 +681,9 @@
 
       const ogsToken = data.game.ogsGameId ? getOgsToken() : null;
       gameSocket.join(currentGameId, data.viewerColor ?? null, ogsToken, displayName);
+      connectReview();
 
-      const prefix = `game/${currentGameId}/`;
+      const prefix = /** @type {`game/${string}/`} */ (`game/${currentGameId}/`);
 
       gameSocket.on(`${prefix}gamedata`, (gamedata) => {
         gs.initFromGamedata(gamedata, resolveViewerColor(gamedata));
@@ -732,7 +749,7 @@
       });
 
       gameSocket.on(`${prefix}chat`, (chatEvent) => {
-        const line = chatEvent.line ?? chatEvent;
+        const line = 'line' in chatEvent ? chatEvent.line : chatEvent;
         const t = line.date ? line.date * 1000 : null;
         const isDuplicate = t
           ? chatMessages.some((m) => m.t === t)
@@ -768,36 +785,25 @@
         }
       });
 
-      gameSocket.on('analysis-enter', (event) => {
-        savedAnalysisTree = event.tree;
-        savedAnalysisPath = event.path ?? null;
-        enterAnalysisFromTree(event.tree, event.path ?? null);
-        const bookmarkId = page.url.searchParams.get('bookmark');
-        if (bookmarkId) {
-          const target = findNodeById(analysis.root, bookmarkId);
-          if (target) analysis.currentNode = target;
+      const reviewPrefix = /** @type {`review/${string}/`} */ (`review/${currentGameId}/`);
+
+      gameSocket.on(`${reviewPrefix}full_state`, (entries) => {
+        if (entries.length === 0) return;
+        if (!analysis) enterAnalysis();
+        for (const entry of entries) {
+          analysis.applyReviewEntry(entry, { follow: true });
         }
       });
 
-      gameSocket.on('analysis-exit', () => {
-        analysis = null;
-        controlRequest = null;
-      });
-
-      gameSocket.on('analysis-tree', (event) => {
-        if (!analysis) return;
-        if (analysis.status === 'scoring' || analysis.showEstimate || memorize?.active) {
-          pendingAnalysisTree = { tree: event.tree, path: event.path ?? null };
+      gameSocket.on(`${reviewPrefix}r`, (entry) => {
+        if (!analysis) {
+          enterAnalysis();
+        } else if (analysis.status === 'scoring' || analysis.showEstimate || memorize?.active) {
+          pendingReviewEntries.push(entry);
           return;
         }
-        const prevPath = getNodePath(analysis.currentNode);
-        analysis.loadTree(event.tree, event.path ?? null);
-        const newPath = getNodePath(analysis.currentNode);
-        const isOneStepForward =
-          newPath.length === prevPath.length + 1 && prevPath.every((v, i) => v === newPath[i]);
-        if (isOneStepForward) {
-          analysis.animatedVertex = analysis.currentNode.lastMove ?? null;
-        }
+        analysis.applyReviewEntry(entry, { follow: true });
+        analysis.animatedVertex = analysis.currentNode.lastMove ?? null;
       });
 
       gameSocket.on('request-control', (event) => {
@@ -1132,7 +1138,7 @@
       {/if}
     </div>
 
-    {#if analysisMode & !memorize?.active}
+    {#if analysisMode && !memorize?.active}
       <div class="rgraph">
         <GameGraph
           root={analysis.root}

@@ -1,5 +1,6 @@
 import { WebSocketServer } from 'ws';
 import * as db from './db.js';
+import * as reviews from './reviews.js';
 import * as tvRoom from './tvRoom.js';
 import { NativeGame } from './games/nativeHost.js';
 import { OgsGame } from './games/ogsProxy.js';
@@ -16,6 +17,9 @@ const onlinePlayers = global.__onlinePlayers;
 
 if (!global.__gameConnections) global.__gameConnections = new Map();
 const gameConnections = global.__gameConnections;
+
+if (!global.__reviewClients) global.__reviewClients = new Map();
+const reviewClients = global.__reviewClients;
 
 const ONLINE_TIMEOUT = 15000;
 
@@ -248,6 +252,62 @@ function removeFromGame(socket) {
   socket.gameId = null;
 }
 
+function addToReview(socket, reviewId) {
+  if (!socket.reviewIds) socket.reviewIds = new Set();
+  socket.reviewIds.add(reviewId);
+  if (!reviewClients.has(reviewId)) {
+    reviewClients.set(reviewId, new Set());
+  }
+  reviewClients.get(reviewId).add(socket);
+}
+
+function removeFromReview(socket, reviewId) {
+  socket.reviewIds?.delete(reviewId);
+  const clients = reviewClients.get(reviewId);
+  if (clients) {
+    clients.delete(socket);
+    if (clients.size === 0) {
+      reviewClients.delete(reviewId);
+    }
+  }
+}
+
+function removeFromAllReviews(socket) {
+  const subscribed = [...(socket.reviewIds ?? [])];
+  for (const reviewId of subscribed) {
+    removeFromReview(socket, reviewId);
+  }
+}
+
+function emitToReviewOthers(reviewId, sender, name, data) {
+  const clients = reviewClients.get(reviewId);
+  if (!clients) return;
+  const payload = frame(name, data);
+  for (const socket of clients) {
+    if (socket !== sender && socket.readyState === socket.OPEN) {
+      socket.send(payload);
+    }
+  }
+}
+
+async function handleReviewCommand(socket, command, data) {
+  if (command === 'review/connect') {
+    const review = await reviews.connectReview(data.review_id);
+    if (!review) return;
+    addToReview(socket, review.id);
+    emitTo(socket, `review/${review.id}/full_state`, review.entries ?? []);
+  }
+  if (command === 'review/append') {
+    const reviewId = data.review_id;
+    if (!reviewId || !socket.reviewIds?.has(reviewId)) return;
+    const stored = await reviews.appendReviewEntry(reviewId, data);
+    emitToReviewOthers(reviewId, socket, `review/${reviewId}/r`, stored);
+  }
+  if (command === 'review/disconnect') {
+    removeFromReview(socket, data.review_id);
+  }
+}
+
 function spectatorNames(gameId) {
   const clients = gameClients.get(gameId);
   if (!clients) return [];
@@ -309,13 +369,6 @@ async function handleJoin(socket, data) {
     if (game.status === 'playing' && clockExpired && connection instanceof NativeGame) {
       await connection.timedOut();
     }
-  }
-
-  if (game.analysisActive && game.analysisTree) {
-    emitTo(socket, 'analysis-enter', {
-      tree: game.analysisTree,
-      path: game.currentNodePath ?? null
-    });
   }
 }
 
@@ -387,39 +440,15 @@ async function handleCommand(socket, command, data) {
     await handleGameCommand(socket, command, data);
     return;
   }
+  if (command.startsWith('review/')) {
+    await handleReviewCommand(socket, command, data);
+    return;
+  }
   if (command === 'typing' && socket.gameId) {
     const name = socket.playerName ?? socket.spectatorName;
     if (name) {
       emitToGame(socket.gameId, 'typing', { user: name, isTyping: !!data.isTyping });
     }
-    return;
-  }
-  if (command === 'analysis-enter' && socket.gameId) {
-    await db.updateGame(socket.gameId, {
-      analysisTree: data.tree,
-      currentNodePath: data.path ?? null,
-      analysisActive: true
-    });
-    emitToOthers(socket.gameId, socket, 'analysis-enter', {
-      tree: data.tree,
-      path: data.path ?? null
-    });
-    return;
-  }
-  if (command === 'analysis-exit' && socket.gameId) {
-    await db.updateGame(socket.gameId, { analysisActive: false });
-    emitToOthers(socket.gameId, socket, 'analysis-exit', {});
-    return;
-  }
-  if (command === 'analysis-tree' && socket.gameId) {
-    await db.updateGame(socket.gameId, {
-      analysisTree: data.tree,
-      currentNodePath: data.path ?? null
-    });
-    emitToOthers(socket.gameId, socket, 'analysis-tree', {
-      tree: data.tree,
-      path: data.path ?? null
-    });
     return;
   }
   if (command === 'request-control' && socket.gameId) {
@@ -509,6 +538,7 @@ export function attachWebSocketServer(httpServer) {
       const color = socket.playerColor;
       const wasSpectator = !color && !!socket.spectatorName;
       removeFromGame(socket);
+      removeFromAllReviews(socket);
       if (gameId && color) {
         emitToGame(gameId, 'presence', { color, online: false });
       } else if (gameId && wasSpectator) {

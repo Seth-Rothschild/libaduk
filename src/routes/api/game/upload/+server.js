@@ -1,11 +1,12 @@
 import { json } from '@sveltejs/kit';
 import { createGame, updateGame } from '$lib/server/db.js';
 import { newNativeGamedata, packMoves } from '$lib/server/games/gamedata.js';
+import { connectReview, appendReviewEntry } from '$lib/server/reviews.js';
 
 export async function POST({ request }) {
   const {
     moves,
-    analysisTree,
+    reviewEntries,
     blackName,
     whiteName,
     size,
@@ -40,8 +41,11 @@ export async function POST({ request }) {
     gamedata
   });
 
-  if (analysisTree) {
-    await updateGame(id, { analysisTree, analysisActive: true });
+  if (reviewEntries?.length > 0) {
+    await connectReview(id);
+    for (const entry of reviewEntries) {
+      await appendReviewEntry(id, entry);
+    }
   }
   if (result) {
     await updateGame(id, { result });

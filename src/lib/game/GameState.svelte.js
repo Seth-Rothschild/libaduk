@@ -78,6 +78,7 @@ export class GameState {
   winnerResult = $state(null);
   shiftMap = $state(emptyShiftMap(19));
   animatedVertex = $state(null);
+  /** @type {{ type: string, initial?: number, periodTime?: number, periods?: number, increment?: number, max?: number, days?: number }} */
   timeControl = $state({ type: 'none' });
   clockState = $state(null);
   corrState = $state(null);
@@ -153,9 +154,13 @@ export class GameState {
     else if (viewerColor === 'white') this.mySign = -1;
     else this.mySign = null;
 
-    const handicapCoords = parseSgfCoords(gamedata.initial_state?.black ?? '');
-    const hasHandicap = handicapCoords.length > 0;
-    const stoneSetup = handicapCoords.map(([x, y]) => ({ x, y, sign: 1 }));
+    const blackCoords = parseSgfCoords(gamedata.initial_state?.black ?? '');
+    const whiteCoords = parseSgfCoords(gamedata.initial_state?.white ?? '');
+    const hasHandicap = blackCoords.length > 0 || whiteCoords.length > 0;
+    const stoneSetup = [
+      ...blackCoords.map(([x, y]) => ({ x, y, sign: 1 })),
+      ...whiteCoords.map(([x, y]) => ({ x, y, sign: -1 }))
+    ];
     const initialBoard = hasHandicap ? applySetup(createBoard(this.boardSize), stoneSetup) : null;
     const whiteFirst = gamedata.initial_player === 'white';
 

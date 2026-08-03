@@ -8,6 +8,7 @@ import {
 } from '$lib/game/board';
 import influence from '@sabaki/influence';
 import { nameMove } from '@sabaki/boardmatcher';
+import { decodeMovePath, encodeNodePath } from '$lib/game/reviewCodec.js';
 
 export function makeAnalysisNode(
   board,
@@ -19,7 +20,8 @@ export function makeAnalysisNode(
   comment = '',
   setup = [],
   bookmark = null,
-  id
+  id,
+  sign = null
 ) {
   return {
     id: id ?? crypto.randomUUID(),
@@ -27,6 +29,7 @@ export function makeAnalysisNode(
     lastMove,
     markerMap,
     signToPlay,
+    sign,
     children: [],
     parent,
     moveName,
@@ -90,6 +93,7 @@ function serializeNode(node) {
   } else if (node.parent) {
     result.pass = true;
   }
+  if (node.parent) result.sign = node.sign;
   if (node.setup && node.setup.length > 0) result.setup = node.setup;
   if (node.comment) result.comment = node.comment;
   if (node.bookmark) result.bookmark = node.bookmark;
@@ -100,11 +104,13 @@ function serializeNode(node) {
 function deserializeNodeNested(data, parentBoard, signToPlay, parent, size) {
   let board = parentBoard;
   let lastMove = null;
+  const turnAdvanced = !!data.move || !!data.pass || parent !== null;
+  const moveSign = turnAdvanced ? (data.sign ?? signToPlay) : signToPlay;
 
   if (data.move) {
     lastMove = data.move;
     try {
-      board = parentBoard.makeMove(signToPlay, lastMove, {
+      board = parentBoard.makeMove(moveSign, lastMove, {
         preventSuicide: true,
         preventOverwrite: true,
         preventKo: true
@@ -117,10 +123,9 @@ function deserializeNodeNested(data, parentBoard, signToPlay, parent, size) {
   const setup = data.setup ?? [];
   board = applySetup(board, setup);
 
-  const turnAdvanced = !!lastMove || parent !== null;
-  const nextSign = turnAdvanced ? (signToPlay === 1 ? -1 : 1) : signToPlay;
+  const nextSign = turnAdvanced ? (moveSign === 1 ? -1 : 1) : signToPlay;
   const markers = data.markers ?? emptyMarkerMap(size);
-  const moveName = lastMove ? getAnalysisMoveName(parentBoard, signToPlay, lastMove) : null;
+  const moveName = lastMove ? getAnalysisMoveName(parentBoard, moveSign, lastMove) : null;
   const comment = data.comment ?? '';
   const bookmark = data.bookmark ?? null;
   const id = data.id ?? crypto.randomUUID();
@@ -134,7 +139,8 @@ function deserializeNodeNested(data, parentBoard, signToPlay, parent, size) {
     comment,
     setup,
     bookmark,
-    id
+    id,
+    turnAdvanced ? moveSign : null
   );
 
   if (data.children) {
@@ -165,11 +171,13 @@ function deserializeFlat(entries, size) {
 
     let board = parentBoard;
     let lastMove = null;
+    const turnAdvanced = !!entry.move || !!entry.pass || parentNode !== null;
+    const moveSign = turnAdvanced ? (entry.sign ?? signToPlay) : signToPlay;
 
     if (entry.move) {
       lastMove = entry.move;
       try {
-        board = parentBoard.makeMove(signToPlay, lastMove, {
+        board = parentBoard.makeMove(moveSign, lastMove, {
           preventSuicide: true,
           preventOverwrite: true,
           preventKo: true
@@ -185,10 +193,9 @@ function deserializeFlat(entries, size) {
     const setup = entry.setup ?? [];
     board = applySetup(board, setup);
 
-    const turnAdvanced = !!lastMove || parentNode !== null;
-    const nextSign = turnAdvanced ? (signToPlay === 1 ? -1 : 1) : signToPlay;
+    const nextSign = turnAdvanced ? (moveSign === 1 ? -1 : 1) : signToPlay;
     const markers = entry.markers ?? emptyMarkerMap(size);
-    const moveName = lastMove ? getAnalysisMoveName(parentBoard, signToPlay, lastMove) : null;
+    const moveName = lastMove ? getAnalysisMoveName(parentBoard, moveSign, lastMove) : null;
     const comment = entry.comment ?? '';
     const bookmark = entry.bookmark ?? null;
     const id = entry.id ?? crypto.randomUUID();
@@ -202,7 +209,8 @@ function deserializeFlat(entries, size) {
       comment,
       setup,
       bookmark,
-      id
+      id,
+      turnAdvanced ? moveSign : null
     );
 
     if (parentNode) parentNode.children.push(node);
@@ -212,6 +220,68 @@ function deserializeFlat(entries, size) {
   }
 
   return nodes[0];
+}
+
+export function applyMovePath(root, decodedMoves, size) {
+  let node = root;
+  for (const move of decodedMoves) {
+    const existing = node.children.find(
+      (c) =>
+        c.sign === move.sign &&
+        (move.isPass
+          ? c.lastMove === null
+          : c.lastMove && c.lastMove[0] === move.x && c.lastMove[1] === move.y)
+    );
+    if (existing) {
+      node = existing;
+      continue;
+    }
+    if (move.isPass) {
+      const child = makeAnalysisNode(
+        node.board,
+        null,
+        emptyMarkerMap(size),
+        move.sign === 1 ? -1 : 1,
+        node,
+        null,
+        '',
+        [],
+        null,
+        undefined,
+        move.sign
+      );
+      node.children.push(child);
+      node = child;
+      continue;
+    }
+    let newBoard;
+    try {
+      newBoard = node.board.makeMove(move.sign, [move.x, move.y], {
+        preventSuicide: true,
+        preventOverwrite: true,
+        preventKo: true
+      });
+    } catch {
+      return node;
+    }
+    const moveName = getAnalysisMoveName(node.board, move.sign, [move.x, move.y]);
+    const child = makeAnalysisNode(
+      newBoard,
+      [move.x, move.y],
+      emptyMarkerMap(size),
+      move.sign === 1 ? -1 : 1,
+      node,
+      moveName,
+      '',
+      [],
+      null,
+      undefined,
+      move.sign
+    );
+    node.children.push(child);
+    node = child;
+  }
+  return node;
 }
 
 export function getNodePath(node) {
@@ -415,14 +485,10 @@ export class AnalysisState {
     return this.#root;
   }
 
-  loadMoves(moves, handicapStones = []) {
+  loadMoves(moves, stoneSetup = [], initialSign = 1) {
     const size = this.#size;
-    const hasHandicap = handicapStones.length >= 2;
-    const stoneSetup = handicapStones.map(({ x, y }) => ({ x, y, sign: 1 }));
-    const initialBoard = hasHandicap
-      ? applySetup(createBoard(size), stoneSetup)
-      : createBoard(size);
-    const initialSign = hasHandicap ? -1 : 1;
+    const initialBoard =
+      stoneSetup.length > 0 ? applySetup(createBoard(size), stoneSetup) : createBoard(size);
     const root = makeAnalysisNode(
       initialBoard,
       null,
@@ -455,7 +521,12 @@ export class AnalysisState {
           emptyMarkerMap(size),
           nextSign,
           node,
-          moveName
+          moveName,
+          '',
+          [],
+          null,
+          undefined,
+          node.signToPlay
         );
         node.children.push(child);
         node = child;
@@ -466,7 +537,12 @@ export class AnalysisState {
           emptyMarkerMap(size),
           nextSign,
           node,
-          null
+          null,
+          '',
+          [],
+          null,
+          undefined,
+          node.signToPlay
         );
         node.children.push(child);
         node = child;
@@ -475,6 +551,20 @@ export class AnalysisState {
     this.#root = root;
     this.currentNode = node;
     this.#reset();
+  }
+
+  encodeCurrentPath() {
+    return encodeNodePath(this.currentNode);
+  }
+
+  applyReviewEntry(entry, { follow = false } = {}) {
+    if (!entry.m) return;
+    const decoded = decodeMovePath(entry.m, this.#size);
+    const node = applyMovePath(this.#root, decoded, this.#size);
+    if (entry.t !== undefined) node.comment = entry.t;
+    if (entry.bookmark !== undefined) node.bookmark = entry.bookmark;
+    if (follow) this.currentNode = node;
+    this.#version++;
   }
 
   loadTree(data, path = null) {
@@ -615,7 +705,12 @@ export class AnalysisState {
       emptyMarkerMap(this.#size),
       nextSign,
       this.currentNode,
-      moveName
+      moveName,
+      '',
+      [],
+      null,
+      undefined,
+      sign
     );
     this.currentNode.children.push(newNode);
     this.currentNode = newNode;

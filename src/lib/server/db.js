@@ -400,6 +400,47 @@ export async function getChat(gameId) {
   }
 }
 
+// --- Reviews ---
+
+export async function getReview(id) {
+  try {
+    const d = await getDb();
+    const doc = await d.collection('reviews').findOne({ _id: id });
+    if (!doc) return null;
+    const { _id, ...rest } = doc;
+    return { id: _id, ...rest };
+  } catch (err) {
+    console.error('[db] getReview failed:', err.message);
+    throw err;
+  }
+}
+
+export async function createReview({ id, gameId = null, owners = [] }) {
+  try {
+    const d = await getDb();
+    await d.collection('reviews').insertOne({
+      _id: id,
+      gameId,
+      owners,
+      entries: [],
+      createdAt: Date.now()
+    });
+  } catch (err) {
+    console.error('[db] createReview failed:', err.message);
+    throw err;
+  }
+}
+
+export async function appendReviewEntry(id, entry) {
+  try {
+    const d = await getDb();
+    await d.collection('reviews').updateOne({ _id: id }, { $push: { entries: entry } });
+  } catch (err) {
+    console.error('[db] appendReviewEntry failed:', err.message);
+    throw err;
+  }
+}
+
 export async function loadTvChat() {
   try {
     const d = await getDb();

@@ -10,11 +10,8 @@
     sgfNodeComment,
     sgfNodeSetup
   } from '$lib/game/board';
-  import {
-    makeAnalysisNode,
-    getAnalysisMoveName,
-    serializeTree
-  } from '$lib/game/analysisState.svelte.js';
+  import { makeAnalysisNode, getAnalysisMoveName } from '$lib/game/analysisState.svelte.js';
+  import { collectReviewEntries } from '$lib/game/reviewCodec.js';
 
   let sgfText = $state('');
   let fileInputEl;
@@ -60,7 +57,10 @@
         parent,
         moveName,
         comment,
-        setup
+        setup,
+        null,
+        undefined,
+        move?.sign ?? null
       );
 
       for (const childSgf of sgfNode.children) {
@@ -100,14 +100,14 @@
     }
 
     const moves = extractMoves(root);
-    const analysisTree = serializeTree(root);
+    const reviewEntries = collectReviewEntries(root);
 
     const response = await fetch('/api/game/upload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         moves,
-        analysisTree,
+        reviewEntries,
         blackName: parsed.playerBlack || 'Black',
         whiteName: parsed.playerWhite || 'White',
         size: parsed.size,

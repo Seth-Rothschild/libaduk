@@ -1,8 +1,16 @@
+// @ts-check
 import { GobanSocket } from '$lib/goban.js';
+
+/**
+ * @typedef {import('$lib/protocol').LibadukClientToServer} ClientToServer
+ * @typedef {import('$lib/protocol').LibadukGameSocketEvents} SocketEvents
+ * @typedef {import('goban-engine').GobanSocket<ClientToServer>} LibadukSocket
+ */
 
 class GameSocket {
   status = $state('disconnected');
 
+  /** @type {LibadukSocket | null} */
   #socket = null;
   #joinData = null;
 
@@ -17,6 +25,7 @@ class GameSocket {
 
   #open() {
     const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+    /** @type {LibadukSocket} */
     const socket = new GobanSocket(`${protocol}://${location.host}/ws`);
     this.#socket = socket;
     socket.on('connect', () => {
@@ -32,11 +41,24 @@ class GameSocket {
     if (this.#joinData) this.#socket.send('room/join', this.#joinData);
   }
 
+  /**
+   * @template {keyof SocketEvents} E
+   * @param {E} event
+   * @param {SocketEvents[E]} handler
+   */
   on(event, handler) {
-    this.#socket?.on(event, handler);
+    const emitter = /** @type {import('eventemitter3').EventEmitter<SocketEvents>} */ (
+      /** @type {unknown} */ (this.#socket)
+    );
+    emitter?.on(event, /** @type {any} */ (handler));
   }
 
-  send(command, data = {}) {
+  /**
+   * @template {keyof ClientToServer} C
+   * @param {C} command
+   * @param {import('goban-engine').DataArgument<ClientToServer[C]>} data
+   */
+  send(command, data) {
     this.#socket?.send(command, data);
   }
 
