@@ -99,13 +99,18 @@
       onclick={toggle}
     ></button>
     <div class="dropdown">
-      {#if pane === 'background'}
+      {#if pane === 'announcements'}
+        <AnnouncementsPane onBack={() => (pane = 'main')} onOpen={showAnnouncements} />
+      {:else if pane === 'background'}
         <BackgroundPane onBack={() => (pane = 'main')} />
       {:else if pane === 'board'}
         <BoardPane onBack={() => (pane = 'main')} />
       {:else if pane === 'language'}
         <LanguagePane onBack={() => (pane = 'main')} />
       {:else}
+        <button class="text" data-icon-right="&#xe026;" onclick={() => (pane = 'announcements')}
+          >{t('Announcements')}</button
+        >
         <button class="text" data-icon-right="&#xe026;" onclick={() => (pane = 'board')}
           >{t('Board')}</button
         >
