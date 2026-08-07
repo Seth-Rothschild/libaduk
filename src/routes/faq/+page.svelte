@@ -201,8 +201,7 @@
 <style>
   h1.box__top {
     padding: 0 0 4vh 0;
-    font-size: 28px;
-    font-weight: 300;
+    font-size: 38px;
   }
 
   h2 {
