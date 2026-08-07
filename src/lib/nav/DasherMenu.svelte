@@ -51,7 +51,11 @@
     <button id="user_tag" class="link" onclick={toggle}>{username}</button>
     <div class="dropdown">
       {#if pane === 'announcements'}
-        <AnnouncementsPane onBack={() => (pane = 'main')} onOpen={showAnnouncements} />
+        <AnnouncementsPane
+          onBack={() => (pane = 'main')}
+          onOpen={showAnnouncements}
+          onClose={close}
+        />
       {:else if pane === 'background'}
         <BackgroundPane onBack={() => (pane = 'main')} />
       {:else if pane === 'board'}
@@ -100,7 +104,11 @@
     ></button>
     <div class="dropdown">
       {#if pane === 'announcements'}
-        <AnnouncementsPane onBack={() => (pane = 'main')} onOpen={showAnnouncements} />
+        <AnnouncementsPane
+          onBack={() => (pane = 'main')}
+          onOpen={showAnnouncements}
+          onClose={close}
+        />
       {:else if pane === 'background'}
         <BackgroundPane onBack={() => (pane = 'main')} />
       {:else if pane === 'board'}

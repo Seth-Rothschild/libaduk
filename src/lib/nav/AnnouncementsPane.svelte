@@ -2,7 +2,7 @@
   import { announcementsUi } from '$lib/announcements/announcementsUi.svelte.js';
   import { t } from '$lib/i18n/i18n.svelte.js';
 
-  let { onBack, onOpen } = $props();
+  let { onBack, onOpen, onClose } = $props();
 </script>
 
 <button class="sub-head text" data-icon="&#xe027;" onclick={onBack}>{t('Announcements')}</button>
@@ -33,6 +33,7 @@
     </group>
   </section>
   <hr class="board-settings-divider" />
+  <a class="text" href="/updates" onclick={onClose}>{t('See all updates')}</a>
   <div class="announcements-open">
     <button class="button" onclick={onOpen}>{t('Open Announcements')}</button>
   </div>

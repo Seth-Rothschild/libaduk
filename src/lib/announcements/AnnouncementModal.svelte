@@ -2,40 +2,10 @@
   import { t } from '$lib/i18n/i18n.svelte.js';
   import { formatTime } from '$lib/format.js';
   import { announcementsUi } from './announcementsUi.svelte.js';
+  import { allAnnouncements, renderMarkdown, isExpired } from './announcements.js';
 
   const EXPIRY_DAYS = 30;
   const DISMISSED_KEY = 'announcements:dismissed';
-
-  const modules = import.meta.glob('./content/*.md', {
-    eager: true,
-    query: '?raw',
-    import: 'default'
-  });
-
-  function parseAnnouncement(raw) {
-    const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-    if (!match) return null;
-    const [, frontmatterText, body] = match;
-    const frontmatter = {};
-    for (const line of frontmatterText.split('\n')) {
-      if (!line.trim()) continue;
-      const [key, ...rest] = line.split(':');
-      frontmatter[key.trim()] = rest.join(':').trim();
-    }
-    return {
-      id: frontmatter.id,
-      title: frontmatter.title,
-      subtitle: frontmatter.subtitle,
-      date: frontmatter.date,
-      body: body.trim()
-    };
-  }
-
-  function isExpired(dateString) {
-    const ageMs = Date.now() - new Date(dateString).getTime();
-    const expiryMs = EXPIRY_DAYS * 24 * 60 * 60 * 1000;
-    return ageMs > expiryMs;
-  }
 
   function getDismissedIds() {
     const raw = localStorage.getItem(DISMISSED_KEY);
@@ -48,49 +18,13 @@
     localStorage.setItem(DISMISSED_KEY, JSON.stringify([...dismissedIds]));
   }
 
-  function escapeHtml(text) {
-    return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-  }
-
-  function renderInline(text) {
-    const escaped = escapeHtml(text);
-    const withLinks = escaped.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-    const withBold = withLinks.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    return withBold.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  }
-
-  function renderBlock(block) {
-    const headerMatch = block.match(/^(#{1,3}) (.*)$/);
-    if (headerMatch) {
-      const level = headerMatch[1].length + 2;
-      return `<h${level}>${renderInline(headerMatch[2])}</h${level}>`;
-    }
-    const lines = block.split('\n');
-    const isList = lines.every((line) => line.startsWith('- '));
-    if (isList) {
-      const items = lines.map((line) => `<li>${renderInline(line.slice(2))}</li>`).join('');
-      return `<ul>${items}</ul>`;
-    }
-    return `<p>${renderInline(block.replaceAll('\n', ' '))}</p>`;
-  }
-
-  function renderMarkdown(markdown) {
-    const blocks = markdown.split('\n\n').filter((block) => block.trim());
-    return blocks.map(renderBlock).join('');
-  }
-
-  const allAnnouncements = Object.values(modules)
-    .map(parseAnnouncement)
-    .filter(Boolean)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
-
   let dialog = $state(null);
   let index = $state(0);
 
   $effect(() => {
     if (announcementsUi.disabled) return;
     const newest = allAnnouncements[0];
-    if (!newest || isExpired(newest.date)) return;
+    if (!newest || isExpired(newest.date, EXPIRY_DAYS)) return;
     const dismissedIds = getDismissedIds();
     if (dismissedIds.has(newest.id)) return;
     index = 0;
