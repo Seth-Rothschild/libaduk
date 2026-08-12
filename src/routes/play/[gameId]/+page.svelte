@@ -492,10 +492,10 @@
 
   function confirmMove() {
     if (!pendingMove) return;
-    onVertexClick(pendingMove[0], pendingMove[1]);
+    onVertexClick(pendingMove[0], pendingMove[1], true);
   }
 
-  function onVertexClick(x, y) {
+  function onVertexClick(x, y, fromButton = false) {
     if (isSpectator) return;
     if (gs.status === 'playing') {
       if (!isMyTurn) return;
@@ -503,8 +503,11 @@
       if (moveResult.overwrite || moveResult.suicide || moveResult.ko) return;
       const mode = boardSettings.moveConfirmation;
       const coordsMatch = pendingMove?.[0] === x && pendingMove?.[1] === y;
-      const needsConfirm = mode === 'double-click' || mode === 'button';
-      if (needsConfirm && !coordsMatch) {
+      if (mode === 'button' && !fromButton) {
+        pendingMove = [x, y];
+        return;
+      }
+      if (mode === 'double-click' && !coordsMatch) {
         pendingMove = [x, y];
         return;
       }
