@@ -1,4 +1,5 @@
 import { MongoClient } from 'mongodb';
+import { randomUUID } from 'crypto';
 
 const MONGO_URL = process.env.MONGO_URL ?? 'mongodb://localhost:27017';
 const DB_NAME = process.env.MONGO_DB ?? 'libaduk';
@@ -773,6 +774,64 @@ export async function getUserPuzzleAttempts(username) {
     return doc?.attempts ?? [];
   } catch (err) {
     console.error('[db] getUserPuzzleAttempts failed:', err.message);
+    throw err;
+  }
+}
+
+// --- Notifications ---
+
+export async function addNotification(username, notification) {
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    const entry = { id: randomUUID(), read: false, createdAt: Date.now(), ...notification };
+    await d.collection('users').updateOne({ _id: key }, { $push: { notifications: entry } });
+    return entry;
+  } catch (err) {
+    console.error('[db] addNotification failed:', err.message);
+    throw err;
+  }
+}
+
+export async function getNotifications(username) {
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    const doc = await d
+      .collection('users')
+      .findOne({ _id: key }, { projection: { notifications: 1 } });
+    const notifications = doc?.notifications ?? [];
+    return notifications.slice().reverse();
+  } catch (err) {
+    console.error('[db] getNotifications failed:', err.message);
+    throw err;
+  }
+}
+
+export async function markAllNotificationsRead(username) {
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    await d.collection('users').updateOne(
+      { _id: key },
+      { $set: { 'notifications.$[unread].read': true } },
+      {
+        arrayFilters: [{ 'unread.read': false }]
+      }
+    );
+  } catch (err) {
+    console.error('[db] markAllNotificationsRead failed:', err.message);
+    throw err;
+  }
+}
+
+export async function clearNotifications(username) {
+  try {
+    const key = username.toLowerCase();
+    const d = await getDb();
+    await d.collection('users').updateOne({ _id: key }, { $set: { notifications: [] } });
+  } catch (err) {
+    console.error('[db] clearNotifications failed:', err.message);
     throw err;
   }
 }

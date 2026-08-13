@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { getMe } from './user.svelte.js';
 import { getGuestId } from './guestId.js';
+import { notifications } from './notifications.svelte.js';
 
 class PingState {
   ping = $state(null);
@@ -36,6 +37,9 @@ class PingState {
         if (msg.playersOnline !== undefined) {
           this.lobbyStats = { playersOnline: msg.playersOnline, gamesInPlay: msg.gamesInPlay };
         }
+      }
+      if (msg.type === 'notification') {
+        notifications.add(msg.notification);
       }
     });
 

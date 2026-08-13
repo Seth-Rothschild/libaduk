@@ -5,6 +5,7 @@
   import SiteTitle from './SiteTitle.svelte';
   import TopNav from './TopNav.svelte';
   import SearchBar from './SearchBar.svelte';
+  import NotifyMenu from './NotifyMenu.svelte';
   import DasherMenu from './DasherMenu.svelte';
   import MobileNav from './MobileNav.svelte';
 
@@ -44,6 +45,9 @@
 
   <div class="site-buttons">
     <SearchBar />
+    {#if username}
+      <NotifyMenu />
+    {/if}
     <DasherMenu {username} onSignOut={signOut} />
   </div>
 </header>

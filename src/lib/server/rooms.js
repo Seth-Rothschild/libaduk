@@ -284,6 +284,10 @@ function send(socket, msg) {
   }
 }
 
+export function notifyUser(username, msg) {
+  send(onlinePlayers.get(username)?.socket, msg);
+}
+
 function addToGame(socket, gameId) {
   socket.gameId = gameId;
   if (!gameClients.has(gameId)) {
@@ -350,7 +354,7 @@ export function attachWebSocketServer(httpServer) {
       }
       if (msg.type === 'ping') {
         if (msg.name) {
-          onlinePlayers.set(msg.name, { lastPing: Date.now(), isAuth: !!msg.isAuth });
+          onlinePlayers.set(msg.name, { lastPing: Date.now(), isAuth: !!msg.isAuth, socket });
         }
         send(socket, { type: 'pong', ...getLobbyStats() });
       }
@@ -515,6 +519,19 @@ export function attachWebSocketServer(httpServer) {
           movePatch.corrTurnDeadline = turnDeadline;
           broadcast(socket.gameId, { type: 'move', x: msg.x, y: msg.y, turnDeadline });
           await db.updateGame(socket.gameId, movePatch);
+
+          const moverColor = socket.playerColor;
+          const recipientColor = moverColor === 'black' ? 'white' : 'black';
+          const recipientName = recipientColor === 'black' ? game.blackName : game.whiteName;
+          const moverName = moverColor === 'black' ? game.blackName : game.whiteName;
+          if (recipientName && (game.owners ?? []).includes(recipientName)) {
+            const notification = await db.addNotification(recipientName, {
+              type: 'corres-move',
+              gameId: socket.gameId,
+              opponent: moverName
+            });
+            notifyUser(recipientName, { type: 'notification', notification });
+          }
           return;
         }
         await db.updateGame(socket.gameId, movePatch);
