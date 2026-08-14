@@ -581,6 +581,16 @@ body > header {
   max-width: 100vw;
 }
 
+@media (max-width: 600px) {
+  .site-buttons .notify .dropdown {
+    position: fixed;
+    inset-inline-start: 0.5rem;
+    inset-inline-end: 0.5rem;
+    width: auto;
+    max-width: none;
+  }
+}
+
 .site-buttons .notify .dropdown .empty {
   padding: 2rem 0;
   text-align: center;
