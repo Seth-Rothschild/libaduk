@@ -14,23 +14,35 @@
 
   const COL_LETTERS = 'ABCDEFGHJKLMNOPQRST';
 
-  function parseMessageParts(text) {
+  function parseTextSegment(text) {
     const isCoord = (word) => /^[A-HJ-Ta-hj-t]\d{1,2}$/i.test(word);
     const isURL = (word) => /^https?:\/\/\S+$/.test(word);
-    const isMention = (word) => /^@[a-zA-Z0-9_-]{2,30}$/.test(word);
     const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const matchSet = new Set(text.split(' ').filter((w) => isCoord(w) || isURL(w) || isMention(w)));
-    if (matchSet.size === 0) return [{ type: 'text', content: text }];
+    const matchSet = new Set(text.split(' ').filter((w) => isCoord(w) || isURL(w)));
+    if (matchSet.size === 0) return text ? [{ type: 'text', content: text }] : [];
 
     const pattern = new RegExp(`(${[...matchSet].map(escapeRegex).join('|')})`);
-    return text.split(pattern).map((part, i) => {
-      if (i % 2 === 0) return { type: 'text', content: part };
-      if (isURL(part)) return { type: 'url', content: part };
-      if (isMention(part)) return { type: 'mention', content: part, username: part.slice(1) };
-      const x = COL_LETTERS.indexOf(part[0].toUpperCase());
-      const y = boardSize - parseInt(part.slice(1));
-      return { type: 'coord', content: part, x, y };
-    });
+    return text
+      .split(pattern)
+      .filter((part) => part)
+      .map((part, i) => {
+        if (i % 2 === 0) return { type: 'text', content: part };
+        if (isURL(part)) return { type: 'url', content: part };
+        const x = COL_LETTERS.indexOf(part[0].toUpperCase());
+        const y = boardSize - parseInt(part.slice(1));
+        return { type: 'coord', content: part, x, y };
+      });
+  }
+
+  function parseMessageParts(text) {
+    // Mentions are inserted by the autocomplete picker as @[username], since usernames
+    // can contain spaces (e.g. accounts created via OGS login end in " (OGS)").
+    const segments = text.split(/@\[([^\]]+)\]/);
+    return segments.flatMap((segment, i) =>
+      i % 2 === 1
+        ? [{ type: 'mention', content: `@${segment}`, username: segment }]
+        : parseTextSegment(segment)
+    );
   }
 
   let textareaEl = $state(null);
@@ -72,9 +84,9 @@
 
   function selectMention(user) {
     const cursorPos = mentionStart + 1 + mentionQuery.length;
-    inputText =
-      inputText.slice(0, mentionStart) + '@' + user.username + ' ' + inputText.slice(cursorPos);
-    const newCursorPos = mentionStart + user.username.length + 2;
+    const mentionToken = `@[${user.username}] `;
+    inputText = inputText.slice(0, mentionStart) + mentionToken + inputText.slice(cursorPos);
+    const newCursorPos = mentionStart + mentionToken.length;
     closeMentions();
     tick().then(() => {
       textareaEl?.focus();

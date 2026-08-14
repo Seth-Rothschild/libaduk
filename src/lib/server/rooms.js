@@ -288,12 +288,12 @@ export function notifyUser(username, msg) {
   send(onlinePlayers.get(username)?.socket, msg);
 }
 
-const MENTION_PATTERN = /(^|[^\w@#/])@([a-zA-Z0-9_-]{2,30})/g;
+const MENTION_PATTERN = /@\[([^\]]+)\]/g;
 
 export async function notifyMentions(text, { taggedBy, gameId = null, isTv = false }) {
   const candidates = new Set();
   for (const match of text.matchAll(MENTION_PATTERN)) {
-    candidates.add(match[2].toLowerCase());
+    candidates.add(match[1].toLowerCase());
   }
   candidates.delete(taggedBy.toLowerCase());
   for (const candidate of candidates) {
