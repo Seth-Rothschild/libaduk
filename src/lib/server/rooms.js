@@ -288,6 +288,27 @@ export function notifyUser(username, msg) {
   send(onlinePlayers.get(username)?.socket, msg);
 }
 
+const MENTION_PATTERN = /(^|[^\w@#/])@([a-zA-Z0-9_-]{2,30})/g;
+
+export async function notifyMentions(text, { taggedBy, gameId = null, isTv = false }) {
+  const candidates = new Set();
+  for (const match of text.matchAll(MENTION_PATTERN)) {
+    candidates.add(match[2].toLowerCase());
+  }
+  candidates.delete(taggedBy.toLowerCase());
+  for (const candidate of candidates) {
+    const user = await db.getUser(candidate);
+    if (!user) continue;
+    const notification = await db.addNotification(user.username, {
+      type: 'chat-tag',
+      gameId,
+      isTv,
+      from: taggedBy
+    });
+    notifyUser(user.username, { type: 'notification', notification });
+  }
+}
+
 function addToGame(socket, gameId) {
   socket.gameId = gameId;
   if (!gameClients.has(gameId)) {
@@ -655,7 +676,10 @@ export function attachWebSocketServer(httpServer) {
         const text = typeof msg.text === 'string' ? msg.text.slice(0, 500).trim() : '';
         const user = typeof msg.user === 'string' ? msg.user.slice(0, 50) : 'anon';
         const moveNumber = Number.isFinite(msg.moveNumber) ? msg.moveNumber : null;
-        if (text) tvRoom.addChat({ user, text, t: Date.now(), moveNumber });
+        if (text) {
+          tvRoom.addChat({ user, text, t: Date.now(), moveNumber });
+          await notifyMentions(text, { taggedBy: user, isTv: true });
+        }
       }
       if (msg.type === 'tv-game-ended' && socket.tvViewer) {
         tvRoom.clearGameIfMatches(msg.gameId);

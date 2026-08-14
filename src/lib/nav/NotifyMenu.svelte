@@ -59,16 +59,33 @@
       ></button>
       <div class="notifications">
         {#each notifications.items as n (n.id)}
-          <a class="site_notification" href="/play/{n.gameId}" onclick={close}>
-            <span class="site_notification__icon" data-icon="&#xe019;"></span>
-            <span class="content">
-              <span>
-                <strong>{t('Your move')}</strong>
-                <time>{formatTime(n.createdAt)}</time>
+          {#if n.type === 'chat-tag'}
+            <a
+              class="site_notification"
+              href={n.isTv ? '/tv' : `/play/${n.gameId}`}
+              onclick={close}
+            >
+              <span class="site_notification__icon" data-icon="&#xe042;"></span>
+              <span class="content">
+                <span>
+                  <strong>{n.from}</strong>
+                  <time>{formatTime(n.createdAt)}</time>
+                </span>
+                <span>{t('mentioned you in chat')}</span>
               </span>
-              <span>{t('vs')} {n.opponent}</span>
-            </span>
-          </a>
+            </a>
+          {:else}
+            <a class="site_notification" href="/play/{n.gameId}" onclick={close}>
+              <span class="site_notification__icon" data-icon="&#xe019;"></span>
+              <span class="content">
+                <span>
+                  <strong>{t('Your move')}</strong>
+                  <time>{formatTime(n.createdAt)}</time>
+                </span>
+                <span>{t('vs')} {n.opponent}</span>
+              </span>
+            </a>
+          {/if}
         {/each}
       </div>
     {/if}

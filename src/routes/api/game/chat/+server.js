@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { appendChat, getGame } from '$lib/server/db.js';
-import { broadcast, getOgsAdapter } from '$lib/server/rooms.js';
+import { broadcast, getOgsAdapter, notifyMentions } from '$lib/server/rooms.js';
 
 export async function POST({ request }) {
   const body = await request.json().catch(() => ({}));
@@ -13,6 +13,7 @@ export async function POST({ request }) {
   const entry = { user, text, t: Date.now() };
   await appendChat(gameId, entry);
   broadcast(gameId, { type: 'chat', user, text });
+  await notifyMentions(text, { taggedBy: user, gameId });
   const game = await getGame(gameId);
   const ogsAdapter = getOgsAdapter(gameId);
   if (ogsAdapter && game?.gameType === 'ogs') ogsAdapter.sendChat(text);

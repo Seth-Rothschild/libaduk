@@ -1198,6 +1198,27 @@ html.light .color-icon.white::before {
   border-color: var(--c-error, #f87171);
 }
 
+.mchat__input-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.mchat__input-wrap .mention-results {
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  top: auto;
+  width: auto;
+}
+
+.mention-result-active {
+  background: var(--c-bg-zebra);
+}
+
+.mention-link {
+  font-weight: 600;
+}
+
 .mchat__typing {
   font-size: 0.75em;
   color: var(--c-text-muted);

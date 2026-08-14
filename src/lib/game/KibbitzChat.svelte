@@ -1,5 +1,5 @@
 <script>
-  import { tick } from 'svelte';
+  import { tick, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
 
   let {
@@ -17,17 +17,68 @@
   function parseMessageParts(text) {
     const isCoord = (word) => /^[A-HJ-Ta-hj-t]\d{1,2}$/i.test(word);
     const isURL = (word) => /^https?:\/\/\S+$/.test(word);
+    const isMention = (word) => /^@[a-zA-Z0-9_-]{2,30}$/.test(word);
     const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const matchSet = new Set(text.split(' ').filter((w) => isCoord(w) || isURL(w)));
+    const matchSet = new Set(text.split(' ').filter((w) => isCoord(w) || isURL(w) || isMention(w)));
     if (matchSet.size === 0) return [{ type: 'text', content: text }];
 
     const pattern = new RegExp(`(${[...matchSet].map(escapeRegex).join('|')})`);
     return text.split(pattern).map((part, i) => {
       if (i % 2 === 0) return { type: 'text', content: part };
       if (isURL(part)) return { type: 'url', content: part };
+      if (isMention(part)) return { type: 'mention', content: part, username: part.slice(1) };
       const x = COL_LETTERS.indexOf(part[0].toUpperCase());
       const y = boardSize - parseInt(part.slice(1));
       return { type: 'coord', content: part, x, y };
+    });
+  }
+
+  let textareaEl = $state(null);
+  let mentionQuery = $state(null);
+  let mentionStart = $state(0);
+  let mentionResults = $state([]);
+  let mentionIndex = $state(0);
+  let mentionTimer = null;
+
+  onDestroy(() => clearTimeout(mentionTimer));
+
+  function closeMentions() {
+    mentionQuery = null;
+    mentionResults = [];
+  }
+
+  function detectMention(text, cursorPos) {
+    const upToCursor = text.slice(0, cursorPos);
+    const match = /(^|\s)@([a-zA-Z0-9_-]{0,30})$/.exec(upToCursor);
+    if (!match) return null;
+    return { start: match.index + match[1].length, query: match[2] };
+  }
+
+  function handleInput(e) {
+    const detected = detectMention(inputText, e.target.selectionStart);
+    if (!detected) {
+      closeMentions();
+      return;
+    }
+    mentionQuery = detected.query;
+    mentionStart = detected.start;
+    mentionIndex = 0;
+    clearTimeout(mentionTimer);
+    mentionTimer = setTimeout(async () => {
+      const res = await fetch(`/api/users/search?q=${encodeURIComponent(mentionQuery)}`);
+      mentionResults = await res.json();
+    }, 150);
+  }
+
+  function selectMention(user) {
+    const cursorPos = mentionStart + 1 + mentionQuery.length;
+    inputText =
+      inputText.slice(0, mentionStart) + '@' + user.username + ' ' + inputText.slice(cursorPos);
+    const newCursorPos = mentionStart + user.username.length + 2;
+    closeMentions();
+    tick().then(() => {
+      textareaEl?.focus();
+      textareaEl?.setSelectionRange(newCursorPos, newCursorPos);
     });
   }
 
@@ -90,10 +141,32 @@
     }
     sendFailed = false;
     inputText = '';
+    closeMentions();
     scrollToBottom();
   }
 
   function handleKeydown(e) {
+    if (mentionResults.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        mentionIndex = (mentionIndex + 1) % mentionResults.length;
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        mentionIndex = (mentionIndex - 1 + mentionResults.length) % mentionResults.length;
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        selectMention(mentionResults[mentionIndex]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        closeMentions();
+        return;
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage(inputText);
@@ -184,6 +257,8 @@
                   </span>
                 {:else if part.type === 'url'}
                   <a href={part.content} target="_blank" rel="noopener">{part.content}</a>
+                {:else if part.type === 'mention'}
+                  <a class="mention-link" href="/profile/{part.username}">{part.content}</a>
                 {:else}
                   {part.content}
                 {/if}
@@ -193,16 +268,34 @@
         {/if}
       {/each}
     </ol>
-    <textarea
-      class="mchat__say"
-      class:mchat__say--disconnected={sendFailed}
-      placeholder={sendFailed
-        ? 'Disconnected — message not sent'
-        : 'Chat  about anything — moves, games, nonsense'}
-      aria-label="Kibbitz message"
-      bind:value={inputText}
-      onkeydown={handleKeydown}
-    />
+    <div class="mchat__input-wrap">
+      <textarea
+        class="mchat__say"
+        class:mchat__say--disconnected={sendFailed}
+        placeholder={sendFailed
+          ? 'Disconnected — message not sent'
+          : 'Chat  about anything — moves, games, nonsense'}
+        aria-label="Kibbitz message"
+        bind:value={inputText}
+        bind:this={textareaEl}
+        oninput={handleInput}
+        onkeydown={handleKeydown}
+        onblur={closeMentions}></textarea>
+      {#if mentionResults.length > 0}
+        <div class="search-results mention-results">
+          {#each mentionResults as user, i (user.username)}
+            <button
+              class="search-result"
+              class:mention-result-active={i === mentionIndex}
+              onmousedown={(e) => e.preventDefault()}
+              onclick={() => selectMention(user)}
+            >
+              {user.username}
+            </button>
+          {/each}
+        </div>
+      {/if}
+    </div>
   </div>
 </section>
 
