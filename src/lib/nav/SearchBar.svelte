@@ -2,6 +2,9 @@
   import { onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { t } from '$lib/i18n/i18n.svelte.js';
+  import { browser } from '$app/environment';
+
+  const supportsHover = browser && window.matchMedia('(hover: hover)').matches;
 
   let expanded = $state(false);
   let query = $state('');
@@ -38,10 +41,12 @@
     expand();
   };
 
-  const onMouseEnter = () => expand();
+  const onMouseEnter = () => {
+    if (supportsHover) expand();
+  };
 
   const onMouseLeave = () => {
-    if (clickedIcon) return;
+    if (!supportsHover || clickedIcon) return;
     if (query.length === 0) expanded = false;
     inputEl?.blur();
   };
