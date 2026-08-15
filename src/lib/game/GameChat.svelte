@@ -1,5 +1,6 @@
 <script>
   import { tick, onDestroy } from 'svelte';
+  import { goto } from '$app/navigation';
 
   let {
     username = '',
@@ -14,7 +15,8 @@
     inputText = $bindable(''),
     moveCount = 0,
     readOnly = false,
-    typingUsers = new Set()
+    typingUsers = new Set(),
+    isTv = false
   } = $props();
 
   function formatTyping(users) {
@@ -120,6 +122,7 @@
     });
   }
 
+  const mountTime = Date.now();
   const uniqueViewers = $derived([...new Set(viewers)]);
 
   let activeTab = $state('discussion');
@@ -129,6 +132,7 @@
   let usedStartPresets = $state(new Set());
   let usedEndPresets = $state(new Set());
   let noteSaveTimer = null;
+  let importingGameId = $state(null);
 
   const START_PRESETS = [
     { key: 'hi', text: 'Hello' },
@@ -160,10 +164,61 @@
   const usedPresets = $derived(new Set([...inSessionUsed, ...sentPresetKeys]));
   const startPresetsExpired = $derived(!isGameOver && moveCount > 4);
   const presetsVisible = $derived(
-    !startPresetsExpired &&
+    !isTv &&
+      !startPresetsExpired &&
       usedPresets.size < 2 &&
       (gameStatus === 'playing' || gameStatus === 'scoring' || isGameOver)
   );
+
+  const placeholder = $derived.by(() => {
+    if (sendFailed) return 'Disconnected — message not sent';
+    if (isTv) return 'Chat  about anything — moves, games, nonsense';
+    if (readOnly) return 'Chat with viewers · not sent to OGS';
+    return 'Please be nice in the chat!';
+  });
+
+  function filterEmptyDividers(msgs) {
+    return msgs.filter((m, i) => {
+      if (!m.divider) return true;
+      if (m.t >= mountTime) return true;
+      const next = msgs[i + 1];
+      return !next || !next.divider;
+    });
+  }
+
+  const visibleMessages = $derived(filterEmptyDividers(messages));
+  const userHasPosted = $derived(
+    username && visibleMessages.some((m) => !m.divider && m.user === username)
+  );
+
+  async function importOgsGame(ogsGameId) {
+    importingGameId = ogsGameId;
+    try {
+      const res = await fetch('/api/game/from-ogs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ogsGameId })
+      });
+      if (!res.ok) {
+        window.open(`https://online-go.com/game/${ogsGameId}`, '_blank', 'noopener');
+        return;
+      }
+      const { id } = await res.json();
+      goto(`/play/${id}`);
+    } catch {
+      window.open(`https://online-go.com/game/${ogsGameId}`, '_blank', 'noopener');
+    } finally {
+      importingGameId = null;
+    }
+  }
+
+  function formatTime(t) {
+    if (!t) return '';
+    const date = new Date(t);
+    const datePart = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    const timePart = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `[${datePart}] ${timePart}`;
+  }
 
   function sendMessage(text) {
     if (!text.trim()) return;
@@ -240,30 +295,34 @@
 </script>
 
 <section class="mchat">
-  <div class="mchat__tabs" role="tablist">
-    <button
-      class="mchat__tab discussion"
-      class:mchat__tab-active={activeTab === 'discussion'}
-      role="tab"
-      onclick={() => (activeTab = 'discussion')}
-    >
-      <span>Chat room</span>
-    </button>
-    <button
-      class="mchat__tab"
-      class:mchat__tab-active={activeTab === 'notes'}
-      role="tab"
-      onclick={() => (activeTab = 'notes')}
-    >
-      Notes
-    </button>
-  </div>
+  {#if !isTv}
+    <div class="mchat__tabs" role="tablist">
+      <button
+        class="mchat__tab discussion"
+        class:mchat__tab-active={activeTab === 'discussion'}
+        role="tab"
+        onclick={() => (activeTab = 'discussion')}
+      >
+        <span>Chat room</span>
+      </button>
+      <button
+        class="mchat__tab"
+        class:mchat__tab-active={activeTab === 'notes'}
+        role="tab"
+        onclick={() => (activeTab = 'notes')}
+      >
+        Notes
+      </button>
+    </div>
+  {/if}
 
-  {#if activeTab === 'discussion'}
+  {#if isTv || activeTab === 'discussion'}
     <div class="mchat__content">
-      {#if uniqueViewers.length > 0}
+      {#if isTv || uniqueViewers.length > 0}
         <header class="mchat__viewers">
-          <span class="mchat__viewers-count">In this room: </span>
+          <span class="mchat__viewers-count">
+            {isTv ? `${uniqueViewers.length} watching` : 'In this room: '}
+          </span>
           <ul class="mchat__viewers-list">
             {#each uniqueViewers as viewer}
               <li>{viewer}</li>
@@ -274,38 +333,76 @@
       <ol
         class="mchat__messages"
         aria-live="polite"
-        aria-label="Chat messages"
+        aria-label={isTv ? 'Kibbitz chat' : 'Chat messages'}
         tabindex="0"
         bind:this={messagesEl}
       >
-        {#each messages as msg}
-          <li class:me={msg.user === username} class:system={msg.system}>
-            {#if msg.system}
-              {msg.text}
-            {:else}
-              <span class="color">{msg.user}</span>
-              <t>
-                {#each parseMessageParts(msg.text) as part}
-                  {#if part.type === 'coord'}
-                    <span
-                      class="coord-ref"
-                      role="img"
-                      aria-label={part.content}
-                      onmouseenter={() => onCoordHover([part.x, part.y])}
-                      onmouseleave={() => onCoordHover(null)}
-                      >{part.content}
-                    </span>
-                  {:else if part.type === 'url'}
-                    <a href={part.content} target="_blank" rel="noopener">{part.content}</a>
-                  {:else if part.type === 'mention'}
-                    <a class="mention-link" href="/profile/{part.username}">{part.content}</a>
-                  {:else}
-                    {part.content}
-                  {/if}
-                {/each}
-              </t>
-            {/if}
-          </li>
+        {#if isTv && username && !userHasPosted}
+          <p class="mchat__empty">You haven't said anything yet — jump in!</p>
+        {/if}
+        {#each visibleMessages as msg}
+          {#if msg.divider}
+            <li class="kibbitz-divider">
+              <button
+                class="kibbitz-link"
+                disabled={importingGameId === msg.gameId}
+                onclick={() => importOgsGame(msg.gameId)}
+              >
+                {#if importingGameId === msg.gameId}
+                  Loading…
+                {:else}
+                  {msg.blackName ?? 'Black'} vs {msg.whiteName ?? 'White'}
+                {/if}
+                {#if importingGameId !== msg.gameId}<svg
+                    class="kibbitz-link__icon"
+                    aria-hidden="true"
+                    width="11"
+                    height="11"
+                    viewBox="0 0 11 11"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path d="M4.5 2H2v7h7V6.5" /><path d="M6.5 2H9v2.5" /><line
+                      x1="9"
+                      y1="2"
+                      x2="5"
+                      y2="6"
+                    /></svg
+                  >{/if}
+              </button>
+            </li>
+          {:else}
+            <li class:me={msg.user === username} class:system={msg.system}>
+              {#if msg.system}
+                {msg.text}
+              {:else}
+                <time class="mchat__ts">{formatTime(msg.t)}</time>
+                <span class="color">{msg.user}</span>
+                <t>
+                  {#each parseMessageParts(msg.text) as part}
+                    {#if part.type === 'coord'}
+                      <span
+                        class="coord-ref"
+                        role="img"
+                        aria-label={part.content}
+                        onmouseenter={() => onCoordHover([part.x, part.y])}
+                        onmouseleave={() => onCoordHover(null)}
+                        >{part.content}
+                      </span>
+                    {:else if part.type === 'url'}
+                      <a href={part.content} target="_blank" rel="noopener">{part.content}</a>
+                    {:else if part.type === 'mention'}
+                      <a class="mention-link" href="/profile/{part.username}">{part.content}</a>
+                    {:else}
+                      {part.content}
+                    {/if}
+                  {/each}
+                </t>
+              {/if}
+            </li>
+          {/if}
         {/each}
       </ol>
       {#if typingUsers.size > 0}
@@ -315,12 +412,8 @@
         <textarea
           class="mchat__say"
           class:mchat__say--disconnected={sendFailed}
-          placeholder={sendFailed
-            ? 'Disconnected — message not sent'
-            : readOnly
-              ? 'Chat with viewers · not sent to OGS'
-              : 'Please be nice in the chat!'}
-          aria-label="Chat message"
+          {placeholder}
+          aria-label={isTv ? 'Kibbitz message' : 'Chat message'}
           bind:value={inputText}
           bind:this={textareaEl}
           oninput={handleInput}

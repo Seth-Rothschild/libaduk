@@ -1198,6 +1198,64 @@ html.light .color-icon.white::before {
   border-color: var(--c-error, #f87171);
 }
 
+.kibbitz-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  color: var(--c-font-dim);
+  font-size: 0.85em;
+  text-align: center;
+  padding: 0.5em 0;
+}
+
+.kibbitz-divider::before,
+.kibbitz-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--c-border);
+}
+
+.kibbitz-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  font-size: inherit;
+}
+
+.kibbitz-link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.kibbitz-link:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.kibbitz-link__icon {
+  margin-left: 0.3em;
+  vertical-align: middle;
+  position: relative;
+  top: -0.05em;
+}
+
+.mchat__empty {
+  color: var(--c-font-dim);
+  font-size: 0.85em;
+  text-align: center;
+  padding: 1em;
+  margin: 0;
+}
+
+.mchat__ts,
+.mchat__movenum {
+  color: var(--c-font-dim);
+  font-size: 0.8em;
+  margin-right: 0.25em;
+}
+
 .mchat__input-wrap {
   position: relative;
   flex: 0 0 auto;

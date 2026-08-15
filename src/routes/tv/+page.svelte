@@ -6,7 +6,7 @@
   import PlayerStrip from '$lib/game/PlayerStrip.svelte';
   import GameMeta from '$lib/game/GameMeta.svelte';
   import AnalysisMoves from '$lib/game/AnalysisMoves.svelte';
-  import KibbitzChat from '$lib/game/KibbitzChat.svelte';
+  import GameChat from '$lib/game/GameChat.svelte';
   import NavigationButtons from '$lib/game/NavigationButtons.svelte';
   import { boardSettings } from '$lib/nav/boardSettings.svelte.js';
   import { getGuestId } from '$lib/state/guestId.js';
@@ -328,7 +328,7 @@
   {/if}
 
   {#if isMobile}
-    <KibbitzChat
+    <GameChat
       {username}
       messages={chatMessages}
       viewers={chatViewers}
@@ -336,6 +336,7 @@
       {boardSize}
       onCoordHover={(v) => (chatHighlightVertex = v)}
       bind:inputText={chatInputText}
+      isTv
     />
   {/if}
 
@@ -359,7 +360,7 @@
       handicap={ogsLiveGame.game?.handicap ?? 0}
     />
     {#if !isMobile}
-      <KibbitzChat
+      <GameChat
         {username}
         messages={chatMessages}
         viewers={chatViewers}
@@ -367,6 +368,7 @@
         {boardSize}
         onCoordHover={(v) => (chatHighlightVertex = v)}
         bind:inputText={chatInputText}
+        isTv
       />
     {/if}
   </aside>
